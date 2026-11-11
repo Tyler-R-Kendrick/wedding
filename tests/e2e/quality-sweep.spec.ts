@@ -342,7 +342,7 @@ test.describe('the masthead never collides', () => {
     const ctx = await contextAs(browser, 'A1', { viewport: { width: 1440, height: 900 } });
     const page = await ctx.newPage();
     // A signed-in guest's home is the dashboard (`/` sends them there), with the portal's own
-    // navigation: Home, Travel, Things to Do, Venue, Ask Us.
+    // navigation: Home, Your Trip, Venue, Ask Us.
     await page.goto('/guests');
     await expect(page).toHaveURL(/\/guests(?:\?|$)/);
     await expect(page.locator('header .account-menu__trigger').first()).toBeAttached();

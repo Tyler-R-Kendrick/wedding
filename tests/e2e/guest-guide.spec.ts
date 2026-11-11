@@ -40,44 +40,12 @@ test.beforeEach(({}, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop', 'guest guide journeys are audited on desktop only');
 });
 
-test('signed-in Chicago map and planning tools', async ({ page }) => {
+// The Chicago guide's own page (its map and the time-and-mood form) was retired when the planner
+// on Your Trip took its place; tests/e2e/your-trip.spec.ts covers the planner.
+test('Your Trip links a guest straight to their flights and hotel', async ({ page }) => {
   await page.setExtraHTTPHeaders(principalHeaders('A1'));
-  await page.goto('/guests/things-to-do');
-  await expect(page.locator('#chicago-map .bd-atlas')).toHaveAttribute('data-ready', 'true', { timeout: 20_000 });
-  await expect(page.getByRole('link', { name: 'Your personal agenda →' })).toHaveAttribute('href', '/trip');
-  await page.locator('#exploring-tips > summary').click();
-  await expect(page.getByRole('link', { name: 'Review your meal selections →' })).toHaveAttribute('href', '/rsvp/meals');
-  // Draft recommendations remain labelled in the guide, rather than becoming map pins.
-  await expect(page.locator('.bd-atlas__target[aria-label*="Richardson Farm"]')).toHaveCount(0);
-  const mapWidth = await page.locator('#chicago-map .bd-atlas__canvas').evaluate((el) => el.getBoundingClientRect().width);
-  expect(mapWidth, 'the themed section must leave the map enough space to use').toBeGreaterThanOrEqual(250);
-  const museum = page.locator('.bd-atlas__target[aria-label*="Griffin Museum"]');
-  if (!await museum.getAttribute('data-pin')) {
-    // A narrower themed frame groups nearby places; open the cluster before the place.
-    await museum.click();
-  }
-  const pin = page.locator('.bd-atlas__target[data-pin][aria-label*="Griffin Museum"]');
-  await expect(pin).toBeVisible();
-  await pin.click();
-  const postcard = page.locator('.bd-postcard[data-open="true"]');
-  await expect(postcard).toContainText('Griffin Museum of Science and Industry');
-  await expect(postcard).not.toContainText('TODO(');
-  await expect(postcard.getByRole('link', { name: 'Get directions in Google Maps' })).toHaveAttribute('href', /^https:\/\/www\.google\.com\/maps/);
-  await postcard.getByRole('button', { name: /^Close/ }).click();
-  await expect(page.locator('.bd-postcard[data-open="true"]')).toHaveCount(0);
-  await page.getByRole('group', { name: 'How much time do you have?' }).getByRole('radio', { name: '45 min', exact: true }).check();
-  await page.getByRole('group', { name: 'What are you in the mood for?' }).getByRole('radio', { name: 'Architecture', exact: true }).check();
-  await page.getByRole('button', { name: 'Suggest a plan' }).click();
-  await expect(page.locator('#plan-result')).toBeVisible();
-  // Submitting the form loads the page again: the map has to be ready again before it is measured.
-  await expect(page.locator('#chicago-map .bd-atlas')).toHaveAttribute('data-ready', 'true', { timeout: 20_000 });
-  await settled(page);
-  const results = await new AxeBuilder({ page }).include('#chicago-map').include('#plan').withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
-  const blocking = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
-  expect(blocking).toEqual([]);
   await page.goto('/guests/travel');
-  // The way to "Your trip" is under "Make a trip of it": a guest is linked straight to /trip.
-  const tripLink = page.locator('#make-a-trip').getByRole('link', { name: 'Keep your plans in one place' });
+  const tripLink = page.locator('#plan').getByRole('link', { name: 'Your flights and hotel' });
   await expect(tripLink).toHaveAttribute('href', '/trip');
   await expect(page.getByRole('link', { name: /^Sign in for / })).toHaveCount(0);
 });
@@ -97,20 +65,21 @@ test('linked recommendations open under the guest portal with a directions hando
 test('guest travel page keeps airports visible and axe-clean', async ({ page }) => {
   await page.setExtraHTTPHeaders(principalHeaders('A1'));
   await page.goto('/guests/travel');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Plan your trip');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Your Trip');
   // Both airports are named by their codes, as a label of their own (not only inside the search form).
   await expect(page.locator('#flights, #airports').getByText(/^ORD\b/).first()).toBeVisible();
   await expect(page.locator('#flights, #airports').getByText(/^MDW\b/).first()).toBeVisible();
   await expect(page.getByText(/Prices as of/)).toHaveCount(0);
   // One page for the trip, in the order a guest books it. The dashboard's cards and the ride page
   // point at these anchors.
-  for (const id of ['stay', 'flights', 'getting-around', 'make-a-trip']) await expect(page.locator(`section#${id}, #${id}`).first(), `#${id}`).toBeAttached();
-  const order = await page.locator('main section[id]').evaluateAll((els) => els.map((e) => e.id).filter((id) => ['stay', 'flights', 'getting-around', 'make-a-trip'].includes(id)));
-  expect(order).toEqual(['stay', 'flights', 'getting-around', 'make-a-trip']);
+  for (const id of ['stay', 'flights', 'getting-around', 'plan']) await expect(page.locator(`section#${id}, #${id}`).first(), `#${id}`).toBeAttached();
+  const order = await page.locator('main section[id]').evaluateAll((els) => els.map((e) => e.id).filter((id) => ['stay', 'flights', 'getting-around', 'plan'].includes(id)));
+  expect(order).toEqual(['stay', 'flights', 'getting-around', 'plan']);
   for (const gone of ['airports', 'arriving', 'hotel-rates']) await expect(page.locator(`#${gone}`), `#${gone}`).toHaveCount(0);
   await expect(page.locator('#stay').getByRole('heading', { level: 2 })).toHaveText('Where to stay');
   await expect(page.locator('#flights').getByRole('heading', { level: 2 })).toHaveText('Flights');
   await expect(page.locator('#getting-around').getByRole('heading', { level: 2 })).toHaveText('Getting around');
+  await expect(page.locator('#plan').getByRole('heading', { level: 2 })).toHaveText('What to do');
   // Hotel rates are a disclosure inside "Where to stay", closed until asked for.
   const compare = page.locator('#stay details').filter({ has: page.locator('summary', { hasText: 'Compare rates at other hotels nearby' }) });
   await expect(compare).toHaveCount(1);

@@ -4,10 +4,10 @@ import { formatMinutes } from '@/domain/adventures/itineraries';
 import { formatDate, humanize } from '@/domain/content/format';
 import { guestText } from '@/domain/content/text';
 import { FaqAnswerBody, faqQuestionText } from '@/themes/shared/faq-answer';
-import type { HandoffView, ItineraryView, OperationalFieldView, ProvenanceViewData, RecommendationCard as RecommendationCardData, TextBlockView } from '@/domain/content/views';
-import type { ContentKit, StopItem } from '@/themes/content-types';
+import type { HandoffView, OperationalFieldView, ProvenanceViewData, RecommendationCard as RecommendationCardData, TextBlockView } from '@/domain/content/views';
+import type { ContentKit } from '@/themes/content-types';
 import { Botanical } from '../media';
-import { CONTENT_COPY, OFFICIAL_LINK_ATTRS, chapterLabel, destinationLabel, handoffAttrs, handoffList, providerLabel, stopMeta } from '@/themes/shared/content';
+import { CONTENT_COPY, OFFICIAL_LINK_ATTRS, chapterLabel, destinationLabel, handoffAttrs, handoffList, providerLabel } from '@/themes/shared/content';
 
 /*
  * Botanical–Deco content primitives. Ivory sheets with a hairline edge, fine gold rules under
@@ -383,52 +383,6 @@ function RecommendationCard({ card, headingLevel = 3 }: { card: RecommendationCa
   );
 }
 
-function StopList({ stops, label }: { stops: StopItem[]; label: string }) {
-  return (
-    <ol className="bd-stops" aria-label={label}>
-      {stops.map((s, i) => (
-        <li key={`${s.recommendation.id}-${i}`} className="bd-stops__stop">
-          <span className="bd-stops__num" aria-hidden="true">
-            {pad(i + 1)}
-          </span>
-          <span className="bd-stops__body">
-            <a className="bd-link" href={s.recommendation.href}>
-              {s.recommendation.title}
-            </a>
-            {stopMeta(s).map((m) => (
-              <span key={m} className="bd-stops__meta">
-                {' · '}
-                {m}
-              </span>
-            ))}
-            {s.recommendation.placeholder ? <span className="bd-badge bd-badge--info">{CONTENT_COPY.flags.placeholder}</span> : null}
-          </span>
-        </li>
-      ))}
-    </ol>
-  );
-}
-
-function ItineraryCard({ itinerary: it }: { itinerary: ItineraryView; index: number }) {
-  return (
-    <article className="bd-card bd-itinerary" data-itinerary={it.slug} id={it.slug}>
-      <div className="bd-card__inner">
-        <p className="bd-card__label">{humanize(it.bucket)}</p>
-        <h3 className="bd-card__title">{it.title}</h3>
-        <StatusFlags draft={it.draft} placeholder={it.placeholder} />
-        {it.intro ? (
-          <p>
-            <Block block={it.intro} inline />
-          </p>
-        ) : null}
-        {it.stops.length ? <StopList stops={it.stops} label={`${it.title}: stops`} /> : null}
-        {it.stops.length ? <p className="bd-muted">About {formatMinutes(it.totalMinutes)} in total.</p> : null}
-        <ProvenanceLine provenance={it.provenance} />
-      </div>
-    </article>
-  );
-}
-
 function LookForList({ items, label }: Parameters<ContentKit['LookForList']>[0]) {
   return (
     <ol className="bd-docent" aria-label={label}>
@@ -630,8 +584,6 @@ export const content: ContentKit = {
   AdventureList,
   RecommendationCard,
   Handoffs,
-  StopList,
-  ItineraryCard,
   LookForList,
   RoomGrid,
   CapacityTable,

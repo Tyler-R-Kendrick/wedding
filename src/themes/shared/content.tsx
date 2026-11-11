@@ -1,12 +1,10 @@
-import type { FindAdventuresData } from '@/capabilities/find_adventures';
-import type { ItinerariesData } from '@/capabilities/list_itineraries';
 import type { AdventuresPageData } from '@/capabilities/list_adventures';
 import type { StoryChapter } from '@/db/schema/content';
 import { formatMinutes } from '@/domain/adventures/itineraries';
 import { humanize } from '@/domain/content/format';
-import type { AdventureDetail, HandoffView, RecommendationCard, RecommendationSummary } from '@/domain/content/views';
+import type { AdventureDetail, HandoffView, RecommendationCard } from '@/domain/content/views';
 import { ROUTES } from '@/domain/routes';
-import type { ChipItem, StopItem } from '@/themes/content-types';
+import type { ChipItem } from '@/themes/content-types';
 
 /*
  * Theme-agnostic helpers for the content recipes: copy, filter models, handoff attributes.
@@ -50,22 +48,7 @@ export const CONTENT_COPY = {
   },
   guide: {
     eyebrow: 'Explore Chicago',
-    title: 'Things to Do in Chicago',
-    lede: 'We’re so excited to share one of our favorite cities with you! We’ve gathered places that are special to us and things we love doing together, from great food and beautiful parks to architecture and unique experiences.',
-    jump: 'On this page',
-    time: 'Pick your time',
-    filter: 'Itineraries by time and interest',
-    plan: 'Plan around the time you have',
-    minutes: 'How much time do you have?',
-    mood: 'What are you in the mood for?',
-    kids: 'We have kids with us',
-    suggest: 'Suggest a plan',
-    nothing: 'Nothing fits that combination yet. Try more time or a different mood.',
-    draftNote: 'Places without a listed visit length use a 45-minute planning estimate. Travel and waiting time are not included; check hours and reservations before heading out.',
-    all: 'All the places',
-    hours: 'Hours, menus, and reservation links for the hotel’s own places live on',
-    hoursTail: ', each with the day we last checked it.',
-    back: 'All recommendations and itineraries',
+    back: 'Back to Your Trip',
   },
   ourVenue: {
     eyebrow: 'Our Venue',
@@ -136,34 +119,6 @@ export function adventureChips(data: AdventuresPageData, active: { tag?: string;
   ];
 }
 
-export function itineraryChips(data: ItinerariesData, activeBucket?: string): ChipItem[] {
-  return [{ href: ROUTES.guestThings, label: 'All', active: !activeBucket }, ...data.buckets.map((b) => ({ href: `${ROUTES.guestThings}?bucket=${b}`, label: humanize(b), active: activeBucket === b }))];
-}
-
-export function groupByCategory(items: FindAdventuresData['items']): [string, RecommendationCard[]][] {
-  const by = new Map<string, RecommendationCard[]>();
-  for (const r of items) by.set(r.category, [...(by.get(r.category) ?? []), r]);
-  return [...by.entries()];
-}
-
-/**
- * Three recommendation categories share their wording with an itinerary title ("Food and drink",
- * "With kids", "Stay inside the CAA"), so a category heading carries its count. That makes every
- * heading on the page unique and tells a guest how much is in the group before they scroll into it.
- */
-export function categoryHeading(category: string, count: number): string {
-  return `${humanize(category)} · ${count} ${count === 1 ? 'place' : 'places'}`;
-}
-
-/** The in-page jump list for the guide: the long page's only way to reach a group without scrolling. */
-export function guideJumpItems(groups: [string, RecommendationCard[]][]): ChipItem[] {
-  return [
-    { href: '#itineraries', label: CONTENT_COPY.guide.time },
-    { href: '#plan', label: CONTENT_COPY.guide.plan },
-    ...groups.map(([category, items]) => ({ href: `#category-${category}`, label: categoryHeading(category, items.length) })),
-  ];
-}
-
 export function handoffList(handoffs: RecommendationCard['handoffs']): HandoffView[] {
   return [handoffs.directions, handoffs.booking, handoffs.official].filter((h): h is HandoffView => !!h);
 }
@@ -204,17 +159,6 @@ export function destinationLabel(url: string): string {
   }
 }
 
-/** Compact stop line text pieces: place · minutes · note. */
-export function stopMeta(stop: StopItem): string[] {
-  const r: RecommendationSummary = stop.recommendation;
-  const minutes = stop.minutes ?? r.durationMinutes;
-  return [r.placeName, minutes ? formatMinutes(minutes) : undefined, stop.note].filter((x): x is string => !!x);
-}
-
-export function planTitle(plan: { minutes: number; kids: boolean; interest?: string }): string {
-  return `A ${formatMinutes(plan.minutes)} plan${plan.interest ? ` for ${humanize(plan.interest).toLowerCase()}` : ''}${plan.kids ? ', with kids' : ''}`;
-}
-
 /** The facts under an adventure title (Where / When / Season / How long / Motifs). */
 export function adventureFacts(data: AdventureDetail): { label: string; value: string | { block: AdventureDetail['summary'] } }[] {
   const out: { label: string; value: string | { block: AdventureDetail['summary'] } }[] = [];
@@ -233,7 +177,7 @@ export function labelForRoute(route: string): string {
     [ROUTES.guestPortal]: 'your dashboard',
     [ROUTES.ourVenue]: 'Our Venue',
     [ROUTES.photos]: 'Photos & Video',
-    [ROUTES.guestTravel]: 'Travel & Stay',
+    [ROUTES.guestTravel]: 'Your Trip',
     [ROUTES.gifts]: 'Gifts',
     '/rsvp': 'RSVP',
   };

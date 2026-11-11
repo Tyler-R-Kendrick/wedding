@@ -1,5 +1,6 @@
 'use client';
 
+import './no-devtools';
 import { createLibrary, Renderer, type ActionEvent } from '@openuidev/react-lang';
 import { useCallback } from 'react';
 import type { Day, Part } from '@/domain/trip-planner';

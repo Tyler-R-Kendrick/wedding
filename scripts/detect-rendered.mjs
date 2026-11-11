@@ -37,7 +37,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 /** The same lists the 17px-floor walk uses (tests/e2e/typography.spec.ts). */
 const PUBLIC_ROUTES = ['/', '/our-story', '/our-adventures', '/sign-in'];
 // Everything about the wedding is behind sign-in: an anonymous browser is sent to the door.
-const GUEST_ROUTES = ['/guests', '/guests/travel', '/guests/things-to-do', '/guests/ask-us', '/our-venue', '/rsvp', '/rsvp/attending', '/rsvp/meals', '/trip', '/transportation', '/gifts', '/photos'];
+const GUEST_ROUTES = ['/guests', '/guests/travel', '/guests/ask-us', '/our-venue', '/rsvp', '/rsvp/attending', '/rsvp/meals', '/trip', '/transportation', '/gifts', '/photos'];
 const VIEWPORTS = ['390x844', '820x1180', '1280x800', '1440x900'];
 
 const argv = process.argv.slice(2);

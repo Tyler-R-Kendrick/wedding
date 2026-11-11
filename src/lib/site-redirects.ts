@@ -11,7 +11,9 @@ export const REDIRECTS = [
   { source: '/your-weekend', destination: '/guests', permanent: true },
   { source: '/the-wedding', destination: '/guests', permanent: true },
   { source: '/travel', destination: '/guests/travel', permanent: true },
-  { source: '/share-an-adventure', destination: '/guests/things-to-do', permanent: true },
+  // The Things to Do list became the planner on Your Trip; its address is in emails already sent.
+  { source: '/guests/things-to-do', destination: '/guests/travel#plan', permanent: true },
+  { source: '/share-an-adventure', destination: '/guests/travel#plan', permanent: true },
   { source: '/share-an-adventure/:slug', destination: '/guests/things-to-do/:slug', permanent: true },
   { source: '/ask-us', destination: '/guests/ask-us', permanent: true },
   // Words a guest might type.

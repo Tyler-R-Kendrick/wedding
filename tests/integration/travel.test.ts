@@ -30,6 +30,7 @@ import { households } from '@/db/schema/guests';
 import { hotelRecommendations } from '@/db/schema/travel';
 import { eq } from 'drizzle-orm';
 import { FX } from '@/db/seed/fixtures';
+import { PLANNER_SUGGESTED_HOTELS } from '@/db/seed/travel';
 import { DbAuditSink, listAuditEvents } from '@/lib/audit';
 import { isAllowedRedirect } from '@/lib/redirects';
 import { DeepLinkOnlyFlights, MockFlights, parseDuffelEvent, signDuffelPayload, verifyDuffelSignature, type FlightsProvider } from '@/providers/flights';
@@ -286,7 +287,10 @@ describe('hotel recommendations, block, and admin configuration', () => {
     const payload = JSON.stringify(r.value);
     expect(payload).not.toContain('TODO(');
     expect(payload).not.toMatch(/backlog [A-Z]-\d/);
-    expect(r.value.data.alternatives).toEqual([]);
+    // The hotels our planner suggested, by name and her reason only: nothing invented, nothing pending.
+    expect(r.value.data.alternatives.map((h: { name: string; reasons: { text: string }[]; address: string | null; walkMinutesToVenue: number | null; websiteUrl: string | null; bookingUrl: string | null; placeholder: boolean }) => [h.name, h.reasons.map((x) => x.text), h.address, h.walkMinutesToVenue, h.websiteUrl, h.bookingUrl, h.placeholder])).toEqual(
+      PLANNER_SUGGESTED_HOTELS.map((h) => [h.name, ['Suggested by our planner, Michelle.'], null, null, null, null, false]),
+    );
     expect(r.value.data.facts.venue.valetEntrance).toBe('71 E. Madison St');
     expect(r.value.sources.map((s: { title: string }) => s.title)).toEqual(['Travel › Our room block', 'chicagoathletichotel.com', "Tyler's brief 2026-09-04"]);
     // The venue's planning PDF is never named to a guest: the citation points at the page instead.
@@ -375,7 +379,7 @@ describe('hotel recommendations, block, and admin configuration', () => {
     expect(alt.ok && alt.value.data).toMatchObject({ isVenue: false, priceBand: '$$', reasons: [{ kind: 'walk_minutes' }, { kind: 'family_suites' }], freshness: 'fresh' });
     const list = await run(listHotelRecommendations, guestA, {});
     expect(list.ok && list.value.data.venue).toMatchObject({ synthesized: false, placeholder: false, block: { cutoff: '2027-06-15', code: 'G-FIKE' } });
-    expect(list.ok && list.value.data.alternatives.map((h: { name: string }) => h.name)).toEqual(['Fixture Alternative']);
+    expect(list.ok && list.value.data.alternatives.map((h: { name: string }) => h.name)).toEqual([...PLANNER_SUGGESTED_HOTELS.map((h) => h.name), 'Fixture Alternative']);
     const db = await getDb();
     expect((await listAuditEvents(db, { action: 'content.updated', targetType: 'hotel_recommendation' })).length).toBeGreaterThanOrEqual(2);
   });
@@ -420,7 +424,7 @@ describe('open_booking_link (external hand-offs)', () => {
     });
     expectErr(await run(openBookingLink, guestA, { kind: 'hotel', hotelId: newId() }), 'not_found');
     const list = await run(listHotelRecommendations, guestA, {});
-    const alt = list.ok ? list.value.data.alternatives[0] : undefined;
+    const alt = list.ok ? list.value.data.alternatives.find((h: { name: string }) => h.name === 'Fixture Alternative') : undefined;
     const hotel = await run(openBookingLink, guestA, { kind: 'hotel', hotelId: alt.id, checkIn: '2027-07-16', checkOut: '2027-07-18' });
     expect(hotel.ok && hotel.value.data.handoff).toMatchObject({ provider: 'booking.com', label: 'Search Fixture Alternative on Booking.com' });
     expectErr(await run(openBookingLink, guestA, { kind: 'travel_link', linkId: newId() }), 'not_found');

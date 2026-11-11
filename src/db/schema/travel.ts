@@ -76,6 +76,10 @@ export interface ItineraryDetails {
   address?: string;
   /** Guest-visible note (max 500 chars, validated by the domain schema). */
   note?: string;
+  /** A place saved from the Your Trip planner: the recommendation's slug and where it sits in the weekend. */
+  placeId?: string;
+  day?: 'fri' | 'sat' | 'sun';
+  part?: 'morning' | 'afternoon' | 'evening';
 }
 
 /** Opt-in, editable, deletable travel preferences. Never inferred from IP. One row per guest. */

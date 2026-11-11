@@ -60,12 +60,12 @@ export const PAGES: SitemapPage[] = [
     notes: ['Nothing a guest cannot act on yet is shown: no table before seating is published, no photos before the day.'],
   },
   {
-    id: 'guest-travel', path: '/guests/travel', title: 'Travel & Stay', navLabel: 'Travel', parent: 'portal', audience: 'guest', mode: ['inform', 'act'], visibleFrom: 'TEASER', inNav: true,
-    job: 'One page for the trip: the room block, flights, and getting from the airport and around the city.',
+    id: 'guest-travel', path: '/guests/travel', title: 'Your Trip', navLabel: 'Your Trip', parent: 'portal', audience: 'guest', mode: ['inform', 'act'], visibleFrom: 'TEASER', inNav: true,
+    job: 'One page for the trip: the room block first, flights, getting around, and a planner that suggests what to do from our own places and keeps the ones you save as your weekend.',
     primaryAction: { label: 'Book in our room block', to: 'guest-travel' },
   },
   {
-    id: 'trip', path: '/trip', title: 'Your trip', parent: 'guest-travel', audience: 'guest', mode: ['act'], visibleFrom: 'TEASER',
+    id: 'trip', path: '/trip', title: 'Your flights and hotel', parent: 'guest-travel', audience: 'guest', mode: ['act'], visibleFrom: 'TEASER',
     job: 'Your flights and hotel, kept in one place so we can help if plans change.',
   },
   {
@@ -73,13 +73,9 @@ export const PAGES: SitemapPage[] = [
     job: 'A ride benefit on your invitation, when there is one, and how to claim it. Everything else about getting around is on Travel.',
   },
   {
-    id: 'guest-things', path: '/guests/things-to-do', title: 'Things to Do', parent: 'portal', audience: 'guest', mode: ['inform', 'celebrate'], visibleFrom: 'TEASER', inNav: true,
-    job: 'Chicago recommendations, itineraries and the map.',
-  },
-  {
-    id: 'guest-thing', path: '/guests/things-to-do/[slug]', example: '/guests/things-to-do/starved-rock-state-park', title: 'A recommendation', parent: 'guest-things', audience: 'guest', mode: ['inform'], visibleFrom: 'TEASER',
+    id: 'guest-thing', path: '/guests/things-to-do/[slug]', example: '/guests/things-to-do/starved-rock-state-park', title: 'A recommendation', parent: 'guest-travel', audience: 'guest', mode: ['inform'], visibleFrom: 'TEASER',
     job: 'One Chicago recommendation with directions and why we love it.',
-    primaryAction: { label: 'All recommendations', to: 'guest-things' },
+    primaryAction: { label: 'Back to Your Trip', to: 'guest-travel' },
   },
   {
     id: 'caa', path: '/our-venue', title: 'Our Venue', navLabel: 'Venue', parent: 'portal', audience: 'guest', mode: ['celebrate', 'inform'], visibleFrom: 'TEASER', inNav: true,

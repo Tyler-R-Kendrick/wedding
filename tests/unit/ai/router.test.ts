@@ -153,8 +153,8 @@ describe('closed-world contract', () => {
     expect(CONTACT_LINK.href).toBe('/guests/ask-us#contact');
     expect(refusalLinks([], '/guests/ask-us')).toEqual([CONTACT_LINK]);
     expect(labelForRoute('/our-venue/white-city-ballroom')).toBe('Our Venue');
-    expect(labelForRoute('/guests/travel#stay')).toBe('Travel & Stay');
-    expect(labelForRoute('/guests/things-to-do')).toBe('Things to Do');
+    expect(labelForRoute('/guests/travel#stay')).toBe('Your Trip');
+    expect(labelForRoute('/guests/travel#plan')).toBe('Your Trip');
     // The pages folded into the portal have no label of their own any more.
     for (const gone of ['/the-wedding', '/your-weekend', '/travel', '/share-an-adventure', '/ask-us']) expect(labelForRoute(gone), gone).toBe('the page');
   });

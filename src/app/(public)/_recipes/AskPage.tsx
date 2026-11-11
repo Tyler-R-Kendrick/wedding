@@ -88,7 +88,7 @@ function labelFor(route: string): string {
     [ROUTES.guestPortal]: 'your dashboard',
     [ROUTES.ourVenue]: 'Our Venue',
     [ROUTES.photos]: 'Photos & Video',
-    [ROUTES.guestTravel]: 'Travel & Stay',
+    [ROUTES.guestTravel]: 'Your Trip',
     [ROUTES.gifts]: 'Gifts',
     '/rsvp': 'RSVP',
   };

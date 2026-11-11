@@ -238,7 +238,7 @@ export const BotanicalOurVenuePage: ContentRecipe<OurVenueProps> = ({ data, fram
                 {frame.details.venue.address}
                 <span className="sr-only">, opens Google Maps</span>
               </a>
-              . {CONTENT_COPY.ourVenue.directions} <Link href={`${ROUTES.guestTravel}#getting-around`}>Travel &amp; Stay</Link>.
+              . {CONTENT_COPY.ourVenue.directions} <Link href={`${ROUTES.guestTravel}#getting-around`}>Your Trip</Link>.
             </p>
           </Prose>
         ) : null}
@@ -285,8 +285,8 @@ export const BotanicalOurVenuePage: ContentRecipe<OurVenueProps> = ({ data, fram
           <p className="bd-ribbon__sub">More of our favorite places, and how to reach them from the hotel.</p>
         </div>
         <p className="bd-ribbon__action">
-          <Button variant="primary" href={ROUTES.guestThings}>
-            Our Chicago guide
+          <Button variant="primary" href={`${ROUTES.guestTravel}#plan`}>
+            Plan your free time
           </Button>
         </p>
         {remember ? null : (

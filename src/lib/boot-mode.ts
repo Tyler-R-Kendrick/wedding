@@ -13,4 +13,4 @@ export function startsLazily(env: Record<string, string | undefined>): boolean {
  * route is its own function on Vercel and each one starts cold after a quiet spell, so warming one
  * does nothing for the next.
  */
-export const WARM_PATHS = ['/', '/sign-in', '/guests', '/guests/travel', '/guests/things-to-do', '/guests/ask-us', '/our-venue', '/rsvp', '/api/session'] as const;
+export const WARM_PATHS = ['/', '/sign-in', '/guests', '/guests/travel', '/guests/ask-us', '/our-venue', '/rsvp', '/api/session'] as const;

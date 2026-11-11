@@ -18,13 +18,19 @@ import { currentPrincipal, runAsUi } from './_shared/server';
 import { PATHNAME_HEADER } from '@/themes/routes';
 import { recipes } from '@/app/(public)/_recipes';
 import { FlightSearchForm, HotelSearchForm } from './search-form';
+import { TripPlanner } from '@/components/trip/TripPlanner';
+import { stayFacts } from '@/domain/trip-planner';
+import { loadPlanner } from './planner-data';
+import { removePlannerPlace, savePlannerPlace } from './planner-actions';
 
 export const dynamic = 'force-dynamic';
-export const metadata: Metadata = { title: 'Travel & Stay' };
+export const metadata: Metadata = { title: 'Your Trip' };
 
 /**
- * Travel & Stay. Fetches theme-agnostic data through capabilities and renders the page recipe;
- * live flight/hotel searches happen only from the forms (explicit action), never on load.
+ * Your Trip. Fetches theme-agnostic data through capabilities and renders the page recipe; live
+ * flight/hotel searches happen only from the forms (explicit action), never on load. The last
+ * section is the planner: the couple's places, the guest's saved weekend (their own trip items),
+ * their bookings and the wedding's events, handed to the client as plain props.
  */
 export default async function TravelPage() {
   const pathname = (await headers()).get(PATHNAME_HEADER) ?? '/guests/travel';
@@ -34,7 +40,7 @@ export default async function TravelPage() {
   if (!hotels.ok) {
     return (
       <main id="main" className="mx-auto max-w-[46rem] px-4 py-10">
-        <h1 className="text-4xl font-semibold">Travel &amp; Stay</h1>
+        <h1 className="text-4xl font-semibold">Your Trip</h1>
         <p className="mt-3">{hotels.error.message}</p>
       </main>
     );
@@ -46,6 +52,7 @@ export default async function TravelPage() {
     if (mine.ok) profile = mine.value.data.profile;
     searchDefaults = await buildTravelSearchDefaults(await getDb(), principal.guestId, profile);
   }
+  const planner = await loadPlanner(principal);
   const flightDefaults = searchDefaults.flight;
   const hotelDefaults = searchDefaults.hotel;
   // Swarm F left this seam open ("at integration this becomes `theme.recipes.travel ?? …`"), and
@@ -66,6 +73,18 @@ export default async function TravelPage() {
       slots={{
         flightSearch: <FlightSearchForm defaults={flightDefaults} originSuggestions={searchDefaults.originSuggestions} />,
         hotelSearch: <HotelSearchForm defaults={hotelDefaults} />,
+        planner: (
+          <TripPlanner
+            places={planner.places}
+            saved={planner.saved}
+            bookings={planner.bookings}
+            events={planner.events}
+            hotel={planner.hotel}
+            stay={stayFacts(hotels.value.data.venue.block)}
+            // A guest's weekend is saved as their trip items; an administrator previewing keeps it in memory.
+            actions={planner.persist ? { save: savePlannerPlace, remove: removePlannerPlace } : undefined}
+          />
+        ),
       }}
     />
   );

@@ -71,7 +71,7 @@ export function OurVenuePage({ data }: { data: OurVenuePageData }) {
           ))}
         </ul>
         <p className="wp-prose wp-muted">
-          Address: 12 S Michigan Ave, Chicago, IL 60603. Directions are on <Link href={ROUTES.guestTravel}>Travel &amp; Stay</Link>.
+          Address: 12 S Michigan Ave, Chicago, IL 60603. Directions are on <Link href={ROUTES.guestTravel}>Your Trip</Link>.
         </p>
       </Section>
     </Shell>

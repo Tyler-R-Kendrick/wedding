@@ -59,6 +59,9 @@ export const TEST_SERVER_SPECS = [
   'tests/e2e/seating.spec.ts',
   // Level 08: the signed-in trip page needs the test-principal injector.
   'tests/e2e/trip.spec.ts',
+  // Your Trip's planner: a signed-in guest saves places as their own trip items, through the
+  // test-principal injector; the room block, the old list address and the 390px layout ride along.
+  'tests/e2e/your-trip.spec.ts',
   // Level 08: travel search prefill from household mailing address and party counts.
   'tests/e2e/travel-prefill.spec.ts',
   // Level 09: transport claims and the voucher/redirect suites all drive signed-in principals

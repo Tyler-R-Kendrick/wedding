@@ -54,7 +54,7 @@ const ORDINALS = ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight'
 const PLACES = [
   { ids: ['city.river', 'city.riverwalk'], name: 'Chicago', line: 'The river, the bridges, the lake.', href: ROUTES.adventures, guestHref: `${ROUTES.ourVenue}#city` },
   { ids: ['place.starved-rock'], name: 'Starved Rock', line: 'Where “I love you” was said first.', href: `${ROUTES.adventures}/starved-rock`, guestHref: `${ROUTES.adventures}/starved-rock` },
-  { ids: ['city.north-pond', 'city.lakefront-adler'], name: 'Places ahead', line: 'More to explore together.', href: ROUTES.adventures, guestHref: ROUTES.guestThings },
+  { ids: ['city.north-pond', 'city.lakefront-adler'], name: 'Places ahead', line: 'More to explore together.', href: ROUTES.adventures, guestHref: `${ROUTES.guestTravel}#plan` },
 ] as const;
 
 /** The "Details to come" pill, only where the prose does not already say it is unfinished. */
@@ -250,7 +250,7 @@ export const BotanicalStoryPage: ContentRecipe<StoryProps> = ({ data, frame }) =
       </section>
       {details ? (
         <p className="bd-sr-more">
-          <More href={ROUTES.guestThings}>Borrow a few for your own weekend</More>
+          <More href={`${ROUTES.guestTravel}#plan`}>Borrow a few for your own weekend</More>
         </p>
       ) : null}
     </Shell>

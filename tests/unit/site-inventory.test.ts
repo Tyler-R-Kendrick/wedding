@@ -21,14 +21,14 @@ describe('site inventory', () => {
 
   it('names the guest portal, its legacy aliases, and the sign-in doors', () => {
     const byUrl = (url: string) => inventory().find((row) => row.url === url && row.method === 'GET');
-    for (const url of ['/guests', '/guests/travel', '/guests/things-to-do', '/guests/ask-us', '/guests/things-to-do/[slug]']) {
+    for (const url of ['/guests', '/guests/travel', '/guests/ask-us', '/guests/things-to-do/[slug]']) {
       expect(byUrl(url)?.audience, url).toBe('guest');
       expect(byUrl(url)?.crawl, url).toBe(true);
     }
     expect(byUrl('/guests/things-to-do/[slug]')?.crawlExample).toBe(CRAWL_EXAMPLES.guestRecommendation);
     expect(byUrl('/guests/things-to-do/[slug]')?.examples).toContain('/guests/things-to-do/starved-rock-state-park');
     // The pages folded into the portal are redirects now, not pages: one row each, from site-redirects.ts.
-    const moved: Record<string, string> = { '/your-weekend': '/guests', '/the-wedding': '/guests', '/travel': '/guests/travel', '/ask-us': '/guests/ask-us', '/share-an-adventure': '/guests/things-to-do', '/share-an-adventure/:slug': '/guests/things-to-do/:slug' };
+    const moved: Record<string, string> = { '/your-weekend': '/guests', '/the-wedding': '/guests', '/travel': '/guests/travel', '/ask-us': '/guests/ask-us', '/guests/things-to-do': '/guests/travel#plan', '/share-an-adventure': '/guests/travel#plan', '/share-an-adventure/:slug': '/guests/things-to-do/:slug' };
     for (const [source, destination] of Object.entries(moved)) {
       expect(inventory().filter((row) => row.url === source), source).toHaveLength(1);
       expect(byUrl(source)?.kind, source).toBe('redirect');
@@ -59,7 +59,6 @@ describe('site inventory', () => {
     const door: Record<string, string> = {
       '/guests': '/sign-in?next=/guests',
       '/guests/travel': '/sign-in?next=/guests/travel',
-      '/guests/things-to-do': '/sign-in?next=/guests/things-to-do',
       '/guests/ask-us': '/sign-in?next=/guests/ask-us',
       '/our-venue': '/sign-in?next=/our-venue',
       '/our-venue/[slug]': '/sign-in?next=/our-venue/<slug>',

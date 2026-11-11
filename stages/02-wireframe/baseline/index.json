@@ -800,26 +800,12 @@
    }
   },
   "guest-travel": {
-   "title": "Travel & Stay | Sara + Tyler",
+   "title": "Your Trip | Sara + Tyler",
    "url": "/guests/travel",
    "finalUrl": "/guests/travel",
    "source": "app (test server, fixture data)",
    "principal": "guest",
-   "capturedAt": "2026-11-10",
-   "designs": {
-    "botanical-deco": {
-     "status": 200,
-     "file": "botanical-deco.json"
-    }
-   }
-  },
-  "guest-things": {
-   "title": "Things to Do | Sara + Tyler",
-   "url": "/guests/things-to-do",
-   "finalUrl": "/guests/things-to-do",
-   "source": "app (test server, fixture data)",
-   "principal": "guest",
-   "capturedAt": "2026-11-10",
+   "capturedAt": "2026-11-11",
    "designs": {
     "botanical-deco": {
      "status": 200,

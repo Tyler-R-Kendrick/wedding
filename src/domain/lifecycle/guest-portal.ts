@@ -4,9 +4,15 @@ import { safeReturnPath } from '@/domain/identity/routes';
 export const GUEST_PORTAL = {
   root: '/guests',
   travel: '/guests/travel',
-  thingsToDo: '/guests/things-to-do',
   askUs: '/guests/ask-us',
 } as const;
+
+/**
+ * Where each of our recommendations has its own page. The list that once lived at this address
+ * became the planner on Your Trip (`/guests/travel#plan`); the old address redirects there
+ * (`src/lib/site-redirects.ts`), and only the detail pages remain under it.
+ */
+const PLACE_PAGES = '/guests/things-to-do';
 
 export type GuestPortalPath = (typeof GUEST_PORTAL)[keyof typeof GUEST_PORTAL];
 
@@ -23,14 +29,14 @@ export function guestPortalSignInDoor(pathname: string, search = ''): string {
 
 /** Return paths under `/guests` that capabilities and sign-in may target. */
 export function registerGuestPortalRoutes(): readonly string[] {
-  return [GUEST_PORTAL.root, GUEST_PORTAL.travel, GUEST_PORTAL.thingsToDo, GUEST_PORTAL.askUs];
+  return [GUEST_PORTAL.root, GUEST_PORTAL.travel, GUEST_PORTAL.askUs];
 }
 
 export function isGuestPortalInternalRoute(route: string): boolean {
   const clean = route.replace(/\/+$/, '') || '/';
   if ((registerGuestPortalRoutes() as readonly string[]).includes(clean)) return true;
-  if (clean.startsWith(`${GUEST_PORTAL.thingsToDo}/`)) {
-    const rest = clean.slice(`${GUEST_PORTAL.thingsToDo}/`.length);
+  if (clean.startsWith(`${PLACE_PAGES}/`)) {
+    const rest = clean.slice(`${PLACE_PAGES}/`.length);
     return rest.length > 0 && rest.split('/').every((seg) => /^[a-z0-9-]+$/.test(seg));
   }
   return false;
@@ -38,7 +44,12 @@ export function isGuestPortalInternalRoute(route: string): boolean {
 
 /** Detail page for a Chicago recommendation. */
 export function thingsToDoDetailPath(slug: string): string {
-  return `${GUEST_PORTAL.thingsToDo}/${slug}`;
+  return `${PLACE_PAGES}/${slug}`;
+}
+
+/** True for a recommendation's own page (`/guests/things-to-do/<slug>`). */
+export function isPlaceDetailPath(pathname: string): boolean {
+  return pathname.startsWith(`${PLACE_PAGES}/`) && pathname.length > PLACE_PAGES.length + 1;
 }
 
 export function isAllowedGuestPortalReturn(path: string): boolean {

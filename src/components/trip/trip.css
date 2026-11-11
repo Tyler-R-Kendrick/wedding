@@ -290,8 +290,12 @@
   object-fit: cover;
 }
 
-/* No photograph we may publish: a plain ground, never a stand-in picture. */
+/* No photograph we may publish: a plain ground, never a stand-in picture. None of our places has
+   one yet, so the ground is a thin band: a 4:3 empty box above every card read as a missing image
+   and pushed the answer off a phone's screen. */
 .trip-place__ground {
+  aspect-ratio: auto;
+  block-size: var(--spacing-sm);
   border-block-end: 2px solid var(--color-gold);
   background: var(--color-neutral-variant);
 }
@@ -597,6 +601,13 @@
   gap: var(--spacing-lg);
 }
 
+/* On a wide screen the button keeps its own width rather than stretching across the calendar. */
+@media (width >= 40rem) {
+  .trip-cal > .trip-button {
+    justify-self: start;
+  }
+}
+
 .trip-cal__days {
   display: grid;
   gap: var(--spacing-lg);
@@ -690,5 +701,458 @@
   .trip-chip,
   .trip-map__pin {
     transition: none;
+  }
+}
+
+/* ======================================================================================
+ * The planner on Your Trip (src/components/trip/TripPlanner.tsx): two tabs, starters, the
+ * thread of questions and answers, the ask box pinned to the bottom of the section, and the
+ * three-day board. Phone first; nothing here is wider than the column it sits in.
+ * ==================================================================================== */
+.bd-travel__plan {
+  display: grid;
+  gap: var(--spacing-lg);
+  min-inline-size: 0;
+}
+
+.trip-planner {
+  display: grid;
+  gap: var(--spacing-lg);
+  min-inline-size: 0;
+}
+
+.trip-panel {
+  display: grid;
+  gap: var(--spacing-lg);
+  min-inline-size: 0;
+}
+
+.trip-panel[hidden] {
+  display: none;
+}
+
+/* ---------- tabs ---------- */
+.trip-tabs {
+  display: flex;
+  gap: var(--spacing-sm);
+  border-block-end: 1px solid var(--color-outline);
+}
+
+.trip-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  min-block-size: 44px;
+  padding: var(--spacing-xs) var(--spacing-md);
+  margin-block-end: -1px;
+  border: 0;
+  border-block-end: 2px solid transparent;
+  background: none;
+  color: var(--color-on-surface-muted);
+  font-family: var(--font-text);
+  font-size: var(--type-body-md-size);
+  line-height: var(--type-body-md-line);
+  cursor: pointer;
+}
+
+.trip-tab[aria-selected="true"] {
+  border-block-end-color: var(--color-gold-deep);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.trip-tab__count {
+  display: inline-grid;
+  place-items: center;
+  min-inline-size: 1.75rem;
+  padding: 0 var(--spacing-xs);
+  border-radius: var(--rounded-pill);
+  background: var(--color-moss);
+  color: var(--color-on-moss);
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- starters ---------- */
+.trip-starters {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
+  gap: var(--spacing-sm);
+}
+
+.trip-starter {
+  display: grid;
+  gap: var(--spacing-xs);
+  min-block-size: 44px;
+  padding: var(--spacing-md);
+  border: 1px solid var(--color-outline);
+  border-block-start: 2px solid var(--color-gold);
+  border-radius: var(--rounded-sm);
+  background: var(--color-surface);
+  text-align: start;
+  cursor: pointer;
+}
+
+.trip-starter:hover {
+  border-color: var(--color-gold-deep);
+  background: var(--color-neutral-variant);
+}
+
+.trip-starter__label {
+  font-family: var(--font-display);
+  font-size: var(--type-title-size);
+  line-height: var(--type-title-line);
+  color: var(--color-primary);
+}
+
+.trip-starter__hint {
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  color: var(--color-on-surface-muted);
+}
+
+/* ---------- the thread ---------- */
+.trip-thread {
+  display: grid;
+  gap: var(--spacing-2xl);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-inline-size: 0;
+}
+
+.trip-turn {
+  display: grid;
+  gap: var(--spacing-md);
+  min-inline-size: 0;
+}
+
+.trip-turn__asked {
+  justify-self: end;
+  max-inline-size: min(100%, 34rem);
+  margin: 0;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--rounded-md);
+  background: var(--color-neutral-variant);
+  color: var(--color-on-surface);
+  font-family: var(--font-text);
+  font-size: var(--type-body-md-size);
+  line-height: var(--type-body-md-line);
+  overflow-wrap: anywhere;
+}
+
+.trip-turn__status {
+  margin: 0;
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  font-style: italic;
+  color: var(--color-on-surface-muted);
+}
+
+.trip-turn__answer {
+  min-inline-size: 0;
+
+  /* A new answer is scrolled to, and must not land under the pinned ask box. */
+  scroll-margin-block-end: 10rem;
+}
+
+.trip-thread__end {
+  block-size: 0;
+  scroll-margin-block-end: 10rem;
+}
+
+/* A control reached by Tab is scrolled clear of the pinned ask box, never left underneath it. */
+.trip-panel :is(a, button, select, input) {
+  scroll-margin-block-end: 10rem;
+}
+
+/* ---------- the ask box, pinned to the bottom of the section while it is on screen ---------- */
+.trip-ask {
+  position: sticky;
+  z-index: 5;
+  inset-block-end: calc(var(--bottom-bar-height, 0px) + env(safe-area-inset-bottom, 0px));
+  display: grid;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) 0;
+  border-block-start: 2px solid var(--color-gold);
+  background: var(--color-surface);
+}
+
+.trip-ask__input {
+  inline-size: 100%;
+  min-block-size: 44px;
+  max-block-size: 10rem;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--color-outline);
+  border-radius: var(--rounded-sm);
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+  font-family: var(--font-text);
+  font-size: var(--type-body-md-size);
+  line-height: var(--type-body-md-line);
+  field-sizing: content;
+  resize: vertical;
+}
+
+.trip-ask__tools {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+}
+
+.trip-reset {
+  justify-self: start;
+}
+
+.trip-ask__mic,
+.trip-reset,
+.trip-saved__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  min-block-size: 44px;
+  min-inline-size: 44px;
+  padding: var(--spacing-xs) var(--spacing-md);
+  border: 1px solid var(--color-gold);
+  border-radius: var(--rounded-pill);
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  cursor: pointer;
+}
+
+.trip-ask__mic:hover,
+.trip-reset:hover,
+.trip-saved__remove:hover {
+  border-color: var(--color-gold-deep);
+  background: var(--color-neutral-variant);
+}
+
+.trip-ask__mic.is-on {
+  border-color: var(--color-moss);
+  background: var(--color-moss);
+  color: var(--color-on-moss);
+}
+
+.trip-ask__send {
+  min-block-size: 44px;
+}
+
+/* ---------- the board ---------- */
+.trip-board {
+  display: grid;
+  gap: var(--spacing-lg);
+  min-inline-size: 0;
+}
+
+.trip-board__bar {
+  display: grid;
+  gap: var(--spacing-md);
+}
+
+.trip-board__actions {
+  display: grid;
+  justify-items: start;
+  gap: var(--spacing-sm);
+}
+
+.trip-days {
+  display: grid;
+  gap: var(--spacing-lg);
+  min-inline-size: 0;
+}
+
+@media (width >= 60rem) {
+  .trip-days {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.trip-day {
+  display: grid;
+  align-content: start;
+  gap: var(--spacing-sm);
+  min-inline-size: 0;
+}
+
+.trip-slot {
+  display: grid;
+  gap: var(--spacing-sm);
+  min-block-size: 5rem;
+  padding: var(--spacing-sm);
+  border: 1px dashed var(--color-outline);
+  border-radius: var(--rounded-sm);
+  background: var(--color-surface);
+  transition: border-color var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard);
+}
+
+.trip-slot.is-over {
+  border-style: solid;
+  border-color: var(--color-gold-deep);
+  background: var(--color-neutral-variant);
+}
+
+.trip-slot.is-wedding {
+  border-style: solid;
+  border-color: var(--color-moss);
+  background: var(--color-moss);
+  color: var(--color-on-moss);
+}
+
+.trip-slot__label {
+  margin: 0;
+  font-family: var(--font-text);
+  font-size: var(--type-label-caps-size);
+  line-height: var(--type-label-caps-line);
+  letter-spacing: var(--type-label-caps-tracking);
+  text-transform: uppercase;
+  color: var(--color-on-surface-muted);
+}
+
+.trip-slot.is-wedding .trip-slot__label {
+  color: inherit;
+}
+
+.trip-slot__wedding {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--type-title-size);
+  line-height: var(--type-title-line);
+}
+
+.trip-slot__empty {
+  margin: 0;
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  color: var(--color-on-surface-muted);
+}
+
+.trip-saved {
+  display: grid;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--color-gold);
+  border-radius: var(--rounded-sm);
+  background: var(--color-neutral);
+  cursor: grab;
+}
+
+.trip-saved.is-dragging {
+  opacity: 0.6;
+}
+
+.trip-saved__name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--type-title-size);
+  line-height: var(--type-title-line);
+  overflow-wrap: anywhere;
+}
+
+.trip-saved__tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.trip-saved__move {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  min-inline-size: 0;
+}
+
+.trip-saved__select {
+  min-block-size: 44px;
+  max-inline-size: 100%;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--color-outline);
+  border-radius: var(--rounded-sm);
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+}
+
+/* ---------- the toast, and the dot that flies to "My weekend" ---------- */
+.trip-toast {
+  position: fixed;
+  z-index: 40;
+  inset-inline: var(--spacing-md);
+  inset-block-end: calc(var(--bottom-bar-height, 0px) + env(safe-area-inset-bottom, 0px) + var(--spacing-md));
+  display: grid;
+  justify-items: center;
+  pointer-events: none;
+}
+
+.trip-toast__box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-sm) var(--spacing-md);
+  max-inline-size: 34rem;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--rounded-sm);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  box-shadow: var(--shadow-lift);
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  pointer-events: auto;
+}
+
+.trip-toast__open {
+  min-block-size: 44px;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--color-gold);
+  border-radius: var(--rounded-pill);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.trip-fly {
+  position: fixed;
+  z-index: 50;
+  inline-size: var(--spacing-md);
+  block-size: var(--spacing-md);
+  border-radius: var(--rounded-pill);
+  background: var(--color-gold-deep);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.trip-tab:focus-visible,
+.trip-starter:focus-visible,
+.trip-ask__input:focus-visible,
+.trip-ask__mic:focus-visible,
+.trip-reset:focus-visible,
+.trip-saved__remove:focus-visible,
+.trip-saved__select:focus-visible,
+.trip-toast__open:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trip-slot {
+    transition: none;
+  }
+
+  .trip-fly {
+    display: none;
   }
 }

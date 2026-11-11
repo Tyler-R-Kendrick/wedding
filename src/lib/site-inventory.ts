@@ -18,7 +18,7 @@ import { THEME_IDS } from '@/themes/registry';
  *
  * Only the pages about the two of us are audience `public`: Home, Our Story, Our Adventures (and
  * each public adventure), the photo credits, Privacy and Terms. Everything that says when or where
- * the wedding is — the dashboard at `/guests`, Travel, Things to Do, the venue pages, Ask Us, the
+ * the wedding is — the dashboard at `/guests`, Your Trip, the venue pages, Ask Us, the
  * RSVP, the ride, gifts and photos — is audience `guest`, and a signed-out reader who asks for one
  * is sent to `/sign-in?next=<path>` (or shown the sign-in gate; each row says which).
  *
@@ -30,7 +30,8 @@ import { THEME_IDS } from '@/themes/registry';
  * and is not listed.
  *
  * The pages folded into the guest portal (`/your-weekend`, `/the-wedding`, `/travel`,
- * `/share-an-adventure`, `/ask-us`) are no longer pages. They are permanent redirects, listed from
+ * `/share-an-adventure`, `/ask-us`) are no longer pages, and neither is the old Things to Do list
+ * (`/guests/things-to-do`), which became the planner on Your Trip. They are permanent redirects, listed from
  * `src/lib/site-redirects.ts` like every other alias, so an old link still arrives.
  */
 
@@ -117,9 +118,7 @@ const pageExpected = (p: SitemapPage): string => {
     case 'portal':
       return '200 for a signed-in guest: the dashboard, with the one thing to do now first. Signed out: redirect to /sign-in?next=/guests. An administrator sees the guests-only gate.';
     case 'guest-travel':
-      return '200 for a signed-in guest: the room block, flights and getting around. Signed out: redirect to /sign-in?next=/guests/travel. An administrator may open it.';
-    case 'guest-things':
-      return '200 for a signed-in guest: Chicago recommendations on the portal. Signed out: redirect to /sign-in?next=/guests/things-to-do. An administrator may open it.';
+      return '200 for a signed-in guest: the room block, flights, getting around and the planner. Signed out: redirect to /sign-in?next=/guests/travel. An administrator may open it (the planner keeps their weekend in memory only).';
     case 'guest-thing':
       return '200 for a signed-in guest when the recommendation exists. Signed out: redirect to /sign-in?next=<path>. Unknown slug is 404. An administrator may open a recommendation they can see.';
     case 'guest-ask':
@@ -267,7 +266,7 @@ const REDIRECT_SLUG_EXAMPLE = 'starved-rock-state-park';
  */
 function redirectRows(): InventoryRow[] {
   return REDIRECTS.map((r) => {
-    const destination = PAGES.find((p) => p.path === r.destination.replace(/:(\w+)/g, '[$1]'));
+    const destination = PAGES.find((p) => p.path === r.destination.split('#')[0]!.replace(/:(\w+)/g, '[$1]'));
     const door = destination && destination.audience !== 'public' ? ' A signed-out reader is then asked to sign in.' : '';
     return {
       url: r.source,

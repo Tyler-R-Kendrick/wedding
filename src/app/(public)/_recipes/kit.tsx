@@ -16,7 +16,7 @@ export const NAV = [
   { href: '/', label: 'Home' },
   { href: ROUTES.story, label: 'Our Story' },
   { href: ROUTES.adventures, label: 'Our Adventures' },
-  { href: ROUTES.guestThings, label: 'Things to Do' },
+  { href: ROUTES.guestTravel, label: 'Your Trip' },
   { href: ROUTES.ourVenue, label: 'Our Venue' },
   { href: ROUTES.guestAsk, label: 'Ask Us' },
 ] as const;

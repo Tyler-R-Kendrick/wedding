@@ -1,5 +1,5 @@
 import { expect as baseExpect, test } from '@playwright/test';
-import { contextAs, key, principalHeaders } from './helpers/principal';
+import { key, principalHeaders } from './helpers/principal';
 
 // Server actions revalidate and stream a fresh page; allow the isolated dev server to finish.
 const expect = baseExpect.configure({ timeout: 15_000 });
@@ -42,19 +42,6 @@ test('agenda keeps drafts across type changes and reveals optional errors', asyn
   await item.getByRole('button', { name: 'Remove', exact: true }).click();
   await expect(page).toHaveURL(/notice=removed/);
   await expect(page.getByRole('heading', { name: title, exact: true })).toHaveCount(0, { timeout: 15_000 });
-});
-
-test('native planning works without JavaScript and keeps result focus', async ({ browser }) => {
-  const context = await contextAs(browser, 'A1', { javaScriptEnabled: false });
-  const page = await context.newPage();
-  await page.goto('/guests/things-to-do');
-  await page.getByRole('radio', { name: '45 min', exact: true }).check();
-  await page.getByRole('radio', { name: 'Architecture', exact: true }).check();
-  await page.getByRole('button', { name: 'Suggest a plan' }).click();
-  await expect(page).toHaveURL(/#plan-result$/);
-  await expect(page.locator('#plan-result')).toBeFocused();
-  await expect(page.locator('#plan-result')).toBeVisible();
-  await context.close();
 });
 
 test('reduced-motion planning controls keep visible state without animation', async ({ page }) => {

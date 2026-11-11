@@ -265,10 +265,10 @@ button names the same action for a reader who has not signed in yet.
 | Our Story | `/our-story` | Met → connection → relationship → love → future → engagement → what marriage means | Celebrate | Public | TEASER |
 | Our Adventures | `/our-adventures` | Structured `AdventureMemory` records; "Sara remembers / Tyler remembers" | Celebrate | Public | TEASER |
 | Dashboard | `/guests` | What to do now, what is next, your schedule and reply; reorders with the timeline | Act + Inform | Guest | TEASER |
-| Travel & Stay | `/guests/travel` | The room block, flights, getting from the airport and around the city. One page, each fact once | Inform + Act | Guest | TEASER |
-| Your trip | `/trip` | Your own flights and hotel, kept in one place | Act | Guest | TEASER |
-| Your ride | `/transportation` | A ride benefit on your invitation, when there is one. Otherwise redirects to Travel & Stay | Act | Guest | INVITATIONS_OPEN |
-| Things to Do | `/guests/things-to-do` | Recommendations with a practical layer and a memory layer; itineraries by duration and mode | Inform + Celebrate | Guest | TEASER |
+| Your Trip | `/guests/travel` | The room block first, flights, getting around, then a planner that suggests what to do from our own recommendations and keeps the places a guest saves as their weekend (and a calendar file). One page, each fact once | Inform + Act | Guest | TEASER |
+| Your flights and hotel | `/trip` | Your own flights and hotel, kept in one place | Act | Guest | TEASER |
+| Your ride | `/transportation` | A ride benefit on your invitation, when there is one. Otherwise redirects to Your Trip | Act | Guest | INVITATIONS_OPEN |
+| A recommendation | `/guests/things-to-do/[slug]` | One recommendation with its practical layer and memory layer; the list itself became the planner on Your Trip (the old address redirects there) | Inform + Celebrate | Guest | TEASER |
 | Our Venue | `/our-venue` | Docent: building, spaces, history with provenance, live outlet links, "look for this" | Celebrate + Inform | Guest | TEASER |
 | Ask Us | `/guests/ask-us` | FAQ and the grounded concierge with citations | Inform | Guest | TEASER |
 | RSVP | `/rsvp` | Household-aware RSVP: per-event, per-person meal, dietary, +1 per invitation, message | Act | Guest | RSVP_OPEN |

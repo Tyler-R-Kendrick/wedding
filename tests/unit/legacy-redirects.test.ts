@@ -11,7 +11,9 @@ describe('legacy guest routes', () => {
     expect(bySource['/your-weekend']).toMatchObject({ destination: '/guests', permanent: true });
     expect(bySource['/the-wedding']).toMatchObject({ destination: '/guests', permanent: true });
     expect(bySource['/travel']).toMatchObject({ destination: '/guests/travel', permanent: true });
-    expect(bySource['/share-an-adventure']).toMatchObject({ destination: '/guests/things-to-do', permanent: true });
+    // The Things to Do list became the planner on Your Trip; both of its old addresses lead there.
+    expect(bySource['/guests/things-to-do']).toMatchObject({ destination: '/guests/travel#plan', permanent: true });
+    expect(bySource['/share-an-adventure']).toMatchObject({ destination: '/guests/travel#plan', permanent: true });
     expect(bySource['/share-an-adventure/:slug']).toMatchObject({ destination: '/guests/things-to-do/:slug', permanent: true });
     expect(bySource['/ask-us']).toMatchObject({ destination: '/guests/ask-us', permanent: true });
     // Aliases of aliases were dropped rather than chained: these are 404s now.

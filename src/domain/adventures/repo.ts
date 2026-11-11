@@ -167,7 +167,7 @@ export function toRecommendationSummary(row: RecommendationRow, deps: Recommenda
 }
 
 export function recommendationCitation(row: RecommendationRow, ctx: ReadContext): Citation {
-  return toRecordCitation(row, { route: thingsToDoDetailPath(row.slug), title: `Things to Do › ${row.title}`, recordRef: { type: 'recommendations', id: row.id }, now: ctx.now });
+  return toRecordCitation(row, { route: thingsToDoDetailPath(row.slug), title: `Your Trip › ${row.title}`, recordRef: { type: 'recommendations', id: row.id }, now: ctx.now });
 }
 
 export async function visibleRecommendations(ctx: ReadContext): Promise<RecommendationRow[]> {
@@ -361,7 +361,7 @@ export function toItineraryView(row: ItineraryTemplateRow, ctx: ReadContext, dep
     totalMinutes: totalMinutes(stops.map((s) => ({ minutes: s.minutes, durationMinutes: s.recommendation.durationMinutes }))),
     draft: row.draft,
     placeholder: row.placeholder,
-    provenance: toProvenanceView(row, { route: `${ROUTES.guestThings}#${row.slug}`, sources: ctx.sources, now: ctx.now }),
+    provenance: toProvenanceView(row, { route: `${ROUTES.guestTravel}#plan`, sources: ctx.sources, now: ctx.now }),
   };
 }
 
@@ -373,7 +373,7 @@ export async function listItineraries(ctx: ReadContext, opts: { bucket?: Itinera
   visible.sort((a, b) => order.indexOf(a.bucket) - order.indexOf(b.bucket));
   const itineraries = visible.map((r) => toItineraryView(r, ctx, deps, recById));
   const sources = dedupeCitations(
-    visible.map((r) => toRecordCitation(r, { route: `${ROUTES.guestThings}#${r.slug}`, title: `Things to Do › ${r.title}`, recordRef: { type: 'itinerary_templates', id: r.id }, now: ctx.now })),
+    visible.map((r) => toRecordCitation(r, { route: `${ROUTES.guestTravel}#plan`, title: `Your Trip › ${r.title}`, recordRef: { type: 'itinerary_templates', id: r.id }, now: ctx.now })),
   );
   return { itineraries, sources };
 }
