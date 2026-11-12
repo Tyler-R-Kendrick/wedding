@@ -1,7 +1,6 @@
-import { generateKeyPairSync, createVerify } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { totalsOf } from '@/domain/guests/sheet-totals';
-import { createGuestSheetProvider, GoogleSheetsGuestSheet, MOCK_GUEST_SHEET_VALUES, parseGuestSheet } from '@/providers/guest-sheet';
+import { parseGuestSheet, parseGuestSheetText } from '@/domain/guests/sheet';
 
 const HEADER = ['Family/Group Names', 'Total Adults', 'Total Kids', 'Plus 1', 'Guest Of', 'Group', 'Priority', 'Address', 'Email', 'Phone', 'Save the Date Sent', 'Invite Sent', 'RSVP', 'Table Number', 'Menu Choice', 'Dietary Restrictions', 'Notes'];
 
@@ -28,184 +27,58 @@ describe('parseGuestSheet', () => {
     expect(parsed.missingColumns).toContain('total kids');
   });
 
+  it('takes the names from the first column when its header is not a name (the sheet reads "roung")', () => {
+    const parsed = parseGuestSheet([
+      ['roung', 'Total Adults', 'Group'],
+      ['Household one', '2', 'Friend'],
+    ]);
+    expect(parsed.rows[0]).toMatchObject({ name: 'Household one', adults: 2, group: 'Friend' });
+    expect(parsed.missingColumns).not.toContain('family group names');
+  });
+
   it('stops at the first blank line, so the tallies kept below the list are not read as households', () => {
-    const parsed = parseGuestSheet(MOCK_GUEST_SHEET_VALUES);
-    expect(parsed.rows.map((r) => r.name)).toEqual(['Sample household A', 'Sample household B', 'Sample household C']);
+    const parsed = parseGuestSheet([HEADER, ['A', '1'], [], ['Total', '99']]);
+    expect(parsed.rows.map((r) => r.name)).toEqual(['A']);
   });
 
   it('skips a line with nobody named on it', () => {
-    const parsed = parseGuestSheet([HEADER, ['', '', '', '', 'Bride', 'Family Friend', '5'], ['Named', '1']]);
-    expect(parsed.rows.map((r) => [r.name, r.sheetRow])).toEqual([['Named', 3]]);
+    const parsed = parseGuestSheet([HEADER, ['', '', '', '', 'Bride', 'Friend', '3'], ['B', '1']]);
+    expect(parsed.rows.map((r) => r.name)).toEqual(['B']);
   });
 
-  it('counts a plus-one ticked as "Yes", "x" or a tick as one person', () => {
-    const r = parseGuestSheet([HEADER, ['A', '1', '0', 'Yes'], ['B', '1', '0', 'x'], ['C', '1', '0', '\u2713'], ['D', '1', '0', 'No']]);
-    expect(r.rows.map((x) => x.plusOnes)).toEqual([1, 1, 1, 0]);
+  it('treats blanks and junk as zero heads and no priority, and a ticked plus-one as one', () => {
+    const parsed = parseGuestSheet([HEADER, ['A', '', 'two', '?', '', '', 'high'], ['B', '1', '0', 'Yes'], ['C', '1', '0', '✓']]);
+    expect(parsed.rows[0]).toMatchObject({ adults: 0, kids: 0, plusOnes: 0, priority: null });
+    expect(parsed.rows.map((r) => r.plusOnes)).toEqual([0, 1, 1]);
+  });
+});
+
+describe('parseGuestSheetText', () => {
+  it('reads the tab as pasted out of Google Sheets (tab-separated), blank line and tallies included', () => {
+    const text = ['roung\tTotal Adults\tTotal Kids\tPlus 1\tGuest Of\tGroup\tPriority\tEmail', "Ann and Bo O'Neil\t2\t\t\tBoth\tFriend\t1\tab@example.test", 'Cy\t1\t2\t1\tGroom\tWork\t2\tcy@example.test', '', '\t\t\t\t\t\t53760'].join('\r\n');
+    const parsed = parseGuestSheetText(text);
+    expect(parsed.rows.map((r) => [r.name, r.adults, r.kids, r.plusOnes])).toEqual([
+      ["Ann and Bo O'Neil", 2, 0, 0],
+      ['Cy', 1, 2, 1],
+    ]);
+    expect(parsed.withheldColumns).toEqual(['Email']);
   });
 
-  it('treats blanks and junk as zero heads and no priority', () => {
-    const [row] = parseGuestSheet([HEADER, ['Odd', 'two', '', '1', '', '', 'high']]).rows;
-    expect(row).toMatchObject({ adults: 0, kids: 0, plusOnes: 1, priority: null, guestOf: null });
+  it('reads a CSV export the same way, quoted commas and all', () => {
+    const parsed = parseGuestSheetText('Family/Group Names,Total Adults,Notes\n"Smith, Jo and Al",2,"likes, commas"\n');
+    expect(parsed.rows).toHaveLength(1);
+    expect(parsed.rows[0]).toMatchObject({ name: 'Smith, Jo and Al', adults: 2 });
   });
 });
 
 describe('totalsOf', () => {
   it('counts heads and keeps a running total by priority', () => {
-    const { rows } = parseGuestSheet([HEADER, ['A', '2', '', '', '', '', '1'], ['B', '2', '2', '', '', '', '2'], ['C', '1', '', '1', '', '', '2'], ['D', '1', '', '', '', '', '']]);
+    const { rows } = parseGuestSheet([HEADER, ['A', '2', '', '', '', '', '1'], ['B', '1', '2', '1', '', '', '2'], ['C', '2', '', '', '', '', '']]);
     const t = totalsOf(rows);
-    expect(t).toMatchObject({ households: 4, adults: 6, kids: 2, plusOnes: 1, people: 9 });
+    expect(t).toMatchObject({ households: 3, adults: 5, kids: 2, plusOnes: 1, people: 8 });
     expect(t.byPriority).toEqual([
       { priority: 1, households: 1, people: 2, cumulativePeople: 2 },
-      { priority: 2, households: 2, people: 6, cumulativePeople: 8 },
+      { priority: 2, households: 1, people: 4, cumulativePeople: 6 },
     ]);
-  });
-});
-
-describe('createGuestSheetProvider', () => {
-  const none = { FORCE_MOCK_PROVIDERS: false, GUEST_SHEET_ID: undefined, GUEST_SHEET_RANGE: 'Guests', GOOGLE_SERVICE_ACCOUNT_EMAIL: undefined, GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY: undefined, GUEST_SHEET_CACHE_SECONDS: 120 };
-
-  it('uses sample rows in development and says "not connected" in production', async () => {
-    const dev = createGuestSheetProvider(none);
-    expect(dev.mode).toBe('mock');
-    const read = await dev.read();
-    expect(read.ok && read.value.data.sample).toBe(true);
-
-    const prod = createGuestSheetProvider({ ...none, isProduction: true });
-    expect(prod.mode).toBe('unavailable');
-    const refused = await prod.read();
-    expect(refused.ok).toBe(false);
-    if (!refused.ok) expect(refused.error.class).toBe('unconfigured');
-  });
-
-  it('names what is missing when the setup is only partly done, even in development', () => {
-    const p = createGuestSheetProvider({ ...none, GUEST_SHEET_ID: 'sheet123' });
-    expect(p.mode).toBe('unavailable');
-    expect(p.validateConfig().missing).toEqual(['GOOGLE_SERVICE_ACCOUNT_EMAIL', 'GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY']);
-  });
-});
-
-describe('GoogleSheetsGuestSheet', () => {
-  const { privateKey, publicKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
-  const pem = privateKey.export({ type: 'pkcs8', format: 'pem' }).toString();
-
-  function fakeGoogle(values: unknown[][], opts: { sheetStatus?: number } = {}) {
-    const calls: { url: string; init?: RequestInit }[] = [];
-    const fetchImpl = (async (url: string | URL | Request, init?: RequestInit) => {
-      const u = String(url);
-      calls.push({ url: u, init });
-      if (u.startsWith('https://oauth2.googleapis.com/token')) return Response.json({ access_token: 'tok', expires_in: 3600 });
-      if (opts.sheetStatus && opts.sheetStatus !== 200) return new Response('{"error":{}}', { status: opts.sheetStatus });
-      return Response.json({ range: 'Guests!A1:Z100', majorDimension: 'ROWS', values });
-    }) as typeof fetch;
-    return { calls, fetchImpl };
-  }
-
-  const config = (cacheSeconds = 120) => ({ sheetId: 'sheet-id_1', range: 'Guests', clientEmail: 'site@project.iam.gserviceaccount.com', privateKey: pem.replace(/\n/g, '\\n'), cacheSeconds });
-
-  it('signs a read-only service-account JWT and reads the tab', async () => {
-    const g = fakeGoogle([HEADER, ['Live household', '2']]);
-    const p = new GoogleSheetsGuestSheet(config(), { fetch: g.fetchImpl });
-    const r = await p.read();
-    expect(r.ok && r.value.data.rows.map((x) => x.name)).toEqual(['Live household']);
-    expect(p.sheetUrl).toBe('https://docs.google.com/spreadsheets/d/sheet-id_1/edit');
-
-    const assertion = new URLSearchParams(String(g.calls[0]!.init?.body)).get('assertion')!;
-    const [h, c, sig] = assertion.split('.');
-    const claims = JSON.parse(Buffer.from(c!, 'base64url').toString());
-    expect(claims).toMatchObject({ iss: 'site@project.iam.gserviceaccount.com', scope: 'https://www.googleapis.com/auth/spreadsheets.readonly', aud: 'https://oauth2.googleapis.com/token' });
-    expect(createVerify('RSA-SHA256').update(`${h}.${c}`).verify(publicKey, sig!, 'base64url')).toBe(true);
-
-    expect(g.calls[1]!.url).toBe('https://sheets.googleapis.com/v4/spreadsheets/sheet-id_1/values/Guests?majorDimension=ROWS&valueRenderOption=FORMATTED_VALUE');
-    expect((g.calls[1]!.init?.headers as Record<string, string>).authorization).toBe('Bearer tok');
-  });
-
-  it('reuses a read within the cache window, and `fresh` skips it', async () => {
-    let now = 1_000_000;
-    const g = fakeGoogle([HEADER, ['A', '1']]);
-    const p = new GoogleSheetsGuestSheet(config(120), { fetch: g.fetchImpl, now: () => now });
-    await p.read();
-    now += 60_000;
-    await p.read();
-    expect(g.calls.filter((c) => c.url.includes('sheets.googleapis.com'))).toHaveLength(1);
-    await p.read({ fresh: true });
-    now += 121_000;
-    await p.read();
-    expect(g.calls.filter((c) => c.url.includes('sheets.googleapis.com'))).toHaveLength(3);
-    // The token is fetched once and reused while it is valid.
-    expect(g.calls.filter((c) => c.url.includes('oauth2'))).toHaveLength(1);
-  });
-
-  it('explains a sheet that is not shared with the account', async () => {
-    const g = fakeGoogle([], { sheetStatus: 403 });
-    const r = await new GoogleSheetsGuestSheet(config(), { fetch: g.fetchImpl }).read();
-    expect(r.ok).toBe(false);
-    if (!r.ok) {
-      expect(r.error.class).toBe('auth');
-      expect(r.error.message).toMatch(/shared with the service account/);
-    }
-  });
-
-  it('serves the last good read, marked stale, when Google fails afterwards', async () => {
-    let status = 200;
-    const fetchImpl = (async (url: string | URL | Request) => {
-      if (String(url).includes('oauth2')) return Response.json({ access_token: 'tok', expires_in: 3600 });
-      return status === 200 ? Response.json({ values: [HEADER, ['Kept', '2']] }) : new Response('down', { status });
-    }) as typeof fetch;
-    const p = new GoogleSheetsGuestSheet(config(0), { fetch: fetchImpl });
-    expect((await p.read()).ok).toBe(true);
-    status = 503;
-    const r = await p.read();
-    expect(r.ok && r.value.data.stale).toBe(true);
-    expect(r.ok && r.value.data.rows[0]!.name).toBe('Kept');
-  });
-
-  it('leaves Google alone for a while after a failure, and a refresh still asks', async () => {
-    let now = 1_000_000;
-    let status = 200;
-    let sheetCalls = 0;
-    const fetchImpl = (async (url: string | URL | Request) => {
-      if (String(url).includes('oauth2')) return Response.json({ access_token: 'tok', expires_in: 3600 });
-      sheetCalls++;
-      return status === 200 ? Response.json({ values: [HEADER, ['Kept', '2']] }) : new Response('limited', { status });
-    }) as typeof fetch;
-    const p = new GoogleSheetsGuestSheet(config(0), { fetch: fetchImpl, now: () => now });
-    await p.read();
-    status = 429;
-    expect((await p.read()).ok).toBe(true); // stale, after one failed call
-    expect(sheetCalls).toBe(2);
-    // Google asked for a minute: page views inside it are served the last read without calling.
-    now += 30_000;
-    const r = await p.read();
-    expect(r.ok && r.value.data.stale).toBe(true);
-    expect(sheetCalls).toBe(2);
-    await p.read({ fresh: true });
-    expect(sheetCalls).toBe(3);
-    status = 200;
-    now += 61_000;
-    const back = await p.read();
-    expect(back.ok && back.value.data.stale).toBe(false);
-    expect(sheetCalls).toBe(4);
-  });
-
-  it('gets a new token after Google refuses the one it has', async () => {
-    let refuse = true;
-    let tokens = 0;
-    const fetchImpl = (async (url: string | URL | Request) => {
-      if (String(url).includes('oauth2')) return Response.json({ access_token: `tok${++tokens}`, expires_in: 3600 });
-      return refuse ? new Response('{}', { status: 401 }) : Response.json({ values: [HEADER, ['A', '1']] });
-    }) as typeof fetch;
-    const p = new GoogleSheetsGuestSheet(config(0), { fetch: fetchImpl });
-    expect((await p.read()).ok).toBe(false);
-    refuse = false;
-    expect((await p.read({ fresh: true })).ok).toBe(true);
-    expect(tokens).toBe(2);
-  });
-
-  it('reports a key it cannot use without calling Google', async () => {
-    const g = fakeGoogle([]);
-    const r = await new GoogleSheetsGuestSheet({ ...config(), privateKey: 'not a key' }, { fetch: g.fetchImpl }).read();
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.error.class).toBe('auth');
-    expect(g.calls).toHaveLength(0);
   });
 });

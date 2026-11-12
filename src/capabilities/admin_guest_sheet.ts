@@ -1,12 +1,14 @@
+import { desc } from 'drizzle-orm';
 import { z } from 'zod';
 import { defineCapability } from '@/contracts/capability';
+import { CapabilityError } from '@/contracts/errors';
+import { newId } from '@/contracts/ids';
 import { err, ok } from '@/contracts/result';
-import { toCapabilityError } from '@/providers/base';
+import { guestSheetCopies } from '@/db/schema';
+import { parseGuestSheetText } from '@/domain/guests/sheet';
 import { totalsOf } from '@/domain/guests/sheet-totals';
 import { appServices } from './context';
-import { adminOf } from './identity/shared';
-
-const input = z.object({ fresh: z.boolean().optional() }).optional();
+import { actorOf, adminOf } from './identity/shared';
 
 const row = z.object({
   sheetRow: z.number().int(),
@@ -24,7 +26,7 @@ const row = z.object({
   menu: z.string().nullable(),
 });
 
-const output = z.object({
+const copy = z.object({
   rows: z.array(row),
   totals: z.object({
     households: z.number().int(),
@@ -34,53 +36,91 @@ const output = z.object({
     people: z.number().int(),
     byPriority: z.array(z.object({ priority: z.number().int(), households: z.number().int(), people: z.number().int(), cumulativePeople: z.number().int() })),
   }),
-  retrievedAt: z.string(),
-  ttlSeconds: z.number().int(),
-  stale: z.boolean(),
-  sample: z.boolean(),
-  sheetUrl: z.string().nullable(),
+  uploadedAt: z.string(),
+  source: z.string().nullable(),
   withheldColumns: z.array(z.string()),
   missingColumns: z.array(z.string()),
 });
+
+const output = z.object({ copy: copy.nullable() });
 export type GuestSheetView = z.infer<typeof output>;
+export type GuestSheetCopyView = z.infer<typeof copy>;
+
+const ADMIN_ONLY = { auth: 'admin', requires: ['admin_guest_ops'], exposure: { ui: true, ai: false, webmcp: false } } as const;
 
 /**
- * The couple's planning sheet, read live (src/providers/guest-sheet). It is the list they edit;
- * this reads it so the console shows the same households and head counts without anyone copying
- * rows across. Read only, admin only, never offered to the concierge or WebMCP: the sheet is a
- * private planning document. Contact details, dietary needs and notes are never read from it.
+ * The couple's planning sheet as last copied into the site (src/domain/guests/sheet). The sheet is
+ * where the list is kept; the console shows the latest copy beside the site's own guest records,
+ * so nobody re-types rows. Admin only and never offered to the concierge or WebMCP: it is a private
+ * planning document. Contact details, dietary needs and notes are never stored from it.
  */
-export const adminGuestSheet = defineCapability<z.infer<typeof input>, GuestSheetView>({
+export const adminGuestSheet = defineCapability<Record<string, never> | undefined, GuestSheetView>({
+  ...ADMIN_ONLY,
   name: 'admin_guest_sheet',
-  title: 'Admin: read the planning sheet',
-  description: "Admin only. Reads the couple's Google Sheet guest list (households, head counts, side, group, priority, invitation status) live, with totals. Read only. Not offered to the concierge.",
+  title: 'Admin: the planning sheet',
+  description: "Admin only. The couple's planning-sheet guest list (households, head counts, side, group, priority, invitation status) as last copied into the site, with totals. Not offered to the concierge.",
   kind: 'read',
-  auth: 'admin',
-  requires: ['admin_guest_ops'],
   annotations: { readOnlyHint: true, untrustedContentHint: true, consequentialHint: false },
-  exposure: { ui: true, ai: false, webmcp: false },
-  input,
+  input: z.object({}).optional(),
   output,
-  async handler(ctx, i) {
+  async handler(ctx) {
     const guard = adminOf(ctx);
     if (!guard.ok) return err(guard.error);
-    const sheet = appServices(ctx).providers('guest-sheet');
-    const read = await sheet.read({ fresh: i?.fresh === true });
-    if (!read.ok) return err(toCapabilityError(read.error));
-    const { data, retrievedAt, ttlSeconds } = read.value;
+    const { db } = appServices(ctx);
+    const [latest] = await db.select().from(guestSheetCopies).orderBy(desc(guestSheetCopies.uploadedAt)).limit(1);
+    if (!latest) return ok({ data: { copy: null }, sources: [] });
     return ok({
       data: {
-        rows: data.rows,
-        totals: totalsOf(data.rows),
-        retrievedAt,
-        ttlSeconds,
-        stale: data.stale,
-        sample: data.sample,
-        sheetUrl: sheet.sheetUrl,
-        withheldColumns: data.withheldColumns,
-        missingColumns: data.missingColumns,
+        copy: {
+          rows: latest.rows,
+          totals: totalsOf(latest.rows),
+          uploadedAt: latest.uploadedAt.toISOString(),
+          source: latest.source,
+          withheldColumns: latest.withheldColumns,
+          missingColumns: latest.missingColumns,
+        },
       },
       sources: [],
     });
+  },
+});
+
+const uploadInput = z.object({
+  /** The Guests tab as copied out of the sheet (tab-separated), or a CSV export of it. */
+  text: z.string().min(1).max(500_000),
+  source: z.string().trim().max(120).optional(),
+  dryRun: z.boolean().optional(),
+});
+const uploadOutput = z.object({ dryRun: z.boolean(), lines: z.number().int(), people: z.number().int(), withheldColumns: z.array(z.string()), missingColumns: z.array(z.string()) });
+
+/**
+ * Replaces the planning sheet's copy with a fresh one. The pasted text is parsed on the server and
+ * only the planning columns are kept; the text itself is never stored or logged. A dry run says
+ * what would be saved.
+ */
+export const adminUploadGuestSheet = defineCapability<z.infer<typeof uploadInput>, z.infer<typeof uploadOutput>>({
+  ...ADMIN_ONLY,
+  name: 'admin_upload_guest_sheet',
+  title: 'Admin: update the planning sheet',
+  description: "Admin only. Saves a new copy of the planning sheet's Guests tab (pasted from the sheet, or a CSV export). Only planning columns are kept; contact details, dietary needs and notes are dropped.",
+  kind: 'action',
+  confirmation: 'inline',
+  idempotent: true,
+  annotations: { readOnlyHint: false, untrustedContentHint: true, consequentialHint: false },
+  input: uploadInput,
+  output: uploadOutput,
+  async handler(ctx, i) {
+    const guard = adminOf(ctx);
+    if (!guard.ok) return err(guard.error);
+    const parsed = parseGuestSheetText(i.text);
+    if (parsed.rows.length === 0) return err(new CapabilityError('validation', 'No guest lines were found. Paste the whole Guests tab, header row first.'));
+    const totals = totalsOf(parsed.rows);
+    const summary = { dryRun: !!i.dryRun, lines: parsed.rows.length, people: totals.people, withheldColumns: parsed.withheldColumns, missingColumns: parsed.missingColumns };
+    if (i.dryRun) return ok({ data: summary, sources: [] });
+    const { db } = appServices(ctx);
+    const id = newId();
+    await db.insert(guestSheetCopies).values({ id, rows: parsed.rows, withheldColumns: parsed.withheldColumns, missingColumns: parsed.missingColumns, source: i.source || null, uploadedBy: guard.value.adminId, uploadedAt: ctx.now });
+    await ctx.audit.record({ actor: actorOf(ctx), action: 'guest.imported', target: { type: 'guest_sheet_copy', id }, outcome: 'success', requestId: ctx.requestId, metadata: { lines: summary.lines, people: summary.people } });
+    return ok({ data: summary, sources: [] });
   },
 });

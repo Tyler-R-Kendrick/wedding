@@ -287,10 +287,18 @@ describe('hotel recommendations, block, and admin configuration', () => {
     const payload = JSON.stringify(r.value);
     expect(payload).not.toContain('TODO(');
     expect(payload).not.toMatch(/backlog [A-Z]-\d/);
-    // The nearby hotels, by name only: nothing invented, nothing pending, and no "suggested by" line.
+    // The nearby hotels: name, address, the hotel's own site and a booking link on the room block's
+    // nights; no reason, distance or rate invented, nothing pending, and no "suggested by" line.
     expect(r.value.data.alternatives.map((h: { name: string; reasons: { text: string }[]; address: string | null; walkMinutesToVenue: number | null; websiteUrl: string | null; bookingUrl: string | null; placeholder: boolean }) => [h.name, h.reasons.map((x) => x.text), h.address, h.walkMinutesToVenue, h.websiteUrl, h.bookingUrl, h.placeholder])).toEqual(
-      PLANNER_SUGGESTED_HOTELS.map((h) => [h.name, [], null, null, null, null, false]),
+      PLANNER_SUGGESTED_HOTELS.map((h) => [h.name, [], h.address, null, h.websiteUrl, h.bookingUrl, false]),
     );
+    for (const h of PLANNER_SUGGESTED_HOTELS) {
+      expect(isAllowedRedirect(h.websiteUrl)).toBe(true);
+      expect(isAllowedRedirect(h.bookingUrl)).toBe(true);
+      const booking = new URL(h.bookingUrl);
+      // Both brands' links name the block's nights: Booking.com as checkin/checkout, Hyatt as checkinDate/checkoutDate.
+      expect([booking.searchParams.get('checkin') ?? booking.searchParams.get('checkinDate'), booking.searchParams.get('checkout') ?? booking.searchParams.get('checkoutDate')]).toEqual(['2027-07-16', '2027-07-18']);
+    }
     expect(r.value.data.facts.venue.valetEntrance).toBe('71 E. Madison St');
     expect(r.value.sources.map((s: { title: string }) => s.title)).toEqual(['Travel › Our room block', 'chicagoathletichotel.com', "Tyler's brief 2026-09-04"]);
     // The venue's planning PDF is never named to a guest: the citation points at the page instead.

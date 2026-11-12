@@ -651,3 +651,82 @@ export function AdminRoleFlow() {
     />
   );
 }
+
+interface SheetValues extends Record<string, unknown> {
+  text: string;
+  source: string;
+  summary: string;
+  notes: string[];
+}
+interface SheetResult {
+  dryRun: boolean;
+  lines: number;
+  people: number;
+  withheldColumns: string[];
+  missingColumns: string[];
+}
+
+/**
+ * Update the console's copy of the planning sheet: paste the Guests tab (copied straight out of the
+ * sheet, or a CSV export), read what would be saved, then save. Only the planning columns are kept;
+ * the server drops addresses, emails, phones, dietary needs and notes before anything is stored.
+ *
+ * `secret`: the pasted tab (with those columns in it) is never kept on this device.
+ */
+export function UpdatePlanningSheetFlow({ hasCopy }: { hasCopy: boolean }) {
+  return (
+    <AdminFlow<SheetValues>
+      id="guests:planning-sheet"
+      secret
+      title="Update the planning sheet"
+      trigger={{ label: hasCopy ? 'Update from the sheet' : 'Add the planning sheet', variant: hasCopy ? 'ghost' : 'primary' }}
+      initial={{ text: '', source: 'Guests tab', summary: '', notes: [] }}
+      steps={[
+        {
+          title: 'Paste the Guests tab',
+          lede: 'In the sheet, open the Guests tab, select everything (Ctrl or Cmd + A), copy it, and paste it here. A CSV export of the tab works too.',
+          fields: ['text'],
+          render: (ctx) => <TextField ctx={ctx} name="text" label="The Guests tab" multiline rows={10} spellCheck={false} hint="Header row first. Addresses, emails, phones, dietary needs and notes are dropped before anything is saved." />,
+          ready: (v) => v.text.trim().length > 0,
+          readyHint: { field: 'text', message: 'Paste the tab first.' },
+          next: async (v) => {
+            if (new Blob([JSON.stringify({ input: { text: v.text, source: v.source, dryRun: true }, idempotencyKey: 'X'.repeat(26) })]).size > REQUEST_LIMIT_BYTES) return { errors: { text: 'That is too long to send in one go. Paste only the Guests tab.' } };
+            const res = await callCapability<SheetResult>('admin_upload_guest_sheet', { input: { text: v.text, source: v.source, dryRun: true }, idempotencyKey: newIdempotencyKey() });
+            if (!res.ok || !res.data) return { errors: { text: res.error?.message ?? 'The tab could not be read.' } };
+            const notes = [
+              ...(res.data.missingColumns.length ? [`Columns not found, so shown blank: ${res.data.missingColumns.join(', ')}.`] : []),
+              ...(res.data.withheldColumns.length ? [`Dropped, on purpose: ${res.data.withheldColumns.join(', ')}.`] : []),
+            ];
+            return { patch: { summary: `${res.data.lines} lines, ${res.data.people} people (adults, kids and plus-ones).`, notes } };
+          },
+        },
+        {
+          title: 'Check it',
+          lede: 'Nothing has been saved yet. This is what the console will show.',
+          render: (ctx) => (
+            <>
+              <p className="flow-copy">{ctx.values.summary}</p>
+              {ctx.values.notes.length ? (
+                <ul className="flow-copy">
+                  {ctx.values.notes.map((n) => (
+                    <li key={n}>{n}</li>
+                  ))}
+                </ul>
+              ) : null}
+            </>
+          ),
+        },
+      ]}
+      submit={{
+        label: 'Save this copy',
+        capability: 'admin_upload_guest_sheet',
+        success: 'Planning sheet updated.',
+        input: (v) => ({ text: v.text, source: v.source, dryRun: false }),
+        result: (data) => {
+          const d = data as SheetResult;
+          return <p>{`Saved ${d.lines} lines, ${d.people} people.`}</p>;
+        },
+      }}
+    />
+  );
+}

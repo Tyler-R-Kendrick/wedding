@@ -78,9 +78,6 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 | `MEDIA_MAX_VIDEO_MB` | `512` | media: per-file cap for videos | no |
 | `MEDIA_PART_SIZE_MB` | `8` | media: multipart part size (S3/R2 require >= 5) | no |
 | `MEDIA_MULTIPART_THRESHOLD_MB` | `8` | media: files above this use multipart | no |
-| `GUEST_SHEET_ID`, `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` | unset -> sample rows (dev), not connected (prod) | guest-sheet provider: the couple's planning sheet, read live into `/admin/guests`; all three required, the sheet shared (Viewer) with the account. See [guest-sheet.md](guest-sheet.md) | no |
-| `GUEST_SHEET_RANGE` | `Guests` | guest-sheet provider: tab name or A1 range of the list | no |
-| `GUEST_SHEET_CACHE_SECONDS` | `120` | guest-sheet provider: how long one read is reused before Google is asked again | no |
 | `NEXT_TURBOPACK_ROOT` | unset | `next.config.ts`: Turbopack filesystem root for sandboxes whose `node_modules` is a symlink outside the project (set to the parent directory). Never needed in CI or normal checkouts | no |
 
 ## Public variables (inlined into the browser bundle)

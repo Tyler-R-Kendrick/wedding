@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import { boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
 import type { AdminRole, PrincipalRef } from '@/contracts/principal';
 import { authUsers } from './auth';
+import type { GuestSheetRow } from '@/domain/guests/sheet';
 
 /**
  * Guest domain (ADR-0001). Guests are people as printed on the invitation; households are
@@ -164,3 +165,25 @@ export type InvitationRow = typeof invitations.$inferSelect;
 export type GuestAccessBindingRow = typeof guestAccessBindings.$inferSelect;
 export type OtpAttemptRow = typeof otpAttempts.$inferSelect;
 export type AdminRoleRow = typeof adminRoles.$inferSelect;
+
+/**
+ * The couple's planning sheet, as last copied into the site (src/domain/guests/sheet). Each upload
+ * is a row; the newest is the one shown. Only the planning columns are kept: the parser never maps
+ * addresses, emails, phones, dietary needs or notes, so none of them is stored here.
+ */
+export const guestSheetCopies = pgTable(
+  'guest_sheet_copies',
+  {
+    id: text('id').primaryKey(),
+    rows: jsonb('rows').$type<GuestSheetRow[]>().notNull(),
+    withheldColumns: jsonb('withheld_columns').$type<string[]>().notNull().default([]),
+    missingColumns: jsonb('missing_columns').$type<string[]>().notNull().default([]),
+    /** Where it came from, as the uploader named it ("S+T Wedding, Guests tab"). */
+    source: text('source'),
+    /** The administrator who uploaded it (admin id), or null for a copy loaded by the operator. */
+    uploadedBy: text('uploaded_by'),
+    uploadedAt: timestamp('uploaded_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => [index('guest_sheet_copies_uploaded_at_idx').on(t.uploadedAt)],
+);
+export type GuestSheetCopyRow = typeof guestSheetCopies.$inferSelect;

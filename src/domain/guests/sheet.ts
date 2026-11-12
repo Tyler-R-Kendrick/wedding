@@ -1,9 +1,53 @@
-import type { GuestSheetData, GuestSheetRow } from './types';
+import { parseCsv } from './csv';
 
 /**
- * Header-driven parsing of the planning sheet's Guests tab, so a column Sara moves or inserts
- * does not shift every value into the wrong field. Headers are matched loosely (case, spacing,
- * punctuation, "+"/"plus") against a few spellings each.
+ * The couple's planning sheet (the Guests tab of their wedding spreadsheet), kept in the site as a
+ * copy rather than read live. An administrator pastes the tab, or a CSV export of it, into the
+ * console; the parser keeps only the planning columns and the copy is saved
+ * (`guest_sheet_copies`). Addresses, emails, phones, dietary needs and notes are never mapped, so
+ * they are never stored, shown or exported.
+ */
+
+/**
+ * One line of the couple's planning spreadsheet. A line is a household or a group ("Mom/Dad Fitz",
+ * "Troy and D"), not a person: the sheet counts heads, it does not name each one.
+ *
+ * Only planning columns are carried. Address, email, phone, dietary restrictions and notes stay in
+ * the sheet: the adapter never maps them, so they cannot reach the page, a log or an export.
+ */
+export interface GuestSheetRow {
+  /** The row's number in the sheet (header is row 1), so a reader can find it there. */
+  sheetRow: number;
+  name: string;
+  adults: number;
+  kids: number;
+  plusOnes: number;
+  /** "Bride", "Groom", "Both", as written. */
+  guestOf: string | null;
+  /** "Immediate Family", "Friend", "Work", as written. */
+  group: string | null;
+  /** The sheet's invite tier (1 = must invite). Null when blank or not a number. */
+  priority: number | null;
+  saveTheDateSent: string | null;
+  inviteSent: string | null;
+  rsvp: string | null;
+  table: string | null;
+  menu: string | null;
+}
+
+/** What a pasted sheet parses to: its lines, and which of its headers were not read or not found. */
+export interface GuestSheetParse {
+  rows: GuestSheetRow[];
+  /** Header names present in the sheet that are deliberately not read (contact details, dietary, notes). */
+  withheldColumns: string[];
+  /** Planning columns looked for and not found (renamed or removed in the sheet). */
+  missingColumns: string[];
+}
+
+/**
+ * Header-driven parsing of the Guests tab, so a column Sara moves or inserts does not shift every
+ * value into the wrong field. Headers are matched loosely (case, spacing, punctuation, "+"/"plus")
+ * against a few spellings each.
  */
 const norm = (s: string) =>
   s
@@ -30,7 +74,7 @@ const ALIASES: Record<Field, string[]> = {
 };
 
 /** Columns that exist in the sheet and are never read: contact details and anything personal. */
-const WITHHELD = ['address', 'mailing address', 'email', 'e mail', 'phone', 'phone number', 'dietary restrictions', 'dietary', 'allergies', 'notes'];
+const WITHHELD = ['address', 'address street', 'street', 'mailing address', 'city', 'state', 'zip', 'zip code', 'postal code', 'email', 'e mail', 'phone', 'phone number', 'dietary restrictions', 'dietary', 'allergies', 'notes'];
 
 const cell = (row: readonly unknown[], i: number | undefined): string => {
   if (i === undefined) return '';
@@ -49,7 +93,7 @@ const tier = (s: string) => {
   return s && Number.isInteger(n) ? n : null;
 };
 
-export function parseGuestSheet(values: readonly (readonly unknown[])[]): Omit<GuestSheetData, 'stale' | 'sample'> {
+export function parseGuestSheet(values: readonly (readonly unknown[])[]): GuestSheetParse {
   const [header = [], ...body] = values;
   const headers = header.map((h) => norm(String(h ?? '')));
   const index: Partial<Record<Field, number>> = {};
@@ -62,6 +106,9 @@ export function parseGuestSheet(values: readonly (readonly unknown[])[]): Omit<G
       }
     }
   }
+  // The names are the sheet's first column whatever its header says (the couple's reads "roung"),
+  // unless another column is headed as the names.
+  if (index.name === undefined && headers.length && !WITHHELD.includes(headers[0] ?? '') && !Object.values(index).includes(0)) index.name = 0;
   const missingColumns = (Object.keys(ALIASES) as Field[]).filter((f) => index[f] === undefined).map((f) => ALIASES[f][0] ?? f);
   const withheldColumns = header.map((h) => String(h ?? '').trim()).filter((h, i) => h && WITHHELD.includes(headers[i] ?? ''));
 
@@ -90,4 +137,14 @@ export function parseGuestSheet(values: readonly (readonly unknown[])[]): Omit<G
     });
   }
   return { rows, withheldColumns, missingColumns };
+}
+
+/**
+ * The text an administrator pastes: the tab copied straight out of Google Sheets (tab-separated) or
+ * a CSV export of it. Blank lines are kept, because the list ends at the first one.
+ */
+export function parseGuestSheetText(text: string): GuestSheetParse {
+  const firstLine = text.replace(/^\uFEFF/, '').split(/\r?\n/, 1)[0] ?? '';
+  const delimiter = firstLine.includes('\t') ? '\t' : ',';
+  return parseGuestSheet(parseCsv(text, { delimiter, keepBlankRows: true }));
 }

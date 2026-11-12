@@ -3,7 +3,8 @@
  * Exports never include admin notes, mailing addresses, or any needs text unless the
  * caller explicitly opts in (and needs text is not even stored in this domain).
  */
-export function parseCsv(text: string): string[][] {
+export function parseCsv(text: string, opts: { delimiter?: ',' | '\t'; keepBlankRows?: boolean } = {}): string[][] {
+  const delimiter = opts.delimiter ?? ',';
   const rows: string[][] = [];
   let row: string[] = [];
   let field = '';
@@ -22,7 +23,7 @@ export function parseCsv(text: string): string[][] {
     }
     if (c === '"') {
       quoted = true;
-    } else if (c === ',') {
+    } else if (c === delimiter) {
       row.push(field);
       field = '';
     } else if (c === '\n' || c === '\r') {
@@ -37,7 +38,7 @@ export function parseCsv(text: string): string[][] {
     row.push(field);
     rows.push(row);
   }
-  return rows.filter((r) => r.some((cell) => cell.trim() !== ''));
+  return opts.keepBlankRows ? rows : rows.filter((r) => r.some((cell) => cell.trim() !== ''));
 }
 
 const needsQuote = /[",\r\n]/;

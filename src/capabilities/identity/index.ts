@@ -1,6 +1,6 @@
 import type { AnyCapability } from '@/contracts/capability';
 import { adminGuestOpsCapabilities } from '../admin_guest_ops';
-import { adminGuestSheet } from '../admin_guest_sheet';
+import { adminGuestSheet, adminUploadGuestSheet } from '../admin_guest_sheet';
 import { adminBrowseAsGuest, adminGuestViewStatus, adminListOwnGuestRecords } from './browse_as_guest';
 import { adminClearViewRole, adminListViewRoles, adminSetViewRole, adminViewRoleStatus } from './view_role';
 import { claimIdentity } from '../claim_identity';
@@ -21,6 +21,7 @@ export const identityCapabilities: readonly AnyCapability[] = [
   lookupInvitation, requestOtp, verifyOtp, requestPhoneOtp, verifyPhoneOtp, ...guestSignInPassCapabilities, claimIdentity, registerPasskey, stepUp, getMyInvitation, getMyHousehold, updateMyContact,
   ...adminGuestOpsCapabilities,
   adminGuestSheet,
+  adminUploadGuestSheet,
   adminBrowseAsGuest,
   adminListOwnGuestRecords,
   adminGuestViewStatus,
