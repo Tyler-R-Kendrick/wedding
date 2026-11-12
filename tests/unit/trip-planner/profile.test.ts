@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { namedIn } from '@/domain/trip-planner/draft';
-import { draftPlan, knowBeforeYouGo, understand, type Diet, type PlaceFacts, type PlannerPlace, type Prefs } from '@/domain/trip-planner';
+import { draftPlan, guessPrice, knowBeforeYouGo, understand, withPriceGuesses, type Diet, type PlaceFacts, type PlannerPlace, type Prefs } from '@/domain/trip-planner';
 import { openIn, openOnDay, weekdayOfDate } from '@/domain/trip-planner/hours';
 import { answersOf, hasPrefs, ownAnswers, prefsOf, profileOf, profileStarters, profileSummary, readNeeds, readPrefs, withPrefs, NO_PREFS, type TripProfile } from '@/domain/trip-planner/profile';
 import { priceLevelFor } from '@/domain/trip-planner/intent';
@@ -352,7 +352,9 @@ describe('what the planner does with who it is for', () => {
 describe('what a card says before you go', () => {
   const place = (facts: PlaceFacts, over: Partial<PlannerPlace> = {}): PlannerPlace => ({ ...PLACES.find((p) => p.id === 'steakhouse')!, facts, ...over });
   const FRI = { date: '2027-07-16', part: 'evening' as const };
-  const texts = (k: { items: { text: string }[] }) => k.items.map((i) => i.text);
+  // The price slot of a place to eat with no price on record ("Price not known") has tests of its own below.
+  const UNPRICED = { key: 'price', text: 'Price not known', mark: '$?', tone: 'unknown' };
+  const texts = (k: { items: { text: string; tone?: string }[] }) => k.items.filter((i) => i.tone !== 'unknown').map((i) => i.text);
 
   it('gives the price as symbols with words behind them, the hours for that day, and whether to book', () => {
     const k = knowBeforeYouGo(place({ priceLevel: 3, hours: 'Su,Mo off; Tu-Sa 17:00-22:00', reservations: 'required' }), FRI);
@@ -364,16 +366,25 @@ describe('what a card says before you go', () => {
     expect(k.shut).toBeNull();
   });
 
+  it('where a place to eat has no checked price: our guess, said as one, or a mark where the price would be', () => {
+    expect(knowBeforeYouGo(place({ priceGuess: 2 }), null).items).toEqual([{ key: 'price', text: 'Likely $$, $15 to $40 each', tone: 'guess' }]);
+    expect(knowBeforeYouGo(place({}), null).items).toEqual([UNPRICED]);
+    // A checked price is said plainly, whatever a guess would have been.
+    expect(knowBeforeYouGo(place({ priceLevel: 3, priceGuess: 2 }), null).items).toEqual([{ key: 'price', text: '$$$, $40 to $100 each' }]);
+  });
+
   it('warns when the place is shut that day, or open that day but not in that part of it', () => {
     const p = place({ hours: 'Su,Mo off; Tu-Sa 17:00-22:00' });
     expect(knowBeforeYouGo(p, { date: '2027-07-18', part: 'evening' }).shut).toBe('Closed on Sundays.');
     expect(plain(knowBeforeYouGo(p, { date: '2027-07-16', part: 'morning' }).shut)).toBe('Open 5 pm to 10 pm on Fridays, so not in the morning.');
-    expect(knowBeforeYouGo(p, null)).toEqual({ items: [], shut: null });
+    expect(knowBeforeYouGo(p, null)).toEqual({ items: [UNPRICED], shut: null });
   });
 
   it('says nothing it does not hold, and leaves out "just walk in"', () => {
-    expect(knowBeforeYouGo(place({}), FRI)).toEqual({ items: [], shut: null });
-    expect(knowBeforeYouGo({ ...place({}), facts: undefined }, FRI)).toEqual({ items: [], shut: null });
+    expect(knowBeforeYouGo(place({}), FRI)).toEqual({ items: [UNPRICED], shut: null });
+    expect(knowBeforeYouGo({ ...place({}), facts: undefined }, FRI)).toEqual({ items: [UNPRICED], shut: null });
+    // Somewhere that is not a place to eat has no price slot to fill.
+    expect(knowBeforeYouGo({ ...PLACES.find((x) => x.id === 'art-museum')!, facts: undefined }, FRI)).toEqual({ items: [], shut: null });
     expect(texts(knowBeforeYouGo(place({ reservations: 'walk-in', cost: 'Adults about $40, children about $30; less when booked ahead.' }), FRI))).toEqual(['Adults about $40, children about $30']);
   });
 
@@ -536,13 +547,66 @@ describe('what an independent review found', () => {
     for (const id of ['art-museum', 'garden', 'game-room']) expect(ids(plan), id).not.toContain(id);
   });
 
-  it('under a limit on price, a place whose price we do not hold is passed over while one we know fits', () => {
-    const places = withFacts({ 'burger-counter': { priceLevel: 1 }, 'pizza-place': { priceLevel: 2 } });
+  it('guesses a price from what a place says it is, set by what its peers on our list are known to cost', () => {
+    const at = (id: string, over: Partial<PlannerPlace> = {}) => ({ ...PLACES.find((p) => p.id === id)!, ...over });
+    const list = [
+      at('bean-house', { what: 'Espresso and pastries.' }),
+      at('corner-roastery', { what: 'Small-batch coffee.' }),
+      at('tasting-room', { what: 'A tasting menu of twelve courses.' }),
+      at('steakhouse', { what: 'A classic steakhouse.' }),
+      at('pizza-place', { what: 'Deep-dish pizza by the slice.' }),
+      at('rooftop', { what: 'Somewhere with a view.' }),
+      at('art-museum'),
+    ];
+    const guesses = (places: PlannerPlace[]) => Object.fromEntries(withPriceGuesses(places).map((p) => [p.id, p.facts?.priceGuess ?? null]));
+    // Coffee is the least, a tasting menu the most; nothing to go on is no guess, and a museum has no price level at all.
+    expect(guesses(list)).toEqual({ 'bean-house': 1, 'corner-roastery': 1, 'tasting-room': 4, steakhouse: 3, 'pizza-place': 2, rooftop: null, 'art-museum': null });
+    // Two coffee bars of ours with a checked price of $$: an unpriced one is guessed to cost what they do.
+    const dear = [at('bean-house', { what: 'Espresso.', facts: { priceLevel: 2 } }), at('corner-roastery', { what: 'Coffee.', facts: { priceLevel: 2 } }), at('hotel-cafe', { what: 'Coffee and cake.' })];
+    expect(guesses(dear)).toEqual({ 'bean-house': null, 'corner-roastery': null, 'hotel-cafe': 2 });
+    // A checked price is never replaced by a guess.
+    expect(guessPrice(at('steakhouse', { facts: { priceLevel: 2 } }), list)).toBeNull();
+  });
+
+  it('under a limit on price: checked and likely fits first, a price we cannot tell last, a guess over the limit not at all', () => {
+    const places = withPriceGuesses(
+      withFacts(
+        { 'burger-counter': { priceLevel: 1 }, steakhouse: { priceLevel: 3 } },
+        {
+          // Guessed $$ (pizza): over a limit of $.
+          'pizza-place': { what: 'Deep-dish pizza for dinner.' },
+          // Guessed $$$$ (a tasting menu).
+          'tasting-room': { what: 'A tasting menu for dinner.' },
+          // Says nothing to guess from.
+          rooftop: { what: 'Dinner with a view.' },
+        },
+      ),
+    );
     const plan = draftPlan({ request: 'dinner on Friday under $15', places, saved: [], prefs: ASKED });
-    expect(ids(plan)).toEqual(['burger-counter']);
-    // With no price known anywhere, the answer says so instead of claiming the limit was kept.
+    // The one known to fit, then the one we cannot tell. No checked or likely price over the limit.
+    expect(ids(plan)).toEqual(['burger-counter', 'rooftop']);
+    expect(plan.intro).toContain('Places whose price we do not know come last.');
+    // Asked for by name, the dish is still the answer when our guess is only a little over: kept where it
+    // ranks (it is what they asked for), with its likely price on the card and a word in the answer.
+    const dish = draftPlan({ request: 'deep dish pizza on Friday under $15', places, saved: [], prefs: ASKED });
+    expect(ids(dish)).toContain('pizza-place');
+    expect(dish.intro).toContain('Deep Pan Pizza is likely a little over that.');
+    expect(ids(dish)).not.toContain('tasting-room');
+    // A place we cannot guess at is after it, and after every place known to fit.
+    if (ids(dish).includes('rooftop')) expect(ids(dish).indexOf('rooftop')).toBeGreaterThan(ids(dish).indexOf('burger-counter'));
+    // With no price known or guessed anywhere, the answer says so instead of claiming the limit was kept.
     const blind = draftPlan({ request: 'dinner on Friday under $15', places: withFacts({}), saved: [], prefs: ASKED });
     expect(blind.intro).toContain('Nothing on our own list that we know the price of costs that little.');
+    expect(ids(blind).length).toBeGreaterThan(0);
+  });
+
+  it('a likely price that fits a limit counts as fitting it', () => {
+    const places = withPriceGuesses(withFacts({ steakhouse: { priceLevel: 3 } }, { 'pizza-place': { what: 'Deep-dish pizza for dinner.' } }));
+    const plan = draftPlan({ request: 'dinner on Friday under $40', places, saved: [], prefs: ASKED });
+    expect(ids(plan)).toContain('pizza-place');
+    // Ahead of every place whose price we cannot tell.
+    const unknown = ids(plan).filter((id) => !places.find((p) => p.id === id)!.facts?.priceLevel && !places.find((p) => p.id === id)!.facts?.priceGuess);
+    for (const id of unknown) expect(ids(plan).indexOf('pizza-place'), id).toBeLessThan(ids(plan).indexOf(id));
   });
 
   it('a shellfish allergy told to us at RSVP keeps seafood places out, as one said in the request does', () => {

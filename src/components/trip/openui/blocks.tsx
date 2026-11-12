@@ -128,7 +128,14 @@ function PlaceView({ id, note, day: dayProp, part: partProp, inRoute = false }: 
         {know.items.length ? (
           <ul className="trip-place__know" aria-label="Good to know">
             {know.items.map((k) => (
-              <li key={k.key}>{k.text}</li>
+              <li key={k.key} className={k.tone ? `trip-place__fact--${k.tone}` : undefined}>
+                {k.mark ? (
+                  <span className="trip-place__price-mark" aria-hidden="true">
+                    {k.mark}
+                  </span>
+                ) : null}
+                {k.text}
+              </li>
             ))}
           </ul>
         ) : null}

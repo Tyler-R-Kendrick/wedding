@@ -926,6 +926,35 @@ describe('who the planner plans for', () => {
     await waitFor(() => expect(bar().textContent).toContain('gluten-free'));
   });
 
+  it('a place to eat with no checked price shows our guess as a guess, or a mark where the price would be', async () => {
+    // Out in the city: one checked price, one guess, one we cannot tell.
+    const places = PLACES.filter((p) => !p.interests.includes('inside-caa')).map((p) =>
+      p.id === 'tasting-room' ? { ...p, facts: { priceLevel: 2 as const } } : p.id === 'pizza-place' ? { ...p, facts: { priceGuess: 2 as const } } : p,
+    );
+    setup({ places, profile: profile({ diet: [], asked: true }) });
+    await ask('Dinner on Friday under $40');
+    const factsOf = async (name: string) => {
+      const card = (await screen.findAllByRole('link', { name }))[0]!.closest('article')!;
+      return within(card).getByRole('list', { name: 'Good to know' });
+    };
+    // A checked price, plainly.
+    expect((await factsOf('Tasting Room')).textContent).toContain('$$, $15 to $40 each');
+    // Our guess, said as one and set apart.
+    const guess = within(await factsOf('Deep Pan Pizza')).getByText('Likely $$, $15 to $40 each');
+    expect(guess.className).toBe('trip-place__fact--guess');
+    // Not known: the words say so, and the mark where the dollar signs would be is for the eye only.
+    const unknown = within(await factsOf('The Steakhouse')).getByText('Price not known');
+    expect(unknown.className).toBe('trip-place__fact--unknown');
+    const mark = unknown.querySelector('.trip-place__price-mark')!;
+    expect(mark.textContent).toBe('$?');
+    expect(mark.getAttribute('aria-hidden')).toBe('true');
+    // And it comes after the places whose price is known or guessed to fit, which the answer says.
+    const order = [...document.querySelectorAll('.trip-place__name')].map((n) => n.textContent);
+    expect(order.indexOf('The Steakhouse')).toBeGreaterThan(order.indexOf('Tasting Room'));
+    expect(order.indexOf('The Steakhouse')).toBeGreaterThan(order.indexOf('Deep Pan Pizza'));
+    expect(screen.getByText(/Places whose price we do not know come last\./)).toBeTruthy();
+  });
+
   it('two saves from this page in quick succession are sent one after the other, the second starting from the first', async () => {
     // The first save is still on its way when the second is made.
     let finishFirst: (() => void) | undefined;

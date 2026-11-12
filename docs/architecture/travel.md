@@ -200,6 +200,23 @@ changing it never changes their RSVP. Because it is shaped by RSVP notes, the tw
 `exposure.webmcp` are false) and the save is not replayable, so no result is stored against an
 idempotency key.
 
+### A price the record does not hold
+
+A place to eat with no checked `priceLevel` is not dropped under a spending limit and is not shown
+as if it had none (`src/domain/trip-planner/price.ts`):
+
+- **A guess, where the place says enough to make one.** What it calls itself (a tasting menu, a
+  steakhouse, a coffee bar, a pizza place) gives a level, set to the middle of what the couple's
+  own places of that kind are known to cost when two or more have a checked price. The page adds
+  it as `facts.priceGuess` (`withPriceGuesses`); it is never written to the record, and a card
+  always says it as a guess: "Likely $$, $15 to $40 each".
+- **Not known, said as that.** With nothing to guess from, the card reads "Price not known", with a
+  `$?` mark where the dollar signs would be.
+- **Under a limit**, a checked price over it rules a place out, and so does a guess over it, unless
+  the place is the very dish asked for and the guess is one level over: that place stays where it
+  ranks and the answer says it is likely a little over. A place whose price is not known stays in
+  the answer after the places known or guessed to fit, and the answer says so in a sentence.
+
 A save carries the time the page last read the preferences (`basedOn`): if another device has saved
 or cleared them since, nothing is written and what is saved now comes back. A page sends its own
 saves one after the other, each from where the last ended. A page brought back into view asks again

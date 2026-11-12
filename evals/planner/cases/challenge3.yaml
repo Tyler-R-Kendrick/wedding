@@ -144,8 +144,10 @@
       clarifies: false
       ours: { min: 1, anyOf: [alinea, esme, michael-jordans-steakhouse] }
 # The Chicago classics entry holds no price. Not known is not expensive, so the lowest budget
-# must not drop it, and its card must not show a price nobody recorded.
-- description: 'price: with the lowest saved budget, deep dish still gets the couple''s Chicago classics entry, which holds no price and shows none'
+# must not drop it. Rule changed by the couple on 2026-11-12: a place with no price on record
+# carries the planner's guess where it can make one, always said as a guess ("Likely $$"), and
+# never a plain price nobody recorded.
+- description: 'price: with the lowest saved budget, deep dish still gets the couple''s Chicago classics entry, whose price is shown only as a guess'
   vars:
     category: price
     reads: all
@@ -154,7 +156,7 @@
     expect:
       clarifies: false
       ours: { includes: [chicago-classics] }
-      cards: { excludes: ['classics:[^\n]*\$'] }
+      cards: { excludes: ['classics:(?![^\n]*Likely \$)[^\n]*\$'] }
 
 # ---------- access ----------
 # No place of ours says it has no step-free way in, so "never offered" cannot be shown yet; these
