@@ -1,40 +1,42 @@
-import type { GuestSheetView } from '@/capabilities/admin_guest_sheet';
+import type { GuestSheetCopyView, GuestSheetView } from '@/capabilities/admin_guest_sheet';
 import { DataTable, Note, Section, Stamp, Stat, StatStrip } from '../../_components/console';
+import { UpdatePlanningSheetFlow } from './GuestFlows';
 
 const dash = (v: string | number | null) => (v === null || v === '' || v === 0 ? '—' : v);
 
 /**
- * The couple's planning sheet, as it stands in Google Sheets right now. It sits above the site's own
- * guest records because it is where the list is actually kept: the records below are who can sign
- * in, the sheet is who is invited. Read only; edits happen in the sheet.
+ * The couple's planning sheet, as last copied into the site. It sits above the site's own guest
+ * records because it is where the list is actually kept: the records below are who can sign in,
+ * the sheet is who is invited. Edits happen in the sheet; "Update from the sheet" saves a new copy.
  */
 export function PlanningSheet({ sheet, error }: { sheet: GuestSheetView | null; error: string | null }) {
+  const copy = sheet?.copy ?? null;
   return (
-    <Section title="Planning sheet" id="planning-sheet" note="The guest list as it stands in the planning spreadsheet. Edit it there; this page reads it again every couple of minutes.">
-      {sheet ? <SheetBody sheet={sheet} /> : <Note>{error ?? 'The planning sheet could not be read.'}</Note>}
+    <Section title="Planning sheet" id="planning-sheet" note="The guest list as it stands in the planning spreadsheet. Edit it there, then update the copy here.">
+      {!sheet ? (
+        <Note>{error ?? 'The planning sheet could not be read.'}</Note>
+      ) : (
+        <>
+          <div>
+            <UpdatePlanningSheetFlow hasCopy={!!copy} />
+          </div>
+          {copy ? <SheetBody sheet={copy} /> : <Note>No copy of the planning sheet yet. Choose Add the planning sheet and paste its Guests tab.</Note>}
+        </>
+      )}
     </Section>
   );
 }
 
-function SheetBody({ sheet }: { sheet: GuestSheetView }) {
+function SheetBody({ sheet }: { sheet: GuestSheetCopyView }) {
   const { totals, rows } = sheet;
   return (
     <>
       <p className="con-note">
-        {sheet.stale ? 'The sheet could not be read just now, so this is the last good read, from ' : 'Read from the sheet at '}
-        <Stamp at={sheet.retrievedAt} />. <a href="/admin/guests?sheet=fresh#planning-sheet">Refresh from the sheet</a>
-        {sheet.sheetUrl ? (
-          <>
-            {' · '}
-            <a href={sheet.sheetUrl} target="_blank" rel="noopener noreferrer">
-              Open the sheet<span className="sr-only"> (opens in a new tab)</span>
-            </a>
-          </>
-        ) : null}
+        Copied from the sheet <Stamp at={sheet.uploadedAt} />
+        {sheet.source ? <> ({sheet.source})</> : null}.
       </p>
-      {sheet.sample ? <Note>These are sample lines: the planning sheet is not connected in this environment.</Note> : null}
       {sheet.missingColumns.length ? <Note>Columns not found in the sheet: {sheet.missingColumns.join(', ')}. Those fields show as blank.</Note> : null}
-      {sheet.withheldColumns.length ? <Note>Not read from the sheet, on purpose: {sheet.withheldColumns.join(', ')}.</Note> : null}
+      {sheet.withheldColumns.length ? <Note>Not copied from the sheet, on purpose: {sheet.withheldColumns.join(', ')}.</Note> : null}
       <StatStrip>
         <Stat label="Lines" value={totals.households} />
         <Stat label="Adults" value={totals.adults} />

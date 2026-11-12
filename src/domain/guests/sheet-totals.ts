@@ -1,6 +1,6 @@
-import type { GuestSheetRow } from '@/providers/guest-sheet/types';
+import type { GuestSheetRow } from './sheet';
 
-/** Head counts over the planning sheet's lines (src/providers/guest-sheet). */
+/** Head counts over the planning sheet's lines (src/domain/guests/sheet). */
 export interface GuestSheetTotals {
   households: number;
   adults: number;

@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
 import { stopGuestView } from '@/components/guest-view/actions';
 import { GUEST_VIEW_COOKIE } from '@/domain/identity/guest-view';
 import { startGuestView } from '../_lib/guest-view-actions';
@@ -49,18 +48,12 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
       </ConsolePage>
     );
   }
-  // "Refresh from the sheet" reads past the short cache once, then lands on the plain address, so a
-  // reload, a bookmark or a form on this page never keeps calling Google on every render.
-  if (sp.sheet === 'fresh') {
-    await adminInvoke<GuestSheetView>('admin_guest_sheet', { fresh: true }, { method: 'GET' });
-    redirect('/admin/guests#planning-sheet');
-  }
   // The checkbox submits `merged=on`; `1` is kept for links written by hand.
   const showMerged = sp.merged === 'on' || sp.merged === '1';
   const [list, hh, sheet] = await Promise.all([
     adminInvoke<{ guests: Guest[]; truncated: boolean }>('admin_list_guests', { q: sp.q || undefined, householdId: sp.householdId || undefined, includeMerged: showMerged }, { method: 'GET' }),
     adminInvoke<{ households: { id: string; name: string }[]; truncated: boolean }>('admin_list_households', {}, { method: 'GET' }),
-    // The planning sheet (Google Sheets), read live through a short cache (just refreshed, above, on request).
+    // The planning sheet, as last copied into the site.
     adminInvoke<GuestSheetView>('admin_guest_sheet', {}, { method: 'GET' }),
   ]);
   const rows = list.ok ? list.value.data.guests : [];
