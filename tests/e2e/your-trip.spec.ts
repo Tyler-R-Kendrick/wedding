@@ -313,8 +313,10 @@ test('the planner says who it is planning for; what the guest sets there is save
   await clearWeekend(page);
   await clearAnswers(page);
   const who = plan(page).getByLabel('Who we are planning for');
-  // The party is the household on the invitation; nothing else is presumed.
-  await expect(who).toContainText('2 adults and 1 child');
+  // The party is the household on the invitation, whoever is in it by now (other specs add and
+  // change its members), and nothing else is presumed.
+  const party = /Planning for (Just you|You, with children|\d+ adults?( and \d+ child(ren)?|, with children)?)/;
+  await expect(who.locator('p').first()).toHaveText(new RegExp(`^${party.source}\\.$`));
   await who.getByRole('button', { name: 'Make the ideas fit you' }).click();
   const form = who.locator('form');
   await expect(form.getByText('Your RSVP and your meal at the wedding stay as you left them.')).toBeVisible();
@@ -323,7 +325,7 @@ test('the planner says who it is planning for; what the guest sets there is save
   await expect(form.getByRole('radio', { name: 'Up to $40 each' })).toBeChecked();
   await form.getByRole('button', { name: 'Save' }).click();
   await expect(form).toHaveCount(0);
-  await expect(who.locator('p').first()).toHaveText('Planning for 2 adults and 1 child, vegetarian, meals up to $40 each.');
+  await expect(who.locator('p').first()).toHaveText(new RegExp(`^${party.source}, vegetarian, meals up to \\$40 each\\.$`));
   // The line that changed is still in view, under the tabs, and the page is where the guest can read it.
   await expect(who).toBeInViewport();
 
