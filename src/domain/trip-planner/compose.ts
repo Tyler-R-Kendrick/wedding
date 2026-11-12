@@ -6,8 +6,8 @@ import { DAYS, PARTS, type ComposeContext, type Day, type Part, type Plan, type 
 
 /**
  * A plan as an OpenUI Lang program for the site's own component library (src/components/trip/openui).
- * Called again every time the writer streams a line, so it accepts any partial plan: missing text
- * becomes "", unknown place ids are left out, and every statement it writes is referenced from root.
+ * It accepts any partial plan: missing text becomes "", unknown place ids are left out, and every
+ * statement it writes is referenced from root.
  */
 
 /** A string literal: OpenUI Lang reads double-quoted strings as JSON, so JSON's escaping is exact. */
@@ -64,7 +64,7 @@ function addMap(p: Program, picks: PlanPick[], ctx: ComposeContext, route: boole
   const [first] = located;
   if (located.every((pl) => Math.abs(pl.lat! - first!.lat!) < SAME_SPOT && Math.abs(pl.lng! - first!.lng!) < SAME_SPOT)) return;
   p.state.push('$stop = ""');
-  p.root.push('map', 'picked');
+  p.root.push('map');
   // Every stop, in the plan's order, so the map's numbers are the cards' order. A stop without
   // coordinates is listed under the map with its number but gets no pin.
   const markers = picks.map((x) => {
@@ -73,12 +73,11 @@ function addMap(p: Program, picks: PlanPick[], ctx: ComposeContext, route: boole
     return hasSpot ? `MapMarker(${str(pl.name)}, ${num(pl.lat!)}, ${num(pl.lng!)}, ${str(pl.id)})` : `MapMarker(${str(pl.name)}, null, null, ${str(pl.id)})`;
   });
   p.lines.push(`map = Map(${list(markers)}, ${route ? 'true' : 'false'}, $stop)`);
-  p.lines.push(`picked = Caption($stop == "" ? "Tap a numbered pin to see which place it is." : "Pin: " + $stop)`);
 }
 
 const MORE = ['', 'One more from our list', 'Two more from our list', 'Three more from our list'];
 /** A route's places that did not fit its part of the day. */
-const LATER = ['', 'One more, for another time', 'Two more, for another time', 'Three more, for another time'];
+const LATER = ['', 'One more idea', 'Two more ideas', 'Three more ideas'];
 
 /** A leg as a sentence that ends at its destination: "Walk about 10–15 minutes (0.6 mi) to Shedd Aquarium." */
 function legLine(leg: Leg, to: string): string {
@@ -98,8 +97,9 @@ function sharedPart(picks: PlanPick[]): PlanPick['part'] | null {
  * hotel's position is known. `labels` (a stop's part of the day) stands in for clock times when the
  * stops do not share one part.
  */
-function routeLines(p: Program, name: string, picks: PlanPick[], ctx: ComposeContext, opts: { facts: boolean; back: boolean; labels?: boolean; between?: () => void; inline?: boolean }): void {
-  const part = sharedPart(picks);
+function routeLines(p: Program, name: string, picks: PlanPick[], ctx: ComposeContext, opts: { facts: boolean; back: boolean; labels?: boolean; between?: () => void; inline?: boolean; timeless?: boolean }): void {
+  // `timeless`: the guest named a length of time, not when; the stops get no clock times of ours.
+  const part = opts.timeless ? null : sharedPart(picks);
   const route = planRoute({
     stops: picks.map((x) => ({ place: ctx.places.get(x.id)!, ...(typeof x.minutes === 'number' ? { minutes: x.minutes } : {}), ...(opts.labels && x.part ? { part: x.part } : {}) })),
     hotel: ctx.hotel ?? null,
@@ -109,7 +109,7 @@ function routeLines(p: Program, name: string, picks: PlanPick[], ctx: ComposeCon
     const day = part && isDay(picks[0]!.day) ? `${DAY_NAME[picks[0]!.day]} ${PART_LABEL[part]}` : null;
     const facts = [...(day ? [day] : []), ...routeFacts(route), `${picks.length} ${picks.length === 1 ? 'stop' : 'stops'}`];
     p.root.push(`${name}Facts`);
-    p.lines.push(`${name}Facts = Row(${list(facts.map((f) => `Badge(${str(f)}, "neutral")`))}, 2, true)`);
+    p.lines.push(`${name}Facts = Summary(${list(facts.map(str))})`);
   }
   opts.between?.();
   // Each stop carries the way to it from the stop before: Stop(n, id, when, long, way, mode, note, day, part).
@@ -150,7 +150,7 @@ function picksProgram(plan: Plan, ctx: ComposeContext, route: boolean): string {
   }
   if (extras.length) {
     p.root.push('more');
-    const heading = plan.route && !plan.itinerary ? (LATER[extras.length] ?? 'More, for another time') : (MORE[extras.length] ?? 'More from our list');
+    const heading = plan.route && !plan.itinerary ? (LATER[extras.length] ?? 'More ideas') : (MORE[extras.length] ?? 'More from our list');
     p.lines.push(`more = Col([Title(${str(heading)}, "md"), ${grid(extras)}], 2)`);
   }
   return end(p, plan);
@@ -162,29 +162,20 @@ function budgetProgram(plan: Plan, ctx: ComposeContext): string {
   const minutesOf = (x: PlanPick) => (typeof x.minutes === 'number' && x.minutes > 0 ? x.minutes : ctx.places.get(x.id)?.minutes);
   const rows = knownPicks(plan, ctx).filter((x) => typeof minutesOf(x) === 'number');
   const have = Math.min(600, Math.max(15, Math.round((plan.minutes ?? 120) / 15) * 15));
-  const max = Math.max(240, Math.ceil(have / 60) * 60);
   if (!rows.length) return end(p, plan);
   const timed = new Map(rows.map((r) => [r.id, { ...ctx.places.get(r.id)!, minutes: minutesOf(r)! }]));
   // An itinerary's stops start ticked (those that fit); otherwise the best rows that fit.
   const offered = plan.itinerary ? rows.slice(0, plan.itinerary.stops) : rows;
   const picked = fitIn(have, offered.map((r) => r.id), timed);
-  p.state.push(`$have = ${have}`, `$picked = ${list(picked.map(str))}`);
-  p.root.push('tool');
-  const all = rows.map((r) => {
-    const pl = timed.get(r.id)!;
-    return `{id: ${str(pl.id)}, name: ${str(pl.name)}, min: ${num(pl.minutes!)}}`;
-  });
-  p.lines.push(
-    `all = ${list(all)}`,
-    'used = @Sum(@Each(all, "p", @Includes($picked, p.id) ? p.min : 0))',
-    'rows = Col(@Each(all, "p", Pressable([Row([Text(p.name, "md", null, "medium"), Spacer(), Caption("about " + p.min + " min")], 2)], @Set($picked, @Toggle($picked, p.id)), @Includes($picked, p.id))), 1)',
-    'total = Row([Text("Planned: " + used + " of " + $have + " min", "md", null, "semibold"), Spacer(), Badge(used <= $have ? "Fits" : "Over by " + (used - $have) + " min", used <= $have ? "success" : "warning")], 2)',
-    `tool = Card([Slider($have, 15, ${max}, 15, "Time you have", " min"), rows, total], "soft")`,
-  );
+  // What fits, as a short run of stops, each with its own length (the couple's minutes for it where
+  // they set them) and the way from the one before; what does not fit follows under its own heading.
+  // Nothing here is ticked or dragged: the only thing to do with a place is add it to a time.
   const cards = rows.filter((r) => picked.includes(r.id));
-  if (cards.length) {
-    p.root.push('cards');
-    p.lines.push(`cards = ${grid(cards, false)}`);
+  const rest = rows.filter((r) => !picked.includes(r.id));
+  if (cards.length) routeLines(p, 'cards', cards.map((c) => ({ ...c, note: undefined, minutes: timed.get(c.id)!.minutes! })), ctx, { facts: true, back: false, timeless: true });
+  if (rest.length) {
+    p.root.push('more');
+    p.lines.push(`more = Col([Title(${str(cards.length ? (LATER[rest.length] ?? 'More ideas') : 'Each of these takes longer')}, "md"), ${grid(rest, false)}], 2)`);
   }
   return end(p, plan);
 }
@@ -253,10 +244,8 @@ function weekendProgram(plan: Plan, ctx: ComposeContext): string {
   }
   if (picks.length) {
     const items = picks.map((x) => `{id: ${str(x.id)}, day: ${str(x.day)}, part: ${str(x.part)}}`);
-    const buttons = [`Button("Use this plan", @SetWeekend(${list(items)}), "primary")`];
-    if (ctx.saved.length >= 3) buttons.push('Button("My weekend is set", @ConfirmWeekend(), "secondary")');
     p.root.push('use');
-    p.lines.push(`use = Row(${list(buttons)}, 2, true)`);
+    p.lines.push(`use = Button("Put all of these in my plans", @SetWeekend(${list(items)}), "primary")`);
   }
   return end(p, plan);
 }
@@ -281,8 +270,22 @@ function scheduleProgram(plan: Plan, ctx: ComposeContext): string {
     p.root.push('day');
     p.lines.push(`day = Schedule(${list(rows)})`);
   }
-  p.root.push('stay');
-  p.lines.push('stay = Stay(null, true)');
+  if (!plan.brief) {
+    p.root.push('stay');
+    p.lines.push('stay = Stay(null, true)');
+  }
+  return end(p, plan);
+}
+
+/** The guest's own plan, and a button for each time it could go. */
+function ownProgram(plan: Plan): string {
+  const p = begin(plan);
+  const own = plan.own;
+  const slots = (own?.slots ?? []).filter((s) => isDay(s.day) && PARTS.includes(s.part) && !(s.day === 'sat' && s.part !== 'morning')).slice(0, 9);
+  if (own && typeof own.title === 'string' && own.title.trim() && slots.length) {
+    p.root.push('own');
+    p.lines.push(`own = Col(${list(slots.map((s) => `OwnPlan(${str(own.title.trim().slice(0, 80))}, ${str(s.day)}, ${str(s.part)})`))}, 1)`);
+  }
   return end(p, plan);
 }
 
@@ -319,6 +322,8 @@ export function compose(plan: Plan, ctx: ComposeContext): string {
       return calendarProgram(safe, ctx);
     case 'schedule':
       return scheduleProgram(safe, ctx);
+    case 'own':
+      return ownProgram(safe);
     case 'picks':
     default:
       return picksProgram(safe, ctx, false);

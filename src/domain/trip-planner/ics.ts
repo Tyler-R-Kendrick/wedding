@@ -93,6 +93,7 @@ export function planEntries(saved: readonly SavedItem[], places: ReadonlyMap<str
     out.push({
       uid: `plan-${s.id}-${savedDate(s)}-${s.part}`,
       source: 'plan',
+      part: s.part,
       title,
       when: { kind: 'local', date: savedDate(s), start: hours.start, end: hours.end },
       description: [PLAN_NOTE, place?.what].filter(Boolean).join('\n\n'),
@@ -212,7 +213,8 @@ export function calendarModel(entries: readonly CalendarEntry[]): CalendarDayMod
     const list = days.get(p.date) ?? [];
     list.push({
       at: p.start ?? '',
-      entry: { uid: e.uid, title: e.title, time: p.label, source: e.source, ...(e.tbd ? { note: TIME_TBA } : {}) },
+      // A plan is read by its part of the day: the hours the calendar file gives it are ours, not the guest's.
+      entry: { uid: e.uid, title: e.title, time: e.part ? e.part[0]!.toUpperCase() + e.part.slice(1) : p.label, source: e.source, ...(e.tbd ? { note: TIME_TBA } : {}) },
     });
     days.set(p.date, list);
   }

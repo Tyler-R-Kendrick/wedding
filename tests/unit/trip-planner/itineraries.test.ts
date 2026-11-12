@@ -31,7 +31,7 @@ describe('the couple’s itineraries as the first answer', () => {
     expect(plan.picks.some((p) => p.day === 'sat' && p.part !== 'morning')).toBe(false);
   });
 
-  it('a request about time gets the time tool, with the stops at their own minutes and ticked', () => {
+  it('a request about time gets the stops that fit it, each at the couple’s own minutes', () => {
     const plan = draft('I have 45 minutes');
     expect(plan.shape).toBe('budget');
     expect(plan.minutes).toBe(45);
@@ -40,9 +40,10 @@ describe('the couple’s itineraries as the first answer', () => {
       ['park-walk', 20],
     ]);
     const program = compose(plan, { places: BY_ID, saved: [] });
-    // The couple's minutes, not the place's own 45.
-    expect(program).toContain('{id: "lobby-tour", name: "Walk the Building", min: 25}');
-    expect(program).toContain('$picked = ["lobby-tour", "park-walk"]');
+    // The couple's minutes, not the place's own 45; and nothing to tick or total.
+    expect(program).toMatch(/Stop\(1, "lobby-tour", null, "About 25 minutes"/);
+    expect(program).toMatch(/Stop\(2, "park-walk", null, "About 20 minutes"/);
+    expect(program).not.toMatch(/\$picked|\$have|Pressable|Slider/);
   });
 
   it('located stops become a route on the map; the extras follow under their own heading', () => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type FormEvent, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { downloadIcs, TripPlannerProvider, TripRenderer, type TripAction, type TripHotel } from '@/components/trip/openui';
 import {
   aboutHowLong,
@@ -9,6 +9,8 @@ import {
   dayOfDate,
   savedDate,
   slotForDate,
+  slotName,
+  weekendDate,
   STAY_MAX_DAYS,
   stayDays,
   wallTime,
@@ -16,7 +18,6 @@ import {
   buildIcs,
   calendarModel,
   compose,
-  DAY_NAME,
   dateLabel,
   draftPlan,
   isWeddingTime,
@@ -25,7 +26,6 @@ import {
   PART_LENGTH,
   PART_START,
   planRoute,
-  mergeWritten,
   PARTS,
   planEntries,
   safeSlot,
@@ -36,7 +36,6 @@ import {
   timeText,
   tripEntries,
   weddingEntries,
-  writerPrompt,
   type CalendarEntry,
   type Day,
   type Part,
@@ -48,7 +47,7 @@ import {
   type TripItemInput,
   type WeddingEventInput,
 } from '@/domain/trip-planner';
-import { embed, ensureLocal, getLocalModels, holdLocal, writeLines } from '@/lib/ai/local';
+import { embed, ensureLocal, getLocalModels, holdLocal } from '@/lib/ai/local';
 import { speechSupport, startDictation, type Dictation, type DictationError } from '@/lib/speech';
 import { Icon, type IconName } from '@/themes/shared/icons';
 import './trip.css';
@@ -69,9 +68,16 @@ import './trip.css';
 /** A saved place as the board holds it (`itemId`: the trip item it was loaded from, for reference only). */
 export type PlannerSaved = SavedItem & { name: string; itemId?: string | null };
 
+type TabKey = 'plans' | 'things';
+/** A part of one day of the stay. */
+type Slot = { date: string; part: Part };
+
 export type PlannerActions = {
   save(input: { placeId: string; day: Day; part: Part; date?: string }): Promise<{ ok: true; itemId: string } | { ok: false; message: string }>;
   remove(input: { placeId: string }): Promise<{ ok: true } | { ok: false; message: string }>;
+  /** The guest's own plan ("Dinner with family"): added, or with `itemId` moved or reworded. */
+  saveOwn(input: { itemId?: string; title: string; day: Day; part: Part; date?: string }): Promise<{ ok: true; itemId: string } | { ok: false; message: string }>;
+  removeOwn(input: { itemId: string }): Promise<{ ok: true } | { ok: false; message: string }>;
 };
 
 export type TripPlannerProps = {
@@ -89,12 +95,10 @@ export type TripPlannerProps = {
   actions?: PlannerActions;
 };
 
-type Turn = { id: number; request: string; program: string; waiting: boolean; streaming: boolean };
+/** One question and its answer. `waiting`: the answer is being chosen and is not shown yet; once shown it never changes. */
+type Turn = { id: number; request: string; program: string; waiting: boolean };
 
 type Starter = { label: string; hint: string; request: string; icon: IconName };
-
-/** The wedding itself: always the first starter, answered from the guest's own invitation. */
-export const WEDDING_STARTER: Starter = { label: 'The wedding day', hint: 'Times, rooms and what to wear', request: 'The wedding day', icon: 'rings' };
 
 /** The starters when the couple have no itinerary for them; `key` is the kind of itinerary each stands in for. */
 export const STARTERS: (Starter & { key: string })[] = [
@@ -120,9 +124,10 @@ const MOST_STARTERS = 6;
 const NO_ITINERARIES: PlannerItinerary[] = [];
 
 /**
- * The starters: the wedding day first, then one for each of the couple's own itineraries a guest can
- * use (each sends a request that lands on it), then the plain ones for what no itinerary covers, and
- * "Plan my whole weekend" last.
+ * The starters: one for each of the couple's own itineraries a guest can use (each sends a request
+ * that lands on it), then the plain ones for what no itinerary covers, and "Plan my whole weekend"
+ * last. The wedding itself is not among them: it is on the guest's plans already, and they came
+ * here for the hours around it.
  */
 export function startersFor(itineraries: readonly PlannerItinerary[], placeIds: ReadonlySet<string>): Starter[] {
   const own: (Starter & { key: string })[] = [];
@@ -138,19 +143,21 @@ export function startersFor(itineraries: readonly PlannerItinerary[], placeIds: 
   if (own.some((o) => o.key === '45-min' || o.key === '2-3-h')) covered.add('2-3-h');
   const weekend = STARTERS.find((s) => s.key === 'weekend')!;
   const plain = STARTERS.filter((s) => s.key !== 'weekend' && !covered.has(s.key));
-  return [WEDDING_STARTER, ...[...own, ...plain].slice(0, MOST_STARTERS - 2), weekend].map(({ label, hint, request, icon }) => ({ label, hint, request, icon }));
+  return [...[...own, ...plain].slice(0, MOST_STARTERS - 1), weekend].map(({ label, hint, request, icon }) => ({ label, hint, request, icon }));
 }
 
 const PART_LABEL: Record<Part, string> = { morning: 'Morning', afternoon: 'Afternoon', evening: 'Evening' };
 const PART_ICON: Record<Part, IconName> = { morning: 'sunrise', afternoon: 'sun', evening: 'moon' };
-const CONFIRMED_KEY = 'your-trip:weekend-set';
-const ENOUGH = 3;
-/** How long a request waits for the matcher to install before answering without it. */
-const MATCH_WAIT_MS = 6000;
-const NO_WORDS = new Set<Plan['shape']>(['calendar', 'stay', 'arrive', 'schedule']);
+/** How long an answer may wait for the matcher's ranking before it is shown without it. */
+const MATCH_WAIT_MS = 1200;
+/** Answers that are facts, not a choice of places: nothing to rank. */
+const NO_RANKING = new Set<Plan['shape']>(['calendar', 'stay', 'arrive', 'schedule']);
 const SAVE_FAILED = 'We could not save that just now. Please try again in a moment.';
 const REMOVE_FAILED = 'We could not take that out just now. Please try again in a moment.';
 const TOAST_MS = 5000;
+
+/** A note after a change. `open` offers My plans; `undo` puts back what was just taken out. */
+type ToastState = { text: string; key: number; open: boolean; undo?: () => void };
 
 const SPEECH_ERROR: Record<DictationError, string> = {
   'not-allowed': 'We could not use your microphone. You can type instead.',
@@ -160,36 +167,6 @@ const SPEECH_ERROR: Record<DictationError, string> = {
 };
 
 const reduced = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-/** "My weekend is set", remembered for the browser session (the server render never knows it). */
-const confirmedStore = (() => {
-  const listeners = new Set<() => void>();
-  let memory = false;
-  const read = () => {
-    try {
-      return sessionStorage.getItem(CONFIRMED_KEY) === '1';
-    } catch {
-      return memory;
-    }
-  };
-  return {
-    subscribe(fn: () => void) {
-      listeners.add(fn);
-      return () => listeners.delete(fn);
-    },
-    get: read,
-    set(on: boolean) {
-      memory = on;
-      try {
-        if (on) sessionStorage.setItem(CONFIRMED_KEY, '1');
-        else sessionStorage.removeItem(CONFIRMED_KEY);
-      } catch {
-        // Private windows and blocked storage: the confirmation lasts for this page view only.
-      }
-      for (const fn of listeners) fn();
-    },
-  };
-})();
 
 /** The places' vectors, computed once per session for the same list. */
 let vectorCache: { key: string; vectors: number[][] } | null = null;
@@ -210,13 +187,13 @@ const wait = (ms: number, signal: AbortSignal) =>
     signal.addEventListener('abort', () => (clearTimeout(t), resolve(false)), { once: true });
   });
 
+/**
+ * The matcher's ranking of the places for a request, when the matcher is already installed. An
+ * answer is drawn once and never rearranged, so it never waits on a download: a matcher that is not
+ * ready yet is started for the next question instead.
+ */
 async function matchScores(request: string, places: PlannerPlace[], signal: AbortSignal): Promise<Map<string, number> | null> {
-  const state = getLocalModels().matcher.state;
-  if (state === 'unsupported') return null;
-  // The guest's request is the first use, so it may start the install (or try again after a failed
-  // background one: once per request); the answer never waits long for it.
-  const ready = state === 'ready' || (await Promise.race([ensureLocal('matcher', { userGesture: true }).catch(() => false), wait(MATCH_WAIT_MS, signal)]));
-  if (!ready || signal.aborted) return null;
+  if (getLocalModels().matcher.state !== 'ready') return null;
   const vectors = await placeVectors(places, signal);
   const query = vectors ? (await embed([request], { query: true, signal }))?.[0] : null;
   if (!vectors || !query || signal.aborted) return null;
@@ -231,23 +208,32 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
   // The weekend as of the last change, for handlers that run between renders; every write updates both.
   const savedRef = useRef(saved);
   const [turns, setTurns] = useState<Turn[]>([]);
-  const [tab, setTab] = useState<'plans' | 'things'>('plans');
+  const [tab, setTab] = useState<TabKey>('plans');
+  // The time the guest is finding something for ("Find ideas" on a part of a day): places they add go there.
+  const [target, setTarget] = useState<Slot | null>(null);
+  // A saved place to pick up on My plans ("Change the time" on its row in an answer).
+  const [pickUp, setPickUp] = useState<{ id: string; n: number } | null>(null);
   const [draft, setDraft] = useState('');
-  const [toast, setToast] = useState<{ text: string; key: number; open: boolean } | null>(null);
+  const [toast, setToast] = useState<ToastState | null>(null);
   // Pointed at or focused: a message is never taken away from under the guest.
   const [toastHeld, setToastHeld] = useState(false);
-  const confirmed = useSyncExternalStore(confirmedStore.subscribe, confirmedStore.get, () => false);
   const [speech, setSpeech] = useState<'none' | 'ready' | 'listening'>('none');
   const [speechNote, setSpeechNote] = useState<string | null>(null);
   const ctl = useRef<AbortController | null>(null);
   const dictation = useRef<{ run: Dictation; abort: AbortController } | null>(null);
-  const touched = useRef(new Set<number>());
   /** Each place's changes, sent one after another. */
   const chains = useRef(new Map<string, Promise<boolean>>());
   const nextId = useRef(1);
   const lastPress = useRef<DOMRect | null>(null);
   const tabRef = useRef<HTMLButtonElement>(null);
-  const threadEnd = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const tabsRef = useRef<HTMLDivElement>(null);
+  /** Where the guest was on each tab, to come back to. */
+  const scrollAt = useRef<Partial<Record<TabKey, number>>>({});
+  const tabNow = useRef<TabKey>('plans');
+  /** The trip item behind each of the guest's own plans, once it is saved. */
+  const ownItems = useRef(new Map<string, string>());
+  const threadRef = useRef<HTMLOListElement>(null);
   const askRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -264,16 +250,16 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
   useEffect(() => holdLocal('matcher'), []);
   // A message with a button stays until it is closed or used (WCAG 2.2.1); a plain one goes after a
   // while, but never while it is pointed at or focused.
-  const toastAction = !!toast?.open && tab !== 'plans';
+  const toastAction = (!!toast?.open && tab !== 'plans') || !!toast?.undo;
   useEffect(() => {
     if (!toast || toastAction || toastHeld) return;
     const t = setTimeout(() => setToast(null), TOAST_MS);
     return () => clearTimeout(t);
   }, [toast, toastAction, toastHeld]);
 
-  const say = useCallback((text: string, open = false) => {
+  const say = useCallback((text: string, open = false, undo?: () => void) => {
     setToastHeld(false);
-    setToast({ text, key: Date.now(), open });
+    setToast({ text, key: Date.now(), open, ...(undo ? { undo } : {}) });
   }, []);
   const closeToast = useCallback(() => {
     setToastHeld(false);
@@ -281,39 +267,63 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
   }, []);
   const patch = useCallback((id: number, next: Partial<Turn>) => setTurns((all) => all.map((t) => (t.id === id ? { ...t, ...next } : t))), []);
 
-  const calendarEntries = useCallback((): CalendarEntry[] => {
-    const origin = typeof location === 'undefined' ? undefined : location.origin;
-    // The block's check-in and check-out only for a guest staying in it: they may be staying elsewhere.
-    const blockDays = staysInBlock(bookings, block) ? blockEntries(block) : [];
-    return [...weddingEntries(events), ...planEntries(savedRef.current, byId, origin ? { origin } : {}), ...blockDays, ...tripEntries(bookings)];
-  }, [events, bookings, byId, block]);
+  /** Opens a tab, remembering where the guest was on the one they leave. */
+  const show = useCallback((next: TabKey) => {
+    if (tabNow.current !== next && typeof window !== 'undefined') scrollAt.current[tabNow.current] = window.scrollY;
+    tabNow.current = next;
+    setTab(next);
+  }, []);
+  // The two tabs are different lengths, so a switch made from deep inside one would otherwise leave
+  // the guest wherever the browser clamps the page. They land where they last were on the tab they
+  // open, or at its top; a switch made with the tabs in view moves nothing.
+  const firstTab = useRef(true);
+  useLayoutEffect(() => {
+    if (firstTab.current) {
+      firstTab.current = false;
+      return;
+    }
+    const root = rootRef.current;
+    if (!root || typeof window === 'undefined' || typeof window.scrollTo !== 'function') return;
+    const pinned = parseFloat(getComputedStyle(tabsRef.current ?? root).top) || 0;
+    const top = root.getBoundingClientRect().top + window.scrollY - pinned;
+    const was = scrollAt.current[tab];
+    const here = window.scrollY;
+    // In one frame: a tab is a swap in place, never a slide down the page.
+    // Deep in this tab last time, and at (or a line above) the planner's start now: back to that place.
+    if (was !== undefined && was > top && here >= top - 120) window.scrollTo({ top: was, behavior: 'instant' });
+    // Scrolled past the start with nowhere to go back to: the tab opens at its top.
+    else if (here > top + 2) window.scrollTo({ top, behavior: 'instant' });
+    // Otherwise the tabs are where the guest can see them, and nothing moves.
+  }, [tab]);
+  // A new question goes to the top of the screen, under the tabs, and stays there while its answer
+  // arrives beneath it: the guest reads from the start of the answer, never from its end.
+  const newest = turns.at(-1)?.id;
+  useEffect(() => {
+    if (newest === undefined) return;
+    const turn = threadRef.current?.querySelector<HTMLElement>(`[data-turn="${newest}"]`);
+    if (!turn || typeof turn.scrollIntoView !== 'function') return;
+    // A short way is a glide; past a long answer it is placed at once, not flown over.
+    const far = Math.abs(turn.getBoundingClientRect().top) > window.innerHeight * 1.5;
+    turn.scrollIntoView({ block: 'start', behavior: far || reduced() ? 'instant' : 'smooth' });
+  }, [newest]);
+
+  const entriesFor = useCallback(
+    (plans: readonly SavedItem[]): CalendarEntry[] => {
+      const origin = typeof location === 'undefined' ? undefined : location.origin;
+      // The block's check-in and check-out only for a guest staying in it: they may be staying elsewhere.
+      const blockDays = staysInBlock(bookings, block) ? blockEntries(block) : [];
+      return [...weddingEntries(events), ...planEntries(plans, byId, origin ? { origin } : {}), ...blockDays, ...tripEntries(bookings)];
+    },
+    [events, bookings, byId, block],
+  );
+  const calendarEntries = useCallback(() => entriesFor(savedRef.current), [entriesFor]);
+
+  // The same plans, live, for any summary of them already in the thread.
+  const liveCalendar = useMemo(() => calendarModel(entriesFor(saved)), [entriesFor, saved]);
 
   const composeFor = useCallback(
     (plan: Plan) => compose(plan, { places: byId, saved: savedRef.current, events, hotel, ...(plan.shape === 'calendar' ? { calendar: calendarModel(calendarEntries()) } : {}) }),
     [byId, events, hotel, calendarEntries],
-  );
-
-  /** The better answer, while the guest has not started using the first one. */
-  const upgrade = useCallback(
-    async (id: number, request: string, first: Plan, signal: AbortSignal) => {
-      const apply = (plan: Plan, streaming: boolean) => {
-        if (signal.aborted || touched.current.has(id)) return false;
-        patch(id, { program: composeFor(plan), streaming });
-        return true;
-      };
-      let current = first;
-      const scores = await matchScores(request, places, signal).catch(() => null);
-      if (scores && !signal.aborted && !touched.current.has(id)) {
-        const better = draftPlan({ request, places, saved: savedRef.current, scores, itineraries, events });
-        if (apply(better, false)) current = better;
-      }
-      if (signal.aborted || touched.current.has(id) || NO_WORDS.has(current.shape)) return;
-      const base = current;
-      const { system, prompt } = writerPrompt({ request, draft: base, places });
-      const text = await writeLines({ system, prompt, signal, onText: (t) => void apply(mergeWritten(base, t, places), true) }).catch(() => null);
-      if (text) apply(mergeWritten(base, text, places, { complete: true }), false);
-    },
-    [places, itineraries, events, composeFor, patch],
   );
 
   const send = useCallback(
@@ -324,28 +334,44 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
       const ac = new AbortController();
       ctl.current = ac;
       const id = nextId.current++;
-      const plan = draftPlan({ request, places, saved: savedRef.current, itineraries, events });
-      const quiet = NO_WORDS.has(plan.shape);
-      setTurns((all) => [...all.map((t) => (t.waiting || t.streaming ? { ...t, waiting: false, streaming: false } : t)), { id, request, program: composeFor(plan), waiting: !quiet, streaming: false }]);
+      const first = draftPlan({ request, places, saved: savedRef.current, itineraries, events });
+      const matcher = getLocalModels().matcher.state;
+      // The first use may start the matcher's install; this answer does not wait for it.
+      if (matcher !== 'ready' && matcher !== 'unsupported') void ensureLocal('matcher', { userGesture: true }).catch(() => false);
+      const rank = matcher === 'ready' && !NO_RANKING.has(first.shape);
+      // An earlier question still being ranked is answered as it stands.
+      setTurns((all) => [...all.map((t) => (t.waiting ? { ...t, waiting: false } : t)), { id, request, program: composeFor(first), waiting: rank }]);
       setDraft('');
-      setTab('things');
-      requestAnimationFrame(() => threadEnd.current?.scrollIntoView?.({ block: 'end', behavior: reduced() ? 'auto' : 'smooth' }));
-      if (quiet) return;
-      void upgrade(id, request, plan, ac.signal).finally(() => {
-        if (ctl.current === ac) patch(id, { waiting: false, streaming: false });
+      // A note about the last change is not carried into the next answer.
+      closeToast();
+      show('things');
+      if (!rank) return;
+      void Promise.race([matchScores(request, places, ac.signal).catch(() => null), wait(MATCH_WAIT_MS, ac.signal)]).then((scores) => {
+        if (ac.signal.aborted) return;
+        const better = scores ? draftPlan({ request, places, saved: savedRef.current, scores, itineraries, events }) : null;
+        patch(id, { ...(better ? { program: composeFor(better) } : {}), waiting: false });
       });
     },
-    [places, itineraries, events, composeFor, upgrade, patch],
+    [places, itineraries, events, composeFor, patch, show, closeToast],
   );
 
   const startOver = useCallback(() => {
     ctl.current?.abort();
     ctl.current = null;
-    touched.current.clear();
     setTurns([]);
+    setTarget(null);
     setDraft('');
-    askRef.current?.focus();
-  }, []);
+    closeToast();
+    // Back at the suggestions, at the planner's start (the long thread under the guest is gone).
+    const root = rootRef.current;
+    if (root && typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
+      const pinned = parseFloat(getComputedStyle(tabsRef.current ?? root).top) || 0;
+      const top = root.getBoundingClientRect().top + window.scrollY - pinned;
+      if (window.scrollY > top) window.scrollTo({ top, behavior: 'instant' });
+    }
+    scrollAt.current.things = undefined;
+    askRef.current?.focus({ preventScroll: true });
+  }, [closeToast]);
 
   // ---------- the weekend ----------
 
@@ -411,24 +437,49 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
   const saveTo = useCallback(
     (id: string, name: string, day: Day, part: Part, date?: string) => {
       const was = savedRef.current.find((s) => s.id === id);
-      const after: PlannerSaved = { ...(was ?? { name }), id, name: was?.name ?? name, day, part, date };
+      const after: PlannerSaved = { ...(was ?? { name, ...(id.startsWith('own:') ? { own: true } : {}) }), id, name: was?.name ?? name, day, part, date };
       // A place moved back onto the weekend carries no date of its own.
       if (!date) delete after.date;
-      return change(id, after, () => actions!.save({ placeId: id, day, part, ...(date ? { date } : {}) }));
+      if (!after.own) return change(id, after, () => actions!.save({ placeId: id, day, part, ...(date ? { date } : {}) }));
+      // The guest's own plan: its trip item is known once its first save has come back (changes to one plan are sent in order).
+      return change(id, after, async () => {
+        const itemId = ownItems.current.get(id) ?? was?.itemId ?? undefined;
+        const r = await actions!.saveOwn({ ...(itemId ? { itemId } : {}), title: after.name, day, part, ...(date ? { date } : {}) });
+        if (r.ok) ownItems.current.set(id, r.itemId);
+        return r;
+      });
     },
     [actions, change],
+  );
+
+  /** The guest's own plan, in their words, on a part of a day. */
+  const addOwn = useCallback(
+    (slot: Slot, words: string, quiet = false) => {
+      const name = words.replace(/\s+/g, ' ').trim().slice(0, 80);
+      if (!name) return;
+      const at = slotForDate(slot.date);
+      if (!at.date && isWeddingTime(at.day, slot.part)) return;
+      const id = `own:${typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`}`;
+      if (!quiet) say(`“${name}” is in your plans, ${slotName(slot.date, slot.part)}.`);
+      // Shown at once and saved through the same one-at-a-time path as a move.
+      void saveTo(id, name, at.day, slot.part, at.date);
+    },
+    [saveTo, say],
   );
 
   const add = useCallback(
     (id: string, day?: Day, part?: Part) => {
       const place = byId.get(id);
       if (!place) return;
-      const slot = safeSlot(day ?? 'sat', part ?? 'morning');
+      // The time the guest is filling wins over the answer's own suggestion for the place.
+      const aimed = target ? slotForDate(target.date) : null;
+      const slot = aimed && target ? { day: aimed.day, part: target.part, date: aimed.date } : { ...safeSlot(day ?? 'sat', part ?? 'morning'), date: undefined };
       fly();
-      say(`${place.name} is in your plans, ${DAY_NAME[slot.day]} ${slot.part}.`, true);
-      void saveTo(id, place.name, slot.day, slot.part);
+      // The tabs are pinned, with the count beside My plans, so the note needs no button of its own.
+      say(`${place.name} is in your plans, ${slotName(slot.date ?? weekendDate(slot.day), slot.part)}.`);
+      void saveTo(id, place.name, slot.day, slot.part, slot.date);
     },
-    [byId, saveTo, fly, say],
+    [byId, saveTo, fly, say, target],
   );
 
   /** A place moved on My plans: to any day of the stay and part of the day, except the wedding's. */
@@ -446,9 +497,30 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
   const remove = useCallback(
     (id: string) => {
       if (!savedRef.current.some((s) => s.id === id)) return;
-      void change(id, null, () => actions!.remove({ placeId: id }));
+      const item = savedRef.current.find((s) => s.id === id)!;
+      if (!item.own) return void change(id, null, () => actions!.remove({ placeId: id }));
+      void change(id, null, async () => {
+        const itemId = ownItems.current.get(id) ?? item.itemId;
+        return itemId ? actions!.removeOwn({ itemId }) : { ok: true };
+      });
     },
     [actions, change],
+  );
+  /** Taken off the board with its bin: gone at once, with one tap to put it back where it was. */
+  const removeWithUndo = useCallback(
+    (id: string) => {
+      const item = savedRef.current.find((s) => s.id === id);
+      if (!item) return;
+      const at = { date: savedDate(item), part: item.part };
+      remove(id);
+      say(`${item.own ? `“${item.name}”` : item.name} is out of your plans.`, false, () => {
+        closeToast();
+        if (item.own) return addOwn(at, item.name, true);
+        const slot = slotForDate(at.date);
+        void saveTo(item.id, item.name, slot.day, at.part, slot.date);
+      });
+    },
+    [remove, say, closeToast, addOwn, saveTo],
   );
 
   /** A whole-weekend plan: adds what is new and moves what is elsewhere; never takes a place out. */
@@ -461,7 +533,7 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
           return !was || savedDate(was) !== savedDate(w) || was.part !== w.part;
         })
         .map((w) => saveTo(w.id, byId.get(w.id)!.name, w.day, w.part));
-      void Promise.all(work).then((done) => done.every(Boolean) && say('Your weekend is set out in your plans.', true));
+      void Promise.all(work).then((done) => done.every(Boolean) && say(work.length ? 'They are in your plans.' : 'These are already in your plans.', true));
     },
     [byId, saveTo, say],
   );
@@ -469,13 +541,27 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
   const exportCalendar = useCallback(() => {
     const text = buildIcs({ items: calendarEntries(), now: new Date(), uidDomain: typeof location === 'undefined' ? 'wedding.local' : location.host || 'wedding.local' });
     downloadIcs(text, 'our-wedding-weekend.ics');
-    say('Your calendar file is saved. Open it to add the weekend to your calendar.');
+    say('Your calendar file is saved. Open it to add these plans to your calendar.');
   }, [calendarEntries, say]);
 
-  const confirm = useCallback(() => {
-    confirmedStore.set(true);
-    send('My weekend is set');
-  }, [send]);
+  /** "Find ideas" on a part of a day: asks for that time, and what the guest adds from the answer goes there. */
+  const findFor = useCallback(
+    (slot: Slot) => {
+      setTarget(slot);
+      send(`Ideas for ${slotName(slot.date, slot.part)}`);
+    },
+    [send],
+  );
+  /** "Change the time" on a saved place in an answer: My plans opens with it picked up. */
+  const movePlan = useCallback(
+    (id: string) => {
+      if (!savedRef.current.some((s) => s.id === id)) return;
+      closeToast();
+      setPickUp((p) => ({ id, n: (p?.n ?? 0) + 1 }));
+      show('plans');
+    },
+    [show, closeToast],
+  );
 
   const onAction = useCallback(
     (action: TripAction) => {
@@ -484,17 +570,23 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
           return add(action.id, action.day, action.part);
         case 'RemoveFromWeekend':
           return remove(action.id);
+        case 'AddOwn':
+          return addOwn({ date: weekendDate(action.day), part: action.part }, action.title);
         case 'SetWeekend':
           return replaceWeekend(action.items);
+        case 'MovePlan':
+          return movePlan(action.id);
+        case 'OpenPlans':
+          return show('plans');
         case 'ConfirmWeekend':
-          return confirm();
+          return send('Show my plans');
         case 'ExportCalendar':
           return exportCalendar();
         case 'Ask':
           return send(action.message);
       }
     },
-    [add, remove, replaceWeekend, confirm, exportCalendar, send],
+    [add, remove, addOwn, replaceWeekend, movePlan, show, exportCalendar, send],
   );
 
   // ---------- speech ----------
@@ -542,68 +634,72 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
 
   const savedItems: SavedItem[] = saved;
   const listening = speech === 'listening';
-  const openWeekend = tab === 'plans' ? undefined : () => (setTab('plans'), closeToast());
+  const openPlans = tab === 'plans' ? undefined : () => (show('plans'), closeToast());
 
   return (
-    <TripPlannerProvider places={byId} saved={savedItems} hotel={hotel} stay={block} onAction={onAction}>
-      <div className="trip-planner" onPointerDownCapture={(e) => (lastPress.current = (e.target as Element).closest?.('button')?.getBoundingClientRect() ?? null)}>
-        <div className="trip-tabs" role="tablist" aria-label="Planner">
+    <TripPlannerProvider places={byId} saved={savedItems} target={target} calendar={liveCalendar} hotel={hotel} stay={block} onAction={onAction}>
+      <div ref={rootRef} className="trip-planner" onPointerDownCapture={(e) => (lastPress.current = (e.target as Element).closest?.('button')?.getBoundingClientRect() ?? null)}>
+        <div ref={tabsRef} className="trip-tabs" role="tablist" aria-label="Planner">
           {/* My plans first, and open first: what the guest has planned is what they come back for. */}
-          <button ref={tabRef} type="button" role="tab" id="trip-tab-plans" aria-selected={tab === 'plans'} aria-controls="trip-panel-plans" tabIndex={tab === 'plans' ? 0 : -1} className="trip-tab" onClick={() => setTab('plans')} onKeyDown={(e) => e.key === 'ArrowRight' && (setTab('things'), document.getElementById('trip-tab-things')?.focus())}>
+          <button ref={tabRef} type="button" role="tab" id="trip-tab-plans" aria-selected={tab === 'plans'} aria-controls="trip-panel-plans" tabIndex={tab === 'plans' ? 0 : -1} className="trip-tab" onClick={() => show('plans')} onKeyDown={(e) => e.key === 'ArrowRight' && (show('things'), document.getElementById('trip-tab-things')?.focus())}>
             <Icon name="calendar" className="trip-icon trip-tab__icon" />
             My plans
             {saved.length ? (
               <span className="trip-tab__count" key={saved.length}>
                 {saved.length}
-                <span className="sr-only"> saved</span>
+                <span className="sr-only"> added</span>
               </span>
             ) : null}
           </button>
-          <button type="button" role="tab" id="trip-tab-things" aria-selected={tab === 'things'} aria-controls="trip-panel-things" tabIndex={tab === 'things' ? 0 : -1} className="trip-tab" onClick={() => setTab('things')} onKeyDown={(e) => e.key === 'ArrowLeft' && (setTab('plans'), tabRef.current?.focus())}>
+          <button type="button" role="tab" id="trip-tab-things" aria-selected={tab === 'things'} aria-controls="trip-panel-things" tabIndex={tab === 'things' ? 0 : -1} className="trip-tab" onClick={() => show('things')} onKeyDown={(e) => e.key === 'ArrowLeft' && (show('plans'), tabRef.current?.focus())}>
             <Icon name="compass" className="trip-icon trip-tab__icon" />
             Things to do
           </button>
         </div>
 
-        <div id="trip-panel-things" role="tabpanel" aria-labelledby="trip-tab-things" hidden={tab !== 'things'} className="trip-panel">
+        <div id="trip-panel-things" role="tabpanel" aria-labelledby="trip-tab-things" hidden={tab !== 'things'} className="trip-panel trip-panel--things">
           {turns.length === 0 ? (
-            <div className="trip-starters" role="group" aria-label="Ideas to start with">
-              {starters.map((s) => (
-                <button key={s.label} type="button" className="trip-starter" onClick={() => send(s.request)}>
-                  <Icon name={s.icon} className="trip-starter__icon" />
-                  <span className="trip-starter__label">{s.label}</span>
-                  <span className="trip-starter__hint">{s.hint}</span>
-                </button>
-              ))}
+            <div className="trip-open">
+              <p className="trip-text trip-text--md">Ask for an idea, or start with one of these. Anything you like can go straight into your plans.</p>
+              <div className="trip-starters" role="group" aria-label="Ideas to start with">
+                {starters.map((s) => (
+                  <button key={s.label} type="button" className="trip-starter" onClick={() => send(s.request)}>
+                    <Icon name={s.icon} className="trip-starter__icon" />
+                    <span className="trip-starter__label">{s.label}</span>
+                    <span className="trip-starter__hint">{s.hint}</span>
+                    <Icon name="arrow-right" className="trip-icon trip-icon--sm trip-starter__go" />
+                  </button>
+                ))}
+              </div>
             </div>
           ) : (
-            <ol className="trip-thread" aria-label="Your questions and our answers">
+            <ol ref={threadRef} className="trip-thread" aria-label="Your questions and our answers">
               {turns.map((t) => (
-                <li key={t.id} className="trip-turn" aria-busy={t.waiting || t.streaming}>
+                <li key={t.id} data-turn={t.id} className="trip-turn" aria-busy={t.waiting}>
                   <p className="trip-turn__asked">
                     <span className="sr-only">You asked: </span>
                     {t.request}
                   </p>
                   {t.waiting ? (
                     <p className="trip-typing" role="status">
-                      <span className="sr-only">Writing back</span>
+                      <span className="sr-only">Finding the best fit</span>
                       <span className="trip-typing__dot" aria-hidden="true" />
                       <span className="trip-typing__dot" aria-hidden="true" />
                       <span className="trip-typing__dot" aria-hidden="true" />
                     </p>
-                  ) : null}
-                  <div className="trip-turn__answer" onPointerDown={() => touched.current.add(t.id)} onKeyDown={() => touched.current.add(t.id)} onFocusCapture={() => touched.current.add(t.id)}>
-                    <TripRenderer response={t.program} isStreaming={t.streaming} />
-                  </div>
+                  ) : (
+                    <div className="trip-turn__answer">
+                      <TripRenderer response={t.program} />
+                    </div>
+                  )}
                 </li>
               ))}
             </ol>
           )}
-          <div ref={threadEnd} className="trip-thread__end" aria-hidden="true" />
 
           <form className="trip-ask" onSubmit={submit}>
             <div className="trip-toast trip-toast--ask" role="status" aria-live="polite">
-              {toast && tab === 'things' ? <Toast toast={toast} onOpen={openWeekend} onClose={closeToast} onHold={setToastHeld} /> : null}
+              {toast && tab === 'things' ? <Toast toast={toast} onOpen={openPlans} onClose={closeToast} onHold={setToastHeld} /> : null}
             </div>
             <div className="trip-ask__row">
               <label className="sr-only" htmlFor="trip-ask-input">
@@ -646,21 +742,35 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
                 {speechNote}
               </p>
             ) : null}
+            {target || turns.length ? (
+              <div className="trip-ask__meta">
+                {target ? (
+                  // A chip with its own way out, the way a filter is shown: what is added goes to this time until it is closed.
+                  <p className="trip-ask__target">
+                    <Icon name="calendar-plus" className="trip-icon trip-icon--sm trip-icon--accent" />
+                    <span>{`Adding to ${slotName(target.date, target.part)}`}</span>
+                    <button type="button" className="trip-ask__untarget" aria-label={`Stop adding to ${slotName(target.date, target.part)}`} title="Stop adding to this time" onClick={() => setTarget(null)}>
+                      <Icon name="close" className="trip-icon trip-icon--sm" />
+                    </button>
+                  </p>
+                ) : null}
+                {turns.length ? (
+                  <button type="button" className="trip-link trip-ask__reset" onClick={startOver}>
+                    <Icon name="restart" className="trip-icon trip-icon--sm" />
+                    Clear and start over
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
           </form>
-          {turns.length ? (
-            <button type="button" className="trip-reset" onClick={startOver}>
-              <Icon name="restart" className="trip-icon" />
-              Start over
-            </button>
-          ) : null}
         </div>
 
         <div id="trip-panel-plans" role="tabpanel" aria-labelledby="trip-tab-plans" hidden={tab !== 'plans'} className="trip-panel">
-          <Board saved={saved} byId={byId} events={events} bookings={bookings} stay={block} hotel={hotel} confirmed={confirmed} onMove={move} onRemove={remove} onConfirm={confirm} onAsk={send} persist={!!actions} />
+          <Board saved={saved} byId={byId} events={events} bookings={bookings} stay={block} hotel={hotel} pickUp={pickUp} onMove={move} onRemove={removeWithUndo} onAddOwn={addOwn} onFind={findFor} onCalendar={exportCalendar} onAsk={send} persist={!!actions} />
         </div>
 
         <div className="trip-toast trip-toast--float" role="status" aria-live="polite">
-          {toast && tab !== 'things' ? <Toast toast={toast} onOpen={openWeekend} onClose={closeToast} onHold={setToastHeld} /> : null}
+          {toast && tab !== 'things' ? <Toast toast={toast} onOpen={openPlans} onClose={closeToast} onHold={setToastHeld} /> : null}
         </div>
       </div>
     </TripPlannerProvider>
@@ -674,7 +784,7 @@ function Toast({
   onClose,
   onHold,
 }: {
-  toast: { text: string; key: number; open: boolean };
+  toast: ToastState;
   onOpen: (() => void) | undefined;
   onClose: () => void;
   /** Pointed at or focused: the message is not taken away from under the guest. */
@@ -691,7 +801,12 @@ function Toast({
     >
       <Icon name="check" className="trip-icon trip-toast__mark" />
       <span className="trip-toast__text">{toast.text}</span>
-      {toast.open && onOpen ? (
+      {toast.undo ? (
+        <button type="button" className="trip-toast__open" onClick={toast.undo}>
+          <Icon name="restart" className="trip-icon trip-icon--sm" />
+          Put it back
+        </button>
+      ) : toast.open && onOpen ? (
         <button type="button" className="trip-toast__open" onClick={onOpen}>
           See my plans
           <Icon name="arrow-right" className="trip-icon trip-icon--sm" />
@@ -779,10 +894,12 @@ function Board({
   bookings,
   stay,
   hotel,
-  confirmed,
+  pickUp,
   onMove,
   onRemove,
-  onConfirm,
+  onAddOwn,
+  onFind,
+  onCalendar,
   onAsk,
   persist,
 }: {
@@ -792,10 +909,15 @@ function Board({
   bookings: readonly TripItemInput[];
   stay: StayFacts;
   hotel: TripHotel | null;
-  confirmed: boolean;
+  /** A plan to pick up as the board opens ("Change the time" on a place in an answer). */
+  pickUp: { id: string; n: number } | null;
   onMove: (id: string, date: string, part: Part) => void;
   onRemove: (id: string) => void;
-  onConfirm: () => void;
+  /** The guest's own plan, in their words, on a part of a day. */
+  onAddOwn: (slot: Slot, words: string) => void;
+  /** Ideas for a part of a day, from Things to do. */
+  onFind: (slot: Slot) => void;
+  onCalendar: () => void;
   onAsk: (request: string) => void;
   persist: boolean;
 }) {
@@ -804,6 +926,9 @@ function Board({
   // A place picked up by a tap (or Enter) on its handle: every other time then offers "Move here".
   // Dragging is never the only way to move one (WCAG 2.2, 2.5.7).
   const [picked, setPicked] = useState<string | null>(null);
+  // The part of a day the guest is adding to ("Add" on it): its form is open in place.
+  const [adding, setAdding] = useState<string | null>(null);
+  const [words, setWords] = useState('');
   // Days the guest added before or after the weekend, before anything is planned on them.
   const [added, setAdded] = useState<string[]>([]);
   const drag = useRef<{ id: string; pointer: number; x: number; y: number; scroll: number; at: { x: number; y: number }; moved: boolean; card: HTMLElement | null; frame: number } | null>(null);
@@ -817,17 +942,42 @@ function Board({
     const root = boardRef.current;
     if (!want || !root) return;
     const card = (id: string) => root.querySelector<HTMLElement>(`[data-saved-id="${id}"]`);
-    if (want.kind === 'move') card(want.id)?.querySelector<HTMLElement>('.trip-saved__grip')?.focus();
-    else ((want.next ? card(want.next)?.querySelector<HTMLElement>('.trip-saved__remove') : null) ?? document.getElementById(`trip-day-${want.date}`))?.focus();
+    // Without scrolling: the plan is where the guest's finger just was, and the page stays put.
+    if (want.kind === 'move') card(want.id)?.querySelector<HTMLElement>('.trip-saved__grip')?.focus({ preventScroll: true });
+    else ((want.next ? card(want.next)?.querySelector<HTMLElement>('.trip-saved__remove') : null) ?? document.getElementById(`trip-day-${want.date}`))?.focus({ preventScroll: true });
   }, [saved]);
+  // When the form in a part of the day closes (added, cancelled, Escape), focus goes back to that part's Add.
+  const wasAdding = useRef<string | null>(null);
+  useEffect(() => {
+    const before = wasAdding.current;
+    wasAdding.current = adding;
+    if (before && !adding) boardRef.current?.querySelector<HTMLElement>(`[data-slot="${before}"] .trip-slot__add`)?.focus({ preventScroll: true });
+  }, [adding]);
+  // "Change the time" on a place in an answer: the board opens with that plan picked up and in view.
+  const pickN = pickUp?.n ?? 0;
+  const [pickSeen, setPickSeen] = useState(0);
+  if (pickUp && pickN !== pickSeen) {
+    // A new request, taken up as the board renders (not when the plans change under an old one).
+    setPickSeen(pickN);
+    if (saved.some((x) => x.id === pickUp.id)) {
+      setAdding(null);
+      setPicked(pickUp.id);
+    }
+  }
+  useEffect(() => {
+    if (!pickUp) return;
+    boardRef.current?.querySelector<HTMLElement>(`[data-saved-id="${pickUp.id}"]`)?.scrollIntoView?.({ block: 'center', behavior: 'instant' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pickN]);
+  /** A picked-up plan put back where it was (Cancel, or Escape): focus returns to its Move. */
+  const putDown = (id: string) => {
+    focusNext.current = { kind: 'move', id };
+    setPicked(null);
+    boardRef.current?.querySelector<HTMLElement>(`[data-saved-id="${id}"] .trip-saved__grip`)?.focus({ preventScroll: true });
+  };
   useEffect(() => {
     if (!picked) return;
-    const cancel = (e: globalThis.KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
-      focusNext.current = { kind: 'move', id: picked };
-      setPicked(null);
-      boardRef.current?.querySelector<HTMLElement>(`[data-saved-id="${picked}"] .trip-saved__grip`)?.focus();
-    };
+    const cancel = (e: globalThis.KeyboardEvent) => e.key === 'Escape' && putDown(picked);
     window.addEventListener('keydown', cancel);
     return () => window.removeEventListener('keydown', cancel);
   }, [picked]);
@@ -949,8 +1099,11 @@ function Board({
     const i = order.indexOf(s);
     const here = byId.get(s.id);
     if (!here || typeof here.lat !== 'number' || typeof here.lng !== 'number') return null;
-    const prev = i > 0 ? byId.get(order[i - 1]!.id) : null;
-    const from = prev && typeof prev.lat === 'number' && typeof prev.lng === 'number' ? { name: prev.name, at: { lat: prev.lat, lng: prev.lng } } : i === 0 && hotel ? { name: 'our hotel', at: hotel } : null;
+    // The way from the plan before it only within one part of the day: hours pass between a morning
+    // and an evening, and the guest sets out again from the hotel.
+    const before = i > 0 && order[i - 1]!.part === s.part ? order[i - 1]! : null;
+    const prev = before ? byId.get(before.id) : null;
+    const from = prev && typeof prev.lat === 'number' && typeof prev.lng === 'number' ? { name: prev.name, at: { lat: prev.lat, lng: prev.lng } } : !before && hotel ? { name: 'our hotel', at: hotel } : null;
     if (!from) return null;
     const leg = legBetween(from.at, { lat: here.lat, lng: here.lng });
     if (leg.mode === 'same') return { text: from.name === 'our hotel' ? 'In our hotel' : `Same building as ${from.name}`, icon: 'pin' };
@@ -962,7 +1115,6 @@ function Board({
     const places = items.map((x) => byId.get(x.id)).filter((p): p is PlannerPlace => !!p);
     return places.length ? planRoute({ stops: places.map((place) => ({ place })) }).totalMinutes : 0;
   };
-  const enough = saved.length >= ENOUGH;
   const schedule = useMemo(() => scheduleOf(events), [events]);
   const startOf = useMemo(() => new Map(events.map((e) => [e.id, e.startsAt ? wallTime(typeof e.startsAt === 'string' ? e.startsAt : e.startsAt.toISOString()) : null])), [events]);
   // A guest with a hotel stay of their own has their own check-in and check-out; the block's dates
@@ -1000,8 +1152,7 @@ function Board({
     canAdd(date) ? (
       <button type="button" className={`trip-days__add trip-days__add--${where}`} onClick={() => setAdded((a) => [...a, date])}>
         <Icon name="calendar-plus" className="trip-icon trip-icon--sm" />
-        {`Add ${dateLabel(date)}`}
-        <span className="sr-only">{where === 'before' ? ', the day before' : ', the day after'}</span>
+        {`${where === 'before' ? 'Here earlier' : 'Staying longer'}? Add ${dateLabel(date)}`}
       </button>
     ) : null;
 
@@ -1014,7 +1165,7 @@ function Board({
     const way = wayTo(s, order);
     const isPicked = picked === s.id;
     return (
-      <article key={s.id} data-saved-id={s.id} className={`trip-saved${dragging === s.id ? ' is-dragging' : ''}${isPicked ? ' is-picked' : ''}`}>
+      <article key={s.id} data-saved-id={s.id} className={`trip-saved${s.own ? ' trip-saved--own' : ''}${dragging === s.id ? ' is-dragging' : ''}${isPicked ? ' is-picked' : ''}`}>
         <h4 className="trip-saved__name">{place ? <a className="bd-link" href={place.href}>{name}</a> : name}</h4>
         <div className="trip-saved__tools">
           <button
@@ -1022,14 +1173,14 @@ function Board({
             className="trip-saved__grip"
             aria-label={isPicked ? `Keep ${name} where it is` : `Move ${name}`}
             aria-pressed={isPicked}
-            title={isPicked ? 'Keep it here' : 'Drag, or tap and then choose a time'}
             onPointerDown={(e) => onGripDown(e, s.id)}
             onPointerMove={onGripMove}
             onPointerUp={onGripUp}
             onPointerCancel={onGripUp}
             onClick={() => onGripClick(s.id)}
           >
-            <Icon name="grip" className="trip-icon" strokeWidth="3" />
+            <Icon name="grip" className="trip-icon trip-icon--sm" strokeWidth="3" />
+            <span aria-hidden="true">{isPicked ? 'Cancel' : 'Move'}</span>
           </button>
           <button type="button" className="trip-round trip-saved__remove" aria-label={`Remove ${name}`} title={`Remove ${name}`} onClick={() => removeFrom(s)}>
             <Icon name="trash" className="trip-icon" />
@@ -1057,27 +1208,29 @@ function Board({
 
   return (
     <div className="trip-board" ref={boardRef}>
-      <div className="trip-board__bar">
-        <p className="trip-text trip-text--md">
-          {saved.length
-            ? picked
-              ? `Choose a new time for ${pickedPlace}.`
-              : `Times are a guide. Drag a place by its handle to another time, or tap the handle and then the time you want.${persist ? '' : ' These plans are kept on this page only.'}`
-            : 'Tap the heart on anything you like under Things to do and it joins the day you choose.'}
-        </p>
-        <div className="trip-board__actions">
-          {!saved.length ? (
-            <button type="button" className="trip-chip" onClick={() => onAsk('Plan my whole weekend')}>
-              Plan my whole weekend
+      {/* Every control on the board says what it does. The one thing said in a sentence is what to do
+          next while a plan is picked up, and it stays under the tabs wherever the guest scrolls to. */}
+      <div className="trip-board__say" role="status">
+        {picked ? (
+          <div className="trip-board__say-box">
+            <span>{`Choose a new time for ${pickedPlace}.`}</span>
+            <button type="button" className="trip-link" aria-label="Cancel the move" onClick={() => putDown(picked)}>
+              Cancel
             </button>
-          ) : null}
-          <button type="button" className="bd-btn bd-btn--primary trip-button trip-button--icon" disabled={!enough} onClick={onConfirm} aria-describedby="trip-confirm-hint">
-            <Icon name={confirmed ? 'calendar' : 'check'} className="trip-icon" />
-            <span>{confirmed ? 'Show my calendar' : 'Confirm my plans'}</span>
+          </div>
+        ) : null}
+      </div>
+      <div className="trip-board__bar">
+        {persist ? null : <p className="trip-text trip-text--md">These plans are kept on this page only.</p>}
+        <div className="trip-board__actions">
+          {/* Always there, so the board above the days is the same height before and after a first plan. */}
+          <button type="button" className="trip-chip" onClick={() => onAsk('Plan my whole weekend')}>
+            Plan my whole weekend
           </button>
-          <p id="trip-confirm-hint" className="trip-caption trip-board__hint">
-            {enough ? (confirmed ? 'Your plans are set. You can still change them here.' : 'We will show them as a calendar you can save.') : `Save ${ENOUGH - saved.length} more ${ENOUGH - saved.length === 1 ? 'place' : 'places'} to see your plans as a calendar.`}
-          </p>
+          <button type="button" className="trip-chip trip-chip--icon" onClick={onCalendar}>
+            <Icon name="calendar-plus" className="trip-icon trip-icon--sm" />
+            Add to my calendar
+          </button>
         </div>
       </div>
       <div className="trip-days" data-count={days.length}>
@@ -1096,6 +1249,12 @@ function Board({
                   </span>{' '}
                   <span className="trip-day__monthday">{monthDay}</span>
                 </h3>
+                {/* A day the guest added and has put nothing on can be taken off again, from either end. */}
+                {added.includes(date) && (date === first || date === last) && !order.length && !booked.has(date) ? (
+                  <button type="button" className="trip-link trip-day__drop" aria-label={`Remove this day, ${dateLabel(date)}`} onClick={() => setAdded((a) => a.filter((d) => d !== date))}>
+                    Remove this day
+                  </button>
+                ) : null}
                 {fixed.head.length ? (
                   <ul className="trip-day__facts">
                     {fixed.head.map((l) => (
@@ -1140,6 +1299,10 @@ function Board({
                               </ol>
                             ) : null}
                             {ours.length && !timed ? <p className="trip-wedding__note">Times to be announced</p> : null}
+                            <button type="button" className="trip-wedding__more" onClick={() => onAsk('The wedding day')}>
+                              Times, rooms and what to wear
+                              <Icon name="arrow-right" className="trip-icon trip-icon--sm" />
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -1152,14 +1315,15 @@ function Board({
                     ...here.map((s) => ({ at: at.get(s.id)?.start ?? PART_START[part], fixed: null, place: s })),
                   ].sort((x, y) => x.at - y.at || (x.fixed ? -1 : 1));
                   const full = slotMinutes(here);
+                  const open = adding === key && !picked;
+                  const spoken = slotName(date, part);
                   return (
-                    <div key={key} className={`trip-slot${over === key ? ' is-over' : ''}${picked ? ' is-choosing' : ''}${rows.length ? '' : ' is-empty'}`} data-slot={key}>
+                    <div key={key} className={`trip-slot${over === key ? ' is-over' : ''}${picked ? ' is-choosing' : ''}${rows.length ? '' : ' is-empty'}${open ? ' is-adding' : ''}`} data-slot={key}>
                       <p className="trip-slot__label">
                         <Icon name={PART_ICON[part]} className="trip-icon trip-icon--caps trip-icon--accent" />
                         {PART_LABEL[part]}
                       </p>
                       <div className="trip-slot__body">
-                        {rows.length === 0 && !picked ? <p className="trip-slot__empty">Free</p> : null}
                         {rows.map((r) => (r.fixed ? <FixedLine key={r.fixed.key} line={r.fixed} /> : savedCard(r.place!, order, at)))}
                         {full > PART_LENGTH[part] + 15 ? (
                           <p className="trip-slot__full">
@@ -1167,12 +1331,62 @@ function Board({
                             {`${aboutHowLong(full)} with the travel: more than one ${part} holds. Move one to another time?`}
                           </p>
                         ) : null}
-                        {picked && !here.some((s) => s.id === picked) ? (
-                          <button type="button" className="trip-slot__here" onClick={() => moveTo(picked, date, part)}>
-                            <Icon name="arrow-right" className="trip-icon trip-icon--sm" />
-                            Move here<span className="sr-only">{`: ${pickedPlace} to ${dateLabel(date)} ${part}`}</span>
+                        {picked ? (
+                          here.some((x) => x.id === picked) ? (
+                            <p className="trip-slot__now">It is here now</p>
+                          ) : (
+                            <button type="button" className="trip-slot__here" aria-label={`Move here: ${pickedPlace} to ${spoken}`} onClick={() => moveTo(picked, date, part)}>
+                              <Icon name="arrow-right" className="trip-icon trip-icon--sm" />
+                              Move here
+                            </button>
+                          )
+                        ) : open ? (
+                          // Adding to this part of the day, in place: the guest's own plan in their words, or ideas from our list.
+                          <form
+                            className="trip-slot__form"
+                            onSubmit={(e) => {
+                              e.preventDefault();
+                              if (!words.trim()) return;
+                              onAddOwn({ date, part }, words);
+                              setWords('');
+                              setAdding(null);
+                            }}
+                          >
+                            <label className="trip-slot__ask" htmlFor={`trip-own-${key}`}>
+                              {`What are you doing on ${spoken}?`}
+                            </label>
+                            <input
+                              id={`trip-own-${key}`}
+                              className="trip-slot__input"
+                              type="text"
+                              value={words}
+                              maxLength={80}
+                              placeholder="Dinner with family, a nap, or just Busy"
+                              autoComplete="off"
+                              // Opened by the guest's own tap on Add for this part of the day.
+                              autoFocus
+                              onChange={(e) => setWords(e.target.value)}
+                              onKeyDown={(e) => e.key === 'Escape' && (setAdding(null), setWords(''))}
+                            />
+                            <div className="trip-slot__choices">
+                              <button type="submit" className="trip-add" disabled={!words.trim()}>
+                                <Icon name="check" className="trip-icon trip-icon--sm" />
+                                Add it
+                              </button>
+                              <button type="button" className="trip-link" onClick={() => (setAdding(null), setWords(''), onFind({ date, part }))}>
+                                See our ideas
+                              </button>
+                              <button type="button" className="trip-link" onClick={() => (setAdding(null), setWords(''))}>
+                                Cancel
+                              </button>
+                            </div>
+                          </form>
+                        ) : (
+                          <button type="button" className={`trip-slot__add${rows.length ? '' : ' is-free'}`} aria-label={`Add something to ${spoken}`} onClick={() => (setWords(''), setAdding(key))}>
+                            <Icon name="plus" className="trip-icon trip-icon--sm" />
+                            {rows.length ? 'Add something else' : 'Add something'}
                           </button>
-                        ) : null}
+                        )}
                       </div>
                     </div>
                   );

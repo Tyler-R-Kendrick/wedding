@@ -11,4 +11,4 @@ export { compose, placesIn, str as openuiString } from './compose';
 export { planRoute, legBetween, kmBetween, stopMinutes, routeFacts, minutesRange, clockTime, clockSpan, aboutHowLong, orderByNearest, fitToPart, PART_START, PART_LENGTH, type Leg, type LegMode, type RoutePlan, type RouteStop } from './route';
 export { buildIcs, wallTime, calendarModel, weddingEntries, planEntries, tripEntries, blockEntries, staysInBlock, eventTime, settledText, escapeText, foldLine, vtimezone, TIME_TBA, DETAILS_TBC, type TripItemInput } from './ics';
 export { scheduleOf, blockDateLines, timeText, type ScheduleItem } from './schedule';
-export { stayFacts, arrivalFacts, weekendDate, dateLabel, isWeddingTime, addDays, dayOfDate, savedDate, onWeekend, slotForDate, stayDays, STAY_MAX_DAYS, PART_HOURS, DAY_NAME, PLANNER_TIMEZONE, type StayFacts, type ArrivalFacts } from './facts';
+export { stayFacts, arrivalFacts, weekendDate, dateLabel, isWeddingTime, addDays, dayOfDate, savedDate, onWeekend, slotForDate, stayDays, slotName, STAY_MAX_DAYS, PART_HOURS, DAY_NAME, PLANNER_TIMEZONE, type StayFacts, type ArrivalFacts } from './facts';

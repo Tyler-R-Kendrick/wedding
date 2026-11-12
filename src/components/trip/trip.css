@@ -48,10 +48,13 @@
   gap: var(--spacing-xl);
 }
 
+/* A set of places is a list, one to a row, so every name starts at the same edge at every width. */
 .trip-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
-  gap: var(--spacing-lg);
+  grid-template-columns: minmax(0, 1fr);
+  min-inline-size: 0;
+  border-block-end: 1px solid var(--color-outline);
+  container-type: inline-size;
 }
 
 .trip-card {
@@ -145,13 +148,21 @@
   block-size: 1.25rem;
 }
 
-/* Icons beside small capitals (eyebrows, slot labels, calendar kinds) sit a step smaller. */
+/* Icons beside small capitals (eyebrows, slot labels) sit a step smaller. */
 .trip-eyebrow,
-.trip-slot__label,
-.trip-cal__kind {
+.trip-slot__label {
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
+}
+
+/* The labels in an answer ("Group rate", "Book by", "Driving") are words a guest reads to find a
+   fact, so they take the readable capitals (17px), not the ornament's smaller ones. */
+.bd-eyebrow.trip-eyebrow {
+  font-size: var(--type-control-caps-size);
+  font-weight: var(--type-control-caps-weight);
+  line-height: var(--type-control-caps-line);
+  letter-spacing: var(--type-control-caps-tracking);
 }
 
 .trip-icon--caps {
@@ -168,7 +179,7 @@
   color: var(--color-gold-deep);
 }
 
-/* A 44px circle holding one icon: mic, send, heart, trash, close. Each has an accessible name and a title. */
+/* A 44px circle holding one icon: mic, send, trash, close. Each has an accessible name and a title. */
 .trip-round {
   display: inline-grid;
   place-items: center;
@@ -217,7 +228,6 @@
 
 .trip-pressable,
 .trip-segmented__option,
-.trip-heart,
 .trip-option,
 .trip-chip,
 .trip-map__pin {
@@ -335,45 +345,77 @@
   color: var(--color-on-secondary);
 }
 
+/* "Show 2 more": the rest of a list, one tap away, as the list's last row. */
+.trip-more {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: var(--spacing-xs);
+  min-block-size: 44px;
+  padding: 0 var(--spacing-xs);
+  border: 0;
+  border-block-start: 1px solid var(--color-outline);
+  background: none;
+  color: var(--color-tertiary);
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  font-weight: 600;
+  line-height: var(--type-body-sm-line);
+  cursor: pointer;
+  inline-size: 100%;
+}
+
+.trip-more:hover {
+  background: var(--color-neutral-variant);
+  color: var(--color-primary);
+}
+
+.trip-more:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.trip-more > .trip-icon {
+  color: var(--color-gold-deep);
+}
+
+/* Something of the guest's own, and the time it can go: the button, or that it is there. */
+.trip-own {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--spacing-md);
+}
+
 /* ---------- a place ---------- */
 
-/* Six rows: picture, name, what, facts, note and reason, links. The picture is always the same
-   size and drawn at once (a placeholder until a photo arrives, else the place on our own map, else
-   the mark for its kind), so a card has its whole shape before anything loads. On its own a card
-   stacks the rows; in a grid each card spans six of the grid's rows and shares them (subgrid), so
-   in a row of cards the names, the text, the facts and the links each start on one line. */
+/* One row. A small picture beside the name and what it is; under both on a phone, and beside the
+   picture where there is room, its facts and what the guest can do with it. The picture is always
+   the same square, drawn at once (a soft ground until a photo arrives, else the mark for the kind
+   of place), so a row has its shape before anything loads. */
 .trip-place {
   display: grid;
-  grid-template-rows: auto auto auto auto 1fr auto;
-  row-gap: var(--spacing-sm);
-  overflow: clip;
-  border: 1px solid var(--color-outline);
-  border-radius: var(--rounded-md);
-  background: var(--color-surface);
-}
-
-.trip-grid > .trip-place {
-  grid-row: span 6;
-  grid-template-rows: subgrid;
-  row-gap: var(--spacing-sm);
-}
-
-.trip-place > :not(.trip-place__media) {
+  grid-template-areas:
+    "media head"
+    "foot foot";
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  align-items: start;
+  gap: var(--spacing-sm) var(--spacing-md);
   min-inline-size: 0;
-  margin: 0;
-  padding-inline: var(--spacing-md);
+  padding-block: var(--spacing-md);
+  border-block-start: 1px solid var(--color-outline);
 }
 
 .trip-place__media {
   position: relative;
-  margin: 0;
+  grid-area: media;
   overflow: clip;
-  aspect-ratio: 4 / 3;
-  border-block-end: 2px solid var(--color-gold);
+  aspect-ratio: 1;
+  border-radius: var(--rounded-sm);
   background: var(--color-neutral-variant);
 }
 
-/* Until the photo arrives, a soft light passes over the placeholder; still, for reduced motion. */
+/* Until the photo arrives, a soft light passes over the ground; still, for reduced motion. */
 .trip-place__media:not(.is-loaded)::after {
   position: absolute;
   inset: 0;
@@ -407,95 +449,46 @@
   opacity: 1;
 }
 
-/* A CC BY photo's credit, on the photo's foot, as the licence asks; it takes no row of its own. */
-.trip-place__credit {
-  position: absolute;
-  inset-inline: 0;
-  inset-block-end: 0;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  background: var(--color-primary);
-  color: var(--color-on-primary);
-  font-family: var(--font-text);
-  font-size: var(--type-body-sm-size);
-  line-height: var(--type-body-sm-line);
-}
-
-.trip-place__credit a {
-  color: inherit;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.trip-place__credit a:focus-visible {
-  outline: 2px solid var(--color-on-primary);
-  outline-offset: 2px;
-}
-
-/* No photograph: where the place is, on the site's own drawn map. */
-.trip-place__atlas {
-  position: absolute;
-  inset: 0;
-  inline-size: 100%;
-  block-size: 100%;
-}
-
-.trip-place__spot,
-.trip-place__hotel {
-  position: absolute;
-  translate: -50% -50%;
-}
-
-.trip-place__spot {
-  display: grid;
-  place-items: center;
-  inline-size: 2.75rem;
-  block-size: 2.75rem;
-  translate: -50% -85%;
-  color: var(--color-primary);
-}
-
-.trip-place__spot > .trip-icon {
-  inline-size: 2.25rem;
-  block-size: 2.25rem;
-  color: var(--color-primary);
-  fill: var(--color-surface);
-}
-
-.trip-place__hotel {
-  inline-size: 0.875rem;
-  block-size: 0.875rem;
-  rotate: 45deg;
-  border: 2px solid var(--color-surface);
-  background: var(--color-gold-deep);
-}
-
-/* No photograph and no position: the mark for its kind of place. */
+/* No photograph: the mark for its kind of place. */
 .trip-place__media--mark {
   display: grid;
   place-items: center;
 }
 
 .trip-place__mark {
-  inline-size: 3rem;
-  block-size: 3rem;
+  inline-size: 2rem;
+  block-size: 2rem;
   color: var(--color-gold-deep);
 }
 
-.trip-place__extra {
+.trip-place__head,
+.trip-place__foot {
   display: grid;
-  align-content: start;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-xs);
+  min-inline-size: 0;
 }
 
-.trip-place__facts:empty,
-.trip-place__extra:empty {
-  display: none;
+.trip-place__head {
+  grid-area: head;
 }
 
-.trip-grid > .trip-place > .trip-place__facts:empty,
-.trip-grid > .trip-place > .trip-place__extra:empty {
-  display: block;
-  margin-block-start: calc(-1 * var(--spacing-sm));
+.trip-place__foot {
+  grid-area: foot;
+}
+
+.trip-place__head > *,
+.trip-place__foot > * {
+  min-inline-size: 0;
+  margin: 0;
+}
+
+/* Room for the picture to stand beside everything: the facts and the button line up under the name. */
+@container (min-inline-size: 34rem) {
+  .trip-place {
+    grid-template:
+      "media head" auto "media foot" 1fr / 8rem minmax(0, 1fr);
+    gap: var(--spacing-xs) var(--spacing-lg);
+  }
 }
 
 /* ---------- a day's route: numbered stops on a rail, the way between them in small type ---------- */
@@ -607,56 +600,10 @@
   gap: var(--spacing-xs);
 }
 
-/* In a route on a phone the picture is a band, not a 4:3 block, so a stop and the way to the next
-   fit together on one screen. Where there is room the card lies beside its picture. */
-.trip-place--route > .trip-place__media {
-  aspect-ratio: 16 / 9;
-}
-
-@container (min-inline-size: 34rem) {
-  .trip-place--route {
-    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
-    grid-template-rows: auto auto auto auto 1fr;
-  }
-
-  .trip-place--route > .trip-place__media {
-    grid-column: 1;
-    grid-row: 1 / -1;
-    min-block-size: 10rem;
-    aspect-ratio: auto;
-    border-block-end: 0;
-    border-inline-end: 2px solid var(--color-gold);
-  }
-
-  .trip-place--route > :not(.trip-place__media) {
-    grid-column: 2;
-  }
-
-  .trip-place--route > .trip-place__head {
-    padding-block-start: var(--spacing-md);
-  }
-
-  .trip-place--route > .trip-place__actions {
-    align-self: end;
-  }
-}
-
-.trip-place__head {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: var(--spacing-xs) var(--spacing-sm);
-  align-items: start;
-}
-
-.trip-place__head > .bd-eyebrow {
-  grid-column: 1;
-  margin: 0;
-}
-
-/* The heart sits in the card's top corner, beside the category and the name. */
-.trip-place__head > .trip-heart {
-  grid-column: 2;
-  grid-row: 1 / span 2;
+/* A stop's place sits under its time with no rule of its own: the rail already sets it apart. */
+.trip-place--route {
+  padding-block: 0 var(--spacing-sm);
+  border-block-start: 0;
 }
 
 .trip-facts {
@@ -690,6 +637,8 @@
   font-weight: var(--type-title-weight);
   line-height: var(--type-title-line);
   color: var(--color-primary);
+  text-wrap: balance;
+  overflow-wrap: anywhere;
 }
 
 .trip-place__what,
@@ -707,50 +656,146 @@
   color: var(--color-tertiary);
 }
 
-/* The couple's own reason, under a fine gold rule. */
+/* The couple's own reason, in their voice. */
 .trip-place__why {
-  padding-block-start: var(--spacing-sm);
-  border-block-start: 1px solid var(--color-gold);
+  font-style: italic;
   color: var(--color-on-surface-muted);
 }
 
+/* What the guest can do with the place: one clear button, or what was done and what can follow. */
 .trip-place__actions {
   display: flex;
   flex-wrap: wrap;
-  padding-block-end: var(--spacing-xs);
   align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-xs) var(--spacing-md);
+  gap: 0 var(--spacing-md);
 }
 
-.trip-place__when {
+.trip-place__in {
   display: inline-flex;
+  flex-basis: 100%;
   align-items: center;
   gap: var(--spacing-xs);
+  margin: 0;
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  font-weight: 600;
+  line-height: var(--type-body-sm-line);
+  color: var(--color-secondary);
 }
 
-.trip-place__when.is-saved {
-  color: var(--color-tertiary);
+/* A photograph's credit, as its licence asks: the row's last, quietest line. */
+.trip-place__credit {
+  padding-block-start: var(--spacing-sm);
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  color: var(--color-on-surface-muted);
 }
 
-.trip-place__details {
+.trip-place__credit a {
+  color: inherit;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+.trip-place__credit a:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* "Add to Saturday morning": the one filled button on a row. It says where the place will go. */
+.trip-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  min-block-size: 44px;
+  padding: var(--spacing-xs) var(--spacing-md);
+  border: 1px solid var(--color-gold-deep);
+  border-radius: var(--rounded-pill);
+  background: var(--color-gold-deep);
+  color: var(--color-on-gold-deep);
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  font-weight: 600;
+  line-height: var(--type-body-sm-line);
+  text-align: start;
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard);
+}
+
+.trip-add:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.trip-add:disabled {
+  border-color: var(--color-outline);
+  background: var(--color-neutral-variant);
+  color: var(--color-on-surface-muted);
+  cursor: not-allowed;
+}
+
+.trip-add:hover:not(:disabled) {
+  border-color: var(--color-tertiary);
+  background: var(--color-tertiary);
+  color: var(--color-on-tertiary);
+}
+
+/* A quiet action in a line of text: "Change the time", "Remove", "Cancel", "Start over". */
+.trip-link {
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-xs);
   min-block-size: 44px;
-  margin-inline-start: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-tertiary);
+  font-family: var(--font-text);
   font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  text-decoration: underline;
+  text-decoration-color: var(--color-gold);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.25em;
+  cursor: pointer;
 }
 
-.trip-heart.is-on {
-  border-color: var(--color-gold-deep);
-  background: var(--color-neutral-variant);
-  color: var(--color-gold-deep);
+.trip-link:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
-.trip-heart[disabled] {
+.trip-link:disabled {
   cursor: progress;
   opacity: 0.72;
+}
+
+.trip-link:hover:not(:disabled) {
+  color: var(--color-primary);
+  text-decoration-color: currentcolor;
+}
+
+/* A few short facts as one line, a middle dot after each but the last, so a wrapped line never
+   starts with one. */
+.trip-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--spacing-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  color: var(--color-on-surface-muted);
+}
+
+.trip-summary > li:not(:last-child)::after {
+  margin-inline-start: var(--spacing-sm);
+  color: var(--color-gold-deep);
+  content: "\00b7";
 }
 
 /* ---------- the room block and getting here ---------- */
@@ -1048,9 +1093,9 @@
 .trip-map__legend {
   /* Numbered like the pins, so the list says in words what the map shows. */
   list-style: decimal;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-xs) var(--spacing-lg);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+  gap: var(--spacing-xs) var(--spacing-xl);
   margin: 0;
   padding-inline-start: var(--spacing-lg);
   font-family: var(--font-text);
@@ -1068,35 +1113,42 @@
   text-decoration-color: var(--color-gold);
 }
 
-/* ---------- the calendar ---------- */
+/* ---------- the guest's plans, to read ---------- */
+
+/* A summary, set as plain lines under each date: nothing in it is drawn as a thing to press. The two
+   buttons under it are the things that can be done. */
 .trip-cal {
   display: grid;
   gap: var(--spacing-lg);
 }
 
-/* On a wide screen the button keeps its own width rather than stretching across the calendar. */
-@media (width >= 40rem) {
-  .trip-cal > .trip-button {
-    justify-self: start;
-  }
-}
-
 .trip-cal__days {
   display: grid;
-  gap: var(--spacing-lg);
   margin: 0;
   padding: 0;
+  border-block-end: 1px solid var(--color-outline);
   list-style: none;
 }
 
 .trip-cal__day {
   display: grid;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-xs) var(--spacing-lg);
+  padding-block: var(--spacing-sm) var(--spacing-md);
+  border-block-start: 1px solid var(--color-outline);
+}
+
+.trip-cal__date {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--type-title-size);
+  font-weight: var(--type-title-weight);
+  line-height: var(--type-title-line);
+  color: var(--color-primary);
 }
 
 .trip-cal__events {
   display: grid;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-xs);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -1104,58 +1156,65 @@
 
 .trip-cal__event {
   display: grid;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid transparent;
-  border-block-end-color: var(--color-outline);
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  gap: 0 var(--spacing-sm);
   font-family: var(--font-text);
   font-size: var(--type-body-sm-size);
   line-height: var(--type-body-sm-line);
+  color: var(--color-on-surface);
 }
 
-/* The wedding's own events: framed in gold on the ivory ground, with the title in the display face. */
-.trip-cal__event--wedding {
-  border-color: var(--color-gold);
-  border-radius: var(--rounded-md);
-  background: var(--color-neutral);
+.trip-cal__event > .trip-icon {
+  grid-row: span 2;
+  translate: 0 0.125em;
 }
 
 .trip-cal__time {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  align-self: start;
   color: var(--color-on-surface-muted);
   font-variant-numeric: tabular-nums;
 }
 
-
-.trip-cal__what {
-  display: grid;
-}
-
-.trip-cal__kind {
-  font-size: var(--type-label-caps-size);
-  font-weight: var(--type-label-caps-weight);
-  letter-spacing: var(--type-label-caps-tracking);
-  text-transform: uppercase;
-  color: var(--color-tertiary);
-}
-
 .trip-cal__title {
+  grid-column: 2;
   font-size: var(--type-body-md-size);
-  color: var(--color-primary);
+  line-height: var(--type-body-md-line);
 }
 
 .trip-cal__event--wedding .trip-cal__title {
-  font-family: var(--font-display);
-  font-size: var(--type-title-size);
+  font-weight: 600;
+}
+
+.trip-cal__none {
+  margin: 0;
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  font-style: italic;
+  line-height: var(--type-body-sm-line);
+  color: var(--color-on-surface-muted);
+}
+
+.trip-cal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm) var(--spacing-md);
 }
 
 @media (width >= 40rem) {
+  .trip-cal__day {
+    grid-template-columns: 11rem minmax(0, 1fr);
+  }
+
   .trip-cal__event {
-    grid-template-columns: 13rem 1fr;
-    gap: var(--spacing-md);
+    grid-template-columns: auto 11rem minmax(0, 1fr);
+  }
+
+  .trip-cal__event > .trip-icon {
+    grid-row: auto;
+  }
+
+  .trip-cal__title {
+    grid-column: 3;
   }
 }
 
@@ -1170,21 +1229,20 @@
   gap: var(--spacing-sm);
 }
 
+/* The day's events as plain lines between hairlines: to read, so not drawn as cards to press. */
 .trip-sched__events {
   display: grid;
-  gap: var(--spacing-sm);
   margin: 0;
   padding: 0;
+  border-block-end: 1px solid var(--color-outline);
   list-style: none;
 }
 
 .trip-sched__event {
   display: grid;
   gap: var(--spacing-xs);
-  padding: var(--spacing-md);
-  border: 1px solid var(--color-gold);
-  border-radius: var(--rounded-md);
-  background: var(--color-neutral);
+  padding-block: var(--spacing-sm) var(--spacing-md);
+  border-block-start: 1px solid var(--color-outline);
   font-family: var(--font-text);
   font-size: var(--type-body-sm-size);
   line-height: var(--type-body-sm-line);
@@ -1221,7 +1279,6 @@
 /* One focus ring for every control the answers draw. */
 .trip-pressable:focus-visible,
 .trip-segmented__option:focus-visible,
-.trip-heart:focus-visible,
 .trip-option:focus-visible,
 .trip-chip:focus-visible,
 .trip-map__pin:focus-visible,
@@ -1233,7 +1290,6 @@
 @media (prefers-reduced-motion: reduce) {
   .trip-pressable,
   .trip-segmented__option,
-  .trip-heart,
   .trip-option,
   .trip-chip,
   .trip-map__pin {
@@ -1253,9 +1309,37 @@
 }
 
 .trip-planner {
+  /* What is pinned above the planner (nothing on a phone, the site's masthead on a wide window), and
+     how much of that the page already keeps clear when it scrolls something into view (base.css). */
+  --trip-top: 0px;
+  --trip-clear: 0px;
+  --trip-tabs: 3.25rem;
+
   display: grid;
   gap: var(--spacing-lg);
   min-inline-size: 0;
+}
+
+@media (width >= 1100px) {
+  .trip-planner {
+    --trip-top: 72px;
+    --trip-clear: 92px;
+  }
+}
+
+/* The pinned tabs and ask box are opaque in the page's own ground: the same Paper and the same two
+   washes, fixed to the window as the page's are (kit.css), so neither shows as a slab over it. */
+
+/* They reach a little past the planner's edges, as the parts of a day do (their borders would
+   otherwise show beside a pinned bar). */
+.trip-tabs,
+.trip-ask {
+  margin-inline: calc(var(--spacing-sm) * -1);
+  padding-inline: var(--spacing-sm);
+  background:
+    radial-gradient(120% 60% at 0% 0%, color-mix(in oklab, var(--color-surface) 70%, transparent), transparent 60%) fixed,
+    radial-gradient(90% 50% at 100% 100%, color-mix(in oklab, var(--color-neutral-variant) 55%, transparent), transparent 70%) fixed,
+    var(--color-neutral);
 }
 
 .trip-panel {
@@ -1269,7 +1353,13 @@
 }
 
 /* ---------- tabs ---------- */
+
+/* The two tabs stay at the top of the window while the planner is on screen: a guest deep in a long
+   answer is one tap from their plans, and never has to scroll to find where they are. */
 .trip-tabs {
+  position: sticky;
+  z-index: 6;
+  inset-block-start: var(--trip-top);
   display: flex;
   gap: var(--spacing-sm);
   border-block-end: 1px solid var(--color-outline);
@@ -1279,7 +1369,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-sm);
-  min-block-size: 44px;
+  min-block-size: 3.25rem;
   padding: var(--spacing-xs) var(--spacing-md);
   margin-block-end: -1px;
   border: 0;
@@ -1290,6 +1380,19 @@
   font-size: var(--type-body-md-size);
   line-height: var(--type-body-md-line);
   cursor: pointer;
+
+  /* A pinned tab sits inside the room the page keeps clear above anything it scrolls to (base.css);
+     focusing it must not nudge the page to "bring it into view". */
+  scroll-margin-block-start: calc(var(--trip-clear) * -1);
+}
+
+.trip-tab:hover {
+  color: var(--color-primary);
+}
+
+.trip-tab:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .trip-tab[aria-selected="true"] {
@@ -1316,41 +1419,54 @@
 }
 
 /* ---------- starters ---------- */
+.trip-open {
+  display: grid;
+  gap: var(--spacing-md);
+  min-inline-size: 0;
+}
+
+/* Five ways to begin, as a list of rows: an icon, what it is, and what you get. One edge, one
+   rhythm, at every width. */
 .trip-starters {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
-  gap: var(--spacing-sm);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+  gap: 0 var(--spacing-xl);
+  border-block-start: 1px solid var(--color-outline);
 }
 
 .trip-starter {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-content: start;
-  align-items: start;
-  gap: var(--spacing-xs) var(--spacing-md);
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0 var(--spacing-md);
   min-block-size: 44px;
-  padding: var(--spacing-md);
-  border: 1px solid var(--color-outline);
-  border-block-start: 2px solid var(--color-gold);
-  border-radius: var(--rounded-sm);
-  background: var(--color-surface);
+  padding: var(--spacing-sm) var(--spacing-xs);
+  border: 0;
+  border-block-end: 1px solid var(--color-outline);
+  background: none;
   text-align: start;
   cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-standard);
 }
 
 .trip-starter:hover {
-  border-color: var(--color-gold-deep);
   background: var(--color-neutral-variant);
+}
+
+.trip-starter:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .trip-starter__icon {
   grid-row: 1 / span 2;
-  inline-size: 1.75rem;
-  block-size: 1.75rem;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
   color: var(--color-gold-deep);
 }
 
 .trip-starter__label {
+  grid-column: 2;
   font-family: var(--font-display);
   font-size: var(--type-title-size);
   line-height: var(--type-title-line);
@@ -1358,10 +1474,17 @@
 }
 
 .trip-starter__hint {
+  grid-column: 2;
   font-family: var(--font-text);
   font-size: var(--type-body-sm-size);
   line-height: var(--type-body-sm-line);
   color: var(--color-on-surface-muted);
+}
+
+.trip-starter__go {
+  grid-row: 1 / span 2;
+  grid-column: 3;
+  color: var(--color-gold-deep);
 }
 
 /* ---------- the thread ---------- */
@@ -1374,10 +1497,20 @@
   min-inline-size: 0;
 }
 
+/* A question and its answer. When it is asked the question is brought to the top of the window, just
+   under the tabs, and it stays there: the answer is read downward from it, and nothing moves it. */
 .trip-turn {
   display: grid;
+  align-content: start;
   gap: var(--spacing-md);
   min-inline-size: 0;
+  scroll-margin-block-start: calc(var(--trip-top) + var(--trip-tabs) + var(--spacing-md) - var(--trip-clear));
+}
+
+/* The newest one is at least a window tall, so there is always room to bring a short answer's
+   question to the top, and the page is the same height before and after its answer arrives. */
+.trip-turn:last-child {
+  min-block-size: calc(100svh - var(--trip-top) - var(--trip-tabs) - var(--bottom-bar-height, 0px) - 9rem);
 }
 
 .trip-turn__asked {
@@ -1436,19 +1569,11 @@
 
 .trip-turn__answer {
   min-inline-size: 0;
-
-  /* A new answer is scrolled to, and must not land under the pinned ask box. */
-  scroll-margin-block-end: 10rem;
 }
 
-.trip-thread__end {
-  block-size: 0;
-  scroll-margin-block-end: 10rem;
-}
-
-/* A control reached by Tab is scrolled clear of the pinned ask box, never left underneath it. */
-.trip-panel :is(a, button, select, input) {
-  scroll-margin-block-end: 10rem;
+/* A control reached by Tab is scrolled clear of the pinned tabs and the pinned ask box. */
+.trip-panel :is(a, button, select, input, textarea) {
+  scroll-margin-block: calc(var(--trip-top) + var(--trip-tabs) + var(--spacing-md) - var(--trip-clear)) 10rem;
 }
 
 /* ---------- the ask box, pinned to the bottom of the section while it is on screen ---------- */
@@ -1457,10 +1582,52 @@
   z-index: 5;
   inset-block-end: calc(var(--bottom-bar-height, 0px) + env(safe-area-inset-bottom, 0px));
   display: grid;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-md) 0;
-  border-block-start: 2px solid var(--color-gold);
+  gap: var(--spacing-xs);
+  padding-block: var(--spacing-sm);
+  border-block-start: 1px solid var(--color-outline);
+
+  /* The site's bottom bar is a little shorter than the room kept for it; nothing shows in between. */
+  box-shadow: 0 var(--spacing-md) 0 var(--color-neutral);
+}
+
+/* Where the next place will go, when the guest came here from a part of a day: a chip, closed by its ×. */
+.trip-ask__target {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  min-block-size: 44px;
+  margin: 0;
+  padding-inline-start: var(--spacing-sm);
+  border: 1px solid var(--color-gold);
+  border-radius: var(--rounded-pill);
   background: var(--color-surface);
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  color: var(--color-on-surface);
+}
+
+.trip-ask__untarget {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 44px;
+  block-size: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--rounded-pill);
+  background: none;
+  color: var(--color-tertiary);
+  cursor: pointer;
+}
+
+.trip-ask__untarget:hover {
+  background: var(--color-neutral-variant);
+  color: var(--color-primary);
+}
+
+.trip-ask__untarget:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .trip-ask__row {
@@ -1474,41 +1641,42 @@
   min-inline-size: 0;
   inline-size: 100%;
   min-block-size: 44px;
-  max-block-size: 10rem;
+  max-block-size: 8rem;
   padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid var(--color-outline);
-  border-radius: var(--rounded-sm);
+  border: 1px solid var(--color-on-surface-muted);
+  border-radius: var(--rounded-md);
   background: var(--color-surface);
   color: var(--color-on-surface);
   font-family: var(--font-text);
   font-size: var(--type-body-md-size);
   line-height: var(--type-body-md-line);
   field-sizing: content;
-  resize: vertical;
+  resize: none;
 }
 
-.trip-reset {
-  display: inline-flex;
-  justify-self: start;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-xs);
-  min-block-size: 44px;
-  min-inline-size: 44px;
-  padding: var(--spacing-xs) var(--spacing-md);
-  border: 1px solid var(--color-gold);
-  border-radius: var(--rounded-pill);
-  background: var(--color-surface);
-  color: var(--color-primary);
-  font-family: var(--font-text);
-  font-size: var(--type-body-sm-size);
-  line-height: var(--type-body-sm-line);
-  cursor: pointer;
+.trip-ask__input::placeholder {
+  color: var(--color-on-surface-muted);
+  opacity: 1;
 }
 
-.trip-reset:hover {
+.trip-ask__input:focus-visible {
   border-color: var(--color-gold-deep);
-  background: var(--color-neutral-variant);
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Under the field: where the next place goes (when the guest came from a part of a day), and the way
+   to clear the thread. One line where they fit. */
+.trip-ask__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0 var(--spacing-md);
+}
+
+.trip-ask__reset {
+  margin-inline-start: auto;
 }
 
 /* Listening: the mic becomes a stop square on a red ground, ringed, with a steady red dot below. */
@@ -1576,26 +1744,39 @@
   gap: var(--spacing-md);
 }
 
-/* The calendar button and, with nothing saved yet, the way to start: side by side, the note under both. */
-.trip-board__actions {
+/* "Choose a new time for …": said under the tabs for as long as a plan is picked up, wherever the
+   guest scrolls to, with the way to call it off. It takes no room of its own (no height, and its
+   row's gap taken back), so picking a plan up moves nothing on the board. */
+.trip-board__say {
+  position: sticky;
+  z-index: 4;
+  inset-block-start: calc(var(--trip-top) + var(--trip-tabs));
+  block-size: 0;
+  margin-block-end: calc(var(--spacing-lg) * -1);
+}
+
+.trip-board__say-box {
+  position: absolute;
+  inset: 0 calc(var(--spacing-sm) * -1) auto;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--spacing-sm) var(--spacing-md);
+  justify-content: space-between;
+  gap: 0 var(--spacing-md);
+  padding: 0 var(--spacing-md);
+  border-block-end: 1px solid var(--color-gold-deep);
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  font-weight: 600;
+  line-height: var(--type-body-sm-line);
 }
 
-.trip-board__hint {
-  flex-basis: 100%;
-}
-
-/* Until there are enough places it cannot be used yet, and looks it: an outline, not a faded fill
-   (a faded gold button reads as broken, or as busy). */
-.trip-board__actions .bd-btn[disabled] {
-  border: 1px dashed var(--color-outline);
-  background: none;
-  color: var(--color-on-surface-muted);
-  cursor: not-allowed;
-  opacity: 1;
+.trip-chip--icon {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
 }
 
 .trip-days {
@@ -1632,6 +1813,11 @@
 .trip-day__date:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
+}
+
+/* "Remove this day": on a day the guest added and left empty. */
+.trip-day__drop {
+  justify-self: start;
 }
 
 /* A fact about the day with no time of its own: the room block's check-in or check-out. */
@@ -1715,25 +1901,127 @@
   color: var(--color-on-surface-muted);
 }
 
-.trip-slot__empty {
+/* Every part of a day ends with the way to put something in it. With nothing there yet it reads
+   "Add something", in the part's own line; under saved things, "Add something else". Drawn as a
+   control (a plus, an underline) because it is one: tapping it opens the form below. */
+.trip-slot__add {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: var(--spacing-xs);
+  min-block-size: 44px;
+  padding: 0 var(--spacing-xs);
+  border: 0;
+  border-radius: var(--rounded-sm);
+  background: none;
+  color: var(--color-tertiary);
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  text-align: start;
+  text-decoration: underline;
+  text-decoration-color: var(--color-gold);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.25em;
+  cursor: pointer;
+}
+
+.trip-slot__add > .trip-icon {
+  color: var(--color-gold-deep);
+}
+
+.trip-slot__add:hover {
+  background: var(--color-neutral-variant);
+  color: var(--color-primary);
+  text-decoration-color: currentcolor;
+}
+
+.trip-slot__add:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* While a place is picked up the parts of the day offer "Move here"; adding waits. */
+.trip-slot.is-choosing .trip-slot__add {
+  display: none;
+}
+
+/* A part of the day with nothing in it takes one row on a phone: its name, then the way to fill it
+   (or, while a plan is picked up, "Move here" in the same place and at the same height, so picking a
+   plan up moves nothing on the page). */
+.trip-slot.is-empty:not(.is-adding) {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.trip-slot.is-empty:not(.is-adding) :is(.trip-slot__add, .trip-slot__here) {
+  justify-self: end;
+}
+
+/* Where the picked-up plan is: said in the room its Add button had. */
+.trip-slot__now {
   display: flex;
   align-items: center;
   min-block-size: 44px;
   margin: 0;
+  padding-inline: var(--spacing-xs);
   font-family: var(--font-text);
   font-size: var(--type-body-sm-size);
-  line-height: var(--type-body-sm-line);
   font-style: italic;
+  line-height: var(--type-body-sm-line);
   color: var(--color-on-surface-muted);
 }
 
-/* A part of the day with nothing in it says so in its label's own line, so it takes one row, not two. */
-.trip-slot.is-empty:not(.is-choosing) {
-  grid-template-columns: auto minmax(0, 1fr);
+/* The form that opens in the part of the day: what are you doing then, in your own words. */
+.trip-slot.is-adding {
+  border-color: var(--color-gold-deep);
+  background: var(--color-surface);
 }
 
-.trip-slot.is-empty:not(.is-choosing) .trip-slot__empty {
-  justify-content: end;
+.trip-slot__form {
+  display: grid;
+  gap: var(--spacing-xs);
+  min-inline-size: 0;
+  padding-block: var(--spacing-xs);
+}
+
+.trip-slot__ask {
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  font-weight: 600;
+  line-height: var(--type-body-sm-line);
+  color: var(--color-on-surface);
+}
+
+.trip-slot__input {
+  inline-size: 100%;
+  min-inline-size: 0;
+  min-block-size: 44px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--color-on-surface-muted);
+  border-radius: var(--rounded-sm);
+  background: var(--color-neutral);
+  color: var(--color-on-surface);
+  font-family: var(--font-text);
+  font-size: var(--type-body-md-size);
+  line-height: var(--type-body-md-line);
+}
+
+.trip-slot__input::placeholder {
+  color: var(--color-on-surface-muted);
+  opacity: 1;
+}
+
+.trip-slot__input:focus-visible {
+  border-color: var(--color-gold-deep);
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.trip-slot__choices {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--spacing-md);
 }
 
 /* The wedding holds Saturday's afternoon and evening: its own panel beside the label, in moss. */
@@ -1756,6 +2044,29 @@
   font-family: var(--font-text);
   font-size: var(--type-body-sm-size);
   line-height: var(--type-body-sm-line);
+}
+
+.trip-wedding__more {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  min-block-size: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.25em;
+  cursor: pointer;
+}
+
+.trip-wedding__more:focus-visible {
+  outline: 2px solid currentcolor;
+  outline-offset: 2px;
 }
 
 /* The wedding's own events: name, then time, room and dress code. */
@@ -1828,6 +2139,12 @@
   background: var(--color-neutral);
 }
 
+/* Something of the guest's own ("Dinner with family", "Busy"): the same card, a quieter edge. */
+.trip-saved--own {
+  border-color: var(--color-outline);
+  border-inline-start: 2px solid var(--color-gold-deep);
+}
+
 /* Held by its handle: it follows the pointer above the board, and the place it left shows through. */
 .trip-saved.is-dragging {
   z-index: 2;
@@ -1854,6 +2171,14 @@
   overflow-wrap: anywhere;
 }
 
+/* Their words are set in the text face: a note of their own, not one of our places. */
+.trip-saved--own .trip-saved__name {
+  font-family: var(--font-text);
+  font-size: var(--type-body-md-size);
+  font-weight: 600;
+  line-height: var(--type-body-md-line);
+}
+
 /* The handle and the remove button, together at the card's end, each 44px. */
 .trip-saved__tools {
   display: flex;
@@ -1861,19 +2186,27 @@
   gap: var(--spacing-xs);
 }
 
-/* Six dots: drag the card by them, or tap them and then choose a time. */
+/* "Move": drag the card by it, or tap it and then choose a time. It says what it does. */
 .trip-saved__grip {
-  display: grid;
-  place-items: center;
-  inline-size: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  min-inline-size: 2.75rem;
   block-size: 2.75rem;
-  padding: 0;
+  padding: 0 var(--spacing-sm);
   border: 0;
   border-radius: var(--rounded-pill);
   background: none;
-  color: var(--color-gold-deep);
+  color: var(--color-tertiary);
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
   cursor: grab;
   touch-action: none;
+}
+
+.trip-saved__grip > .trip-icon {
+  color: var(--color-gold-deep);
 }
 
 .trip-saved__grip:hover {
@@ -1982,13 +2315,13 @@
 /* Room for the part of the day's name in a column of its own: every row then starts at one edge. */
 @container trip-board (width >= 30rem) {
   .trip-slot,
-  .trip-slot.is-empty:not(.is-choosing) {
+  .trip-slot.is-empty:not(.is-adding) {
     grid-template-columns: 10rem minmax(0, 1fr);
     align-items: first baseline;
   }
 
-  .trip-slot.is-empty:not(.is-choosing) .trip-slot__empty {
-    justify-content: start;
+  .trip-slot.is-empty:not(.is-adding) :is(.trip-slot__add, .trip-slot__here) {
+    justify-self: start;
   }
 
   /* Beside its row the name needs no height of its own: it sits on the first line's baseline. The
@@ -2143,10 +2476,6 @@
   pointer-events: none;
 }
 
-.trip-tab:focus-visible,
-.trip-starter:focus-visible,
-.trip-ask__input:focus-visible,
-.trip-reset:focus-visible,
 .trip-slot__here:focus-visible,
 .trip-toast__open:focus-visible {
   outline: none;

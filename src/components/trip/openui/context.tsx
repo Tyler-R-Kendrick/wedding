@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
-import { arrivalFacts, stayFacts, type ArrivalFacts, type Day, type Part, type PlannerPlace, type SavedItem, type StayFacts } from '@/domain/trip-planner';
+import { arrivalFacts, stayFacts, type ArrivalFacts, type CalendarDayModel, type Day, type Part, type PlannerPlace, type SavedItem, type StayFacts } from '@/domain/trip-planner';
 
 /**
  * What the page hands the planner's components: the couple's places, the guest's saved weekend,
@@ -13,6 +13,11 @@ import { arrivalFacts, stayFacts, type ArrivalFacts, type Day, type Part, type P
 export type TripAction =
   | { type: 'AddToWeekend'; id: string; day?: Day; part?: Part }
   | { type: 'RemoveFromWeekend'; id: string }
+  /** Something of the guest's own ("Busy", "Dinner with my parents"), written into a part of a weekend day. */
+  | { type: 'AddOwn'; title: string; day: Day; part: Part }
+  /** Open My plans with this saved place picked up, ready to be given another time. */
+  | { type: 'MovePlan'; id: string }
+  | { type: 'OpenPlans' }
   | { type: 'SetWeekend'; items: { id: string; day: Day; part: Part }[] }
   | { type: 'ConfirmWeekend' }
   | { type: 'ExportCalendar' }
@@ -23,6 +28,10 @@ export type TripHotel = { name: string; lat: number; lng: number };
 export type TripPlannerValue = {
   places: ReadonlyMap<string, PlannerPlace>;
   saved: readonly SavedItem[];
+  /** The time the guest is finding something for ("Add" on a part of a day): places are added there. */
+  target: { date: string; part: Part } | null;
+  /** The guest's plans as they are now, so a summary of them in an old answer is never out of date. */
+  calendar: readonly CalendarDayModel[] | null;
   hotel: TripHotel | null;
   stay: StayFacts;
   arrival: ArrivalFacts;
@@ -34,6 +43,8 @@ const TripPlannerContext = createContext<TripPlannerValue | null>(null);
 export type TripPlannerProviderProps = {
   places: ReadonlyMap<string, PlannerPlace>;
   saved: readonly SavedItem[];
+  target?: { date: string; part: Part } | null;
+  calendar?: readonly CalendarDayModel[] | null;
   /** The wedding hotel's name and coordinates, for the map. */
   hotel?: TripHotel | null;
   /** The room block (defaults to the travel domain's confirmed block). */
@@ -44,10 +55,10 @@ export type TripPlannerProviderProps = {
   children: ReactNode;
 };
 
-export function TripPlannerProvider({ places, saved, hotel = null, stay, arrival, onAction, children }: TripPlannerProviderProps) {
+export function TripPlannerProvider({ places, saved, target = null, calendar = null, hotel = null, stay, arrival, onAction, children }: TripPlannerProviderProps) {
   const value = useMemo<TripPlannerValue>(
-    () => ({ places, saved, hotel, stay: stay ?? stayFacts(), arrival: arrival ?? arrivalFacts(), onAction }),
-    [places, saved, hotel, stay, arrival, onAction],
+    () => ({ places, saved, target, calendar, hotel, stay: stay ?? stayFacts(), arrival: arrival ?? arrivalFacts(), onAction }),
+    [places, saved, target, calendar, hotel, stay, arrival, onAction],
   );
   return <TripPlannerContext.Provider value={value}>{children}</TripPlannerContext.Provider>;
 }

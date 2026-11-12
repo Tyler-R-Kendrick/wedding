@@ -142,3 +142,8 @@ export function arrivalFacts(): ArrivalFacts {
     hotelName: VENUE.name,
   };
 }
+
+/** A part of a day as a guest says it: "Thursday afternoon". */
+export function slotName(dateIso: string, part: Part): string {
+  return `${dateLabel(dateIso).split(',')[0]} ${part}`;
+}

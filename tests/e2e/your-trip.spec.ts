@@ -33,7 +33,7 @@ async function openTab(page: Page, name: RegExp | string) {
 /** Takes out whatever this guest saved from the planner, so the run leaves the fixture as it found it. */
 async function clearWeekend(page: Page) {
   await openTab(page, /My plans/);
-  const removes = plan(page).getByRole('button', { name: /^Remove / });
+  const removes = plan(page).locator('.trip-saved__remove');
   while ((await removes.count()) > 0) {
     const before = await removes.count();
     await removes.first().click();
@@ -70,16 +70,20 @@ test('a starter answers with places from our list, and a saved place is still th
   await expect(cards.first()).toBeVisible();
   expect(await cards.count()).toBeGreaterThanOrEqual(2);
   expect(await cards.count()).toBeLessThanOrEqual(6);
-  // Each card names a place and links to its page on this site.
-  await expect(cards.first().getByRole('link', { name: /Details/ })).toHaveAttribute('href', /^\/guests\/things-to-do\/[a-z0-9-]+$/);
+  // Each row names a place, and its name links to its page on this site.
+  await expect(cards.first().locator('h4 a')).toHaveAttribute('href', /^\/guests\/things-to-do\/[a-z0-9-]+$/);
   // Nothing on the page says how the answer was made.
   await expect(plan(page)).not.toContainText(/\b(model|AI|download|on-device|OpenUI)\b/);
 
   const first = cards.first();
   const name = (await first.locator('h4').innerText()).trim();
   const saved = page.waitForResponse((r) => r.request().method() === 'POST' && r.url().includes('/guests/travel'));
-  await first.getByRole('button', { name: `Add ${name} to my weekend` }).click();
-  await expect(first.getByRole('button', { name: `Remove ${name} from my weekend` })).toHaveAttribute('aria-pressed', 'true');
+  // The button says where the place will go, and the row then says where it is.
+  const add = first.getByRole('button', { name: new RegExp(`^Add ${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} to (Friday|Saturday|Sunday) (morning|afternoon|evening)$`) });
+  const when = (await add.innerText()).replace(/^Add to /, '');
+  await add.click();
+  await expect(first.getByText(`In your plans: ${when}`)).toBeVisible();
+  await expect(first.getByRole('button', { name: `Remove ${name} from my plans` })).toBeVisible();
   expect((await saved).ok()).toBe(true);
   await expect(plan(page).getByRole('tab', { name: /My plans/ })).toContainText('1');
 
@@ -94,14 +98,17 @@ test('a starter answers with places from our list, and a saved place is still th
   await ctx.close();
 });
 
-test('the wedding day comes first: the guest\'s own events in order, their times when set, and never a placeholder', async ({ browser }) => {
+test('asked about the wedding day: the guest\'s own events in order, their times when set, and never a placeholder; cleared, the suggestions are back', async ({ browser }) => {
   const ctx = await contextAs(browser, 'C1');
   const page = await ctx.newPage();
   await page.goto('/guests/travel#plan');
   await openTab(page, 'Things to do');
-  const starters = plan(page).getByRole('group', { name: 'Ideas to start with' }).getByRole('button');
-  await expect(starters.first()).toContainText('The wedding day');
-  await starters.first().click();
+  // The wedding is in the guest's plans already, so it is not among the suggestions.
+  const starters = plan(page).getByRole('group', { name: 'Ideas to start with' });
+  await expect(starters.getByRole('button').first()).toBeVisible();
+  await expect(starters).not.toContainText('The wedding day');
+  await plan(page).getByLabel('Ask us about the weekend').fill('The wedding day');
+  await plan(page).getByRole('button', { name: 'Ask', exact: true }).click();
   await expect(plan(page).getByRole('heading', { level: 3, name: 'The wedding day' })).toBeVisible();
   // C1 is invited to the ceremony and the reception (the fixture), whose times are not set yet.
   const day = plan(page).getByRole('region', { name: 'The wedding day' });
@@ -110,10 +117,123 @@ test('the wedding day comes first: the guest\'s own events in order, their times
   await expect(plan(page).getByRole('region', { name: 'Our room block' }).getByText(/^Our room block: check-in /)).toBeVisible();
   // The seed's hint ("what happens, and what to expect") is a note to the couple, not a fact.
   await expect(plan(page)).not.toContainText(/TODO|what to expect/);
+  // One tap clears the thread and brings the suggestions back.
+  await plan(page).getByRole('button', { name: 'Clear and start over' }).click();
+  await expect(starters.getByRole('button').first()).toBeVisible();
+  await expect(plan(page).locator('.trip-turn')).toHaveCount(0);
   await openTab(page, /My plans/);
   await expect(plan(page).getByRole('list', { name: 'The wedding' }).getByRole('listitem')).toHaveCount(2);
   await expect(plan(page).getByRole('region', { name: /^Friday/ })).toContainText('Our room block: check-in');
   await expect(plan(page).getByRole('region', { name: /^Sunday/ })).toContainText('Our room block: check-out');
+  await ctx.close();
+});
+
+test('a question goes to the top of the screen and stays there; nothing on the page moves after the answer appears', async ({ browser }) => {
+  for (const viewport of [{ width: 390, height: 844 }, { width: 1280, height: 900 }]) {
+    const ctx = await contextAs(browser, 'C1', { viewport });
+    const page = await ctx.newPage();
+    await page.goto('/guests/travel#plan');
+    await openTab(page, 'Things to do');
+    const tabs = plan(page).getByRole('tablist');
+    for (const q of ['Where should we get dinner?', 'Plan my whole weekend', 'I have two hours', 'What time is the ceremony?']) {
+      await plan(page).getByLabel('Ask us about the weekend').fill(q);
+      await plan(page).getByRole('button', { name: 'Ask', exact: true }).click();
+      const asked = plan(page).locator('.trip-turn__asked').last();
+      await expect(asked).toContainText(q);
+      await expect(plan(page).locator('.trip-turn').last().locator('.trip-turn__answer')).toBeVisible();
+      // The one movement is the question's own short glide to the top; wait for it to come to rest.
+      await expect(async () => {
+        const a = await page.evaluate(() => scrollY);
+        await page.waitForTimeout(250);
+        baseExpect(await page.evaluate(() => scrollY)).toBe(a);
+      }).toPass({ timeout: 5_000 });
+      // At rest it sits just under the pinned tabs, the answer below it.
+      const gap = (await asked.boundingBox())!.y - ((await tabs.boundingBox())!.y + (await tabs.boundingBox())!.height);
+      expect(gap, `${q} at ${viewport.width}`).toBeGreaterThanOrEqual(0);
+      expect(gap, `${q} at ${viewport.width}`).toBeLessThanOrEqual(40);
+      // And it does not move again: no late re-ranking, no rewording, no jump to the answer's end.
+      const read = () => page.evaluate(() => ({ y: Math.round(scrollY), h: document.documentElement.scrollHeight, html: document.querySelector('#plan .trip-turn:last-child .trip-turn__answer')!.innerHTML.length }));
+      const first = await read();
+      await page.waitForTimeout(2_500);
+      expect(await read(), `${q} at ${viewport.width}`).toEqual(first);
+    }
+    // The tabs swap in place: back on Things to do the guest is where they were.
+    const y = await page.evaluate(() => Math.round(scrollY));
+    await openTab(page, /My plans/);
+    await openTab(page, 'Things to do');
+    expect(await page.evaluate(() => Math.round(scrollY))).toBe(y);
+    await ctx.close();
+  }
+});
+
+test('a free part of a day takes a plan of the guest’s own, which is kept, moves without shifting the page, and comes back after a remove', async ({ browser }) => {
+  const ctx = await contextAs(browser, 'C1', { viewport: { width: 390, height: 844 } });
+  const page = await ctx.newPage();
+  await page.goto('/guests/travel#plan');
+  await clearWeekend(page);
+  await openTab(page, /My plans/);
+  // Every free part of a day offers it, where the guest is already looking.
+  await expect(plan(page).getByRole('button', { name: /^Add something to / })).toHaveCount(7);
+  const add = plan(page).getByRole('button', { name: 'Add something to Friday evening' });
+  await add.scrollIntoViewIfNeeded();
+  await add.click();
+  const field = plan(page).getByLabel('What are you doing on Friday evening?');
+  await expect(field).toBeFocused();
+  await field.fill('Dinner with family');
+  // The field is where the guest tapped, clear of the bars at the bottom; from here nothing moves.
+  await page.waitForTimeout(300);
+  const y0 = await page.evaluate(() => Math.round(scrollY));
+  const saved = page.waitForResponse((r) => r.request().method() === 'POST' && r.url().includes('/guests/travel'));
+  await field.press('Enter');
+  const friday = plan(page).getByRole('region', { name: /^Friday/ });
+  await expect(friday.getByRole('heading', { level: 4, name: 'Dinner with family' })).toBeVisible();
+  expect((await saved).ok()).toBe(true);
+  expect(await page.evaluate(() => Math.round(scrollY))).toBe(y0);
+  await expect(plan(page).getByRole('tab', { name: /My plans/ })).toContainText('1');
+
+  // Picking it up changes what each part of a day offers, and moves nothing.
+  const tops = () => plan(page).locator('.trip-slot').evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top + scrollY)));
+  const before = await tops();
+  await plan(page).getByRole('button', { name: 'Move Dinner with family', exact: true }).click();
+  await expect(plan(page).getByText('Choose a new time for Dinner with family.')).toBeVisible();
+  expect(await tops()).toEqual(before);
+  expect(await page.evaluate(() => Math.round(scrollY))).toBe(y0);
+  await plan(page).getByRole('button', { name: 'Move here: Dinner with family to Sunday morning' }).click();
+  await expect(plan(page).getByRole('region', { name: /^Sunday/ }).getByRole('heading', { level: 4, name: 'Dinner with family' })).toBeVisible();
+
+  // It is the guest's own trip item: there after a reload, and on their flights-and-hotel page.
+  await page.reload();
+  await openTab(page, /My plans/);
+  await expect(plan(page).getByRole('region', { name: /^Sunday/ }).getByRole('heading', { level: 4, name: 'Dinner with family' })).toBeVisible();
+  await page.goto('/trip');
+  await expect(page.locator('.agenda-entry').filter({ has: page.getByRole('heading', { name: 'Dinner with family', exact: true }) })).toHaveCount(1);
+
+  // Taken out by its bin, with one tap to put it back.
+  await page.goto('/guests/travel#plan');
+  await openTab(page, /My plans/);
+  await plan(page).getByRole('button', { name: 'Remove Dinner with family', exact: true }).click();
+  await expect(plan(page).getByRole('heading', { level: 4, name: 'Dinner with family' })).toHaveCount(0);
+  await plan(page).getByRole('button', { name: 'Put it back' }).click();
+  await expect(plan(page).getByRole('region', { name: /^Sunday/ }).getByRole('heading', { level: 4, name: 'Dinner with family' })).toBeVisible();
+  await clearWeekend(page);
+  await ctx.close();
+});
+
+test('told the guest is busy, the planner offers to mark the time and adds it in one tap', async ({ browser }) => {
+  const ctx = await contextAs(browser, 'C1');
+  const page = await ctx.newPage();
+  await page.goto('/guests/travel#plan');
+  await clearWeekend(page);
+  await plan(page).getByLabel('Ask us about the weekend').fill("I'm busy Friday night");
+  await plan(page).getByRole('button', { name: 'Ask', exact: true }).click();
+  const turn = plan(page).locator('.trip-turn').last();
+  await expect(turn.getByRole('heading', { level: 3, name: 'Mark that time as busy' })).toBeVisible();
+  await expect(turn.locator('article.trip-place')).toHaveCount(0);
+  await turn.getByRole('button', { name: 'Add Busy to Friday evening' }).click();
+  await expect(turn.getByText('In your plans: Friday evening')).toBeVisible();
+  await openTab(page, /My plans/);
+  await expect(plan(page).getByRole('region', { name: /^Friday/ }).getByRole('heading', { level: 4, name: 'Busy' })).toBeVisible();
+  await clearWeekend(page);
   await ctx.close();
 });
 
@@ -149,7 +269,7 @@ test('at a phone width the page does not scroll sideways, and axe finds nothing 
   expect(small).toEqual([]);
   // The ask box is pinned over whatever scrolls beneath it (focus scrolls clear of it: trip.css),
   // so the page is measured as a guest reads the answer: scrolled to its end, above the box.
-  await plan(page).locator('.trip-thread__end').scrollIntoViewIfNeeded();
+  await plan(page).locator('.trip-turn__answer').last().evaluate((el) => el.scrollIntoView({ block: 'end', behavior: 'instant' }));
   await page.waitForTimeout(300);
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
   const blocking = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');

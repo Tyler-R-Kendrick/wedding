@@ -50,7 +50,9 @@ describe('a day of stops', () => {
     expect(r.stops[0]!.start).toBeGreaterThanOrEqual(13 * 60);
     expect(r.stops[1]!.start!).toBeGreaterThan(r.stops[0]!.end!);
     expect(clockSpan(r.stops[0]!.start!, r.stops[0]!.end!)).toMatch(/^1:\d\d–[12]:\d\d PM$/);
-    expect(routeFacts(r)).toEqual(expect.arrayContaining(['Start around 1 PM', 'All on foot']));
+    // The distance on foot says it is on foot; "All on foot" is kept for a day with almost no walking in it.
+    expect(routeFacts(r)).toEqual(expect.arrayContaining(['Start around 1 PM', expect.stringMatching(/^About [\d.]+ miles? on foot$/)]));
+    expect(routeFacts(r)).not.toContain('All on foot');
   });
 
   it('on a weekend day, a stop never starts before its own part of the day', () => {
