@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { compose, draftPlan, itineraryStarter, matchItinerary, mergeWritten, understand, type Plan, type PlannerItinerary } from '@/domain/trip-planner';
-import { BY_ID, ITINERARIES, PLACES } from './fixtures';
+import { ASKED, BY_ID, ITINERARIES, PLACES } from './fixtures';
 
-const draft = (request: string, scores?: Map<string, number>, itineraries: PlannerItinerary[] = ITINERARIES) => draftPlan({ request, places: PLACES, saved: [], scores, itineraries });
+// Asked already what they eat, so an itinerary about food answers at once.
+const draft = (request: string, scores?: Map<string, number>, itineraries: PlannerItinerary[] = ITINERARIES) => draftPlan({ request, places: PLACES, saved: [], scores, itineraries, prefs: { ...ASKED, diet: [] } });
 const ids = (plan: Plan) => plan.picks.map((p) => p.id);
 const itinerary = (slug: string) => ITINERARIES.find((i) => i.slug === slug)!;
 const known = new Set(PLACES.map((p) => p.id));

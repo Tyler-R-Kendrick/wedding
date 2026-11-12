@@ -3,7 +3,7 @@
 import { defineAction, defineComponent, useIsStreaming, useTriggerAction, type ActionPlan } from '@openuidev/react-lang';
 import { useEffect, useRef, useState } from 'react';
 import { z } from 'zod/v4';
-import { aboutHowLong, blockDateLines, safeSlot, savedDate, slotName, stopMinutes, TIME_TBA, weekendDate, type Day, type Part, type PlannerPlace } from '@/domain/trip-planner';
+import { aboutHowLong, blockDateLines, DIETS, MEALS, safeSlot, savedDate, slotName, stopMinutes, TIME_TBA, weekendDate, type Day, type Diet, type Meal, type Part, type PlannerPlace } from '@/domain/trip-planner';
 import { Icon, type IconName } from '@/themes/shared/icons';
 import { useTripPlanner } from './context';
 
@@ -206,43 +206,205 @@ function External() {
   );
 }
 
-/**
- * Something of the guest's own, offered for one part of a day: a button that writes it into their
- * plans there, and once it is there, a line that says so with the way to take it out again.
- */
+/** The button that writes something of the guest's own into a part of a weekend day, or, once it is there, says so with the way out. */
+function OwnAdd({ title, day, part }: { title: string; day: Day; part: Part }) {
+  const ctx = useTripPlanner();
+  const streaming = useIsStreaming();
+  if (!ctx) return null;
+  // The time the guest is filling wins, as it does for our own places.
+  const date = ctx.target?.date ?? weekendDate(day);
+  const at = ctx.target?.part ?? part;
+  const when = slotName(date, at);
+  const mine = ctx.saved.find((s) => s.own && s.name === title && savedDate(s) === date && s.part === at);
+  return (
+    <div className="trip-own">
+      {mine ? (
+        <>
+          <p className="trip-place__in">
+            <Icon name="check" className="trip-icon trip-icon--sm" />
+            {`In your plans: ${when}`}
+          </p>
+          <button type="button" className="trip-link" disabled={streaming} aria-label={`Remove ${title} from ${when}`} onClick={() => ctx.onAction({ type: 'RemoveFromWeekend', id: mine.id })}>
+            Remove
+          </button>
+        </>
+      ) : (
+        <button type="button" className="trip-add" disabled={streaming} aria-label={`Add ${title} to ${when}`} onClick={() => ctx.onAction({ type: 'AddOwn', title, day, part, ...(ctx.target ? { date: ctx.target.date, part: ctx.target.part } : {}) })}>
+          <Icon name="plus" className="trip-icon trip-icon--sm" />
+          {`Add to ${when}`}
+        </button>
+      )}
+    </div>
+  );
+}
+
 export const OwnPlan = defineComponent({
   name: 'OwnPlan',
   props: z.object({ title: z.string(), day: z.string(), part: z.string() }),
   description: "A plan in the guest's own words (title) and the part of a weekend day (day fri|sat|sun, part morning|afternoon|evening) it can be added to.",
   component: function OwnPlanView({ props }) {
-    const ctx = useTripPlanner();
-    const streaming = useIsStreaming();
     const title = typeof props.title === 'string' ? props.title.trim() : '';
-    if (!ctx || !title || !isDay(props.day) || !isPart(props.part)) return null;
-    const { day, part } = props;
-    if (day === 'sat' && part !== 'morning') return null;
-    const date = weekendDate(day);
-    const when = slotName(date, part);
-    const mine = ctx.saved.find((s) => s.own && s.name === title && savedDate(s) === date && s.part === part);
+    if (!title || !isDay(props.day) || !isPart(props.part)) return null;
+    if (props.day === 'sat' && props.part !== 'morning') return null;
+    return <OwnAdd title={title} day={props.day} part={props.part} />;
+  },
+});
+
+/** One place from outside our own list: its name, one line about it, where it is, and (once chosen) the time it would go. */
+export const NearbyPlace = defineComponent({
+  name: 'NearbyPlace',
+  props: z.object({ name: z.string(), detail: z.string().optional(), address: z.string().optional(), website: z.string().optional(), day: z.string().optional(), part: z.string().optional() }),
+  description: 'A place near the hotel that is not one of the couple\'s own: name, one line (kind and distance), address, website, and the day and part it can be added to.',
+  component: () => null,
+});
+
+type NearbyNode = { props?: { name?: unknown; detail?: unknown; address?: unknown; website?: unknown; day?: unknown; part?: unknown } };
+
+/**
+ * Places from a search of the neighbourhood, after our own and under their own heading, so nobody
+ * takes them for ours. Each can go into the guest's plans as a plan of their own. The source is
+ * credited as its licence asks.
+ */
+export const Nearby = defineComponent({
+  name: 'Nearby',
+  props: z.object({ title: z.string(), places: z.array(NearbyPlace.ref) }),
+  description: 'Places near the hotel from outside the couple\'s own list, under their own heading.',
+  component: function NearbyView({ props }) {
+    const rows = (Array.isArray(props.places) ? props.places : []).flatMap((n) => {
+      const q = (n as NearbyNode)?.props;
+      const name = text(q?.name).trim();
+      if (!name) return [];
+      const website = text(q?.website);
+      return [{ name, detail: text(q?.detail), address: text(q?.address), website: /^https?:\/\//i.test(website) ? website : '', day: isDay(q?.day) ? q.day : null, part: isPart(q?.part) ? q.part : null }];
+    });
+    if (!rows.length) return null;
     return (
-      <div className="trip-own">
-        {mine ? (
-          <>
-            <p className="trip-place__in">
-              <Icon name="check" className="trip-icon trip-icon--sm" />
-              {`In your plans: ${when}`}
-            </p>
-            <button type="button" className="trip-link" disabled={streaming} aria-label={`Remove ${title} from ${when}`} onClick={() => ctx.onAction({ type: 'RemoveFromWeekend', id: mine.id })}>
-              Remove
-            </button>
-          </>
-        ) : (
-          <button type="button" className="trip-add" disabled={streaming} aria-label={`Add ${title} to ${when}`} onClick={() => ctx.onAction({ type: 'AddOwn', title, day, part })}>
-            <Icon name="plus" className="trip-icon trip-icon--sm" />
-            {`Add to ${when}`}
+      <section className="trip-nearby" aria-label={props.title}>
+        <h4 className="trip-title trip-title--md">{props.title}</h4>
+        <p className="trip-nearby__note">Not our own picks: these come from a map of the neighbourhood. Check the hours before you go.</p>
+        <ul className="trip-nearby__list">
+          {rows.map((r) => (
+            <li key={`${r.name}-${r.address}`} className="trip-nearby__row">
+              <div className="trip-nearby__what">
+                <p className="trip-nearby__name">
+                  {r.website ? (
+                    <a className="bd-link" href={r.website} target="_blank" rel="noopener noreferrer">
+                      {r.name}
+                      <External />
+                    </a>
+                  ) : (
+                    r.name
+                  )}
+                </p>
+                {r.detail ? <p className="trip-nearby__detail">{r.detail}</p> : null}
+                {r.address ? <p className="trip-nearby__detail">{r.address}</p> : null}
+              </div>
+              {r.day && r.part && !(r.day === 'sat' && r.part !== 'morning') ? <OwnAdd title={r.name} day={r.day} part={r.part} /> : null}
+            </li>
+          ))}
+        </ul>
+        <p className="trip-place__credit">
+          {'Places from '}
+          <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="license noopener noreferrer">
+            OpenStreetMap contributors
+            <External />
+          </a>
+        </p>
+      </section>
+    );
+  },
+});
+
+export const ClarifyOption = defineComponent({
+  name: 'ClarifyOption',
+  props: z.object({ value: z.string(), label: z.string() }),
+  description: 'One choice in a ClarifyGroup.',
+  component: () => null,
+});
+
+export const ClarifyGroup = defineComponent({
+  name: 'ClarifyGroup',
+  props: z.object({ id: z.string(), label: z.string(), multi: z.boolean().optional(), options: z.array(ClarifyOption.ref) }),
+  description: 'One thing a Clarify asks (id diet or meal), with its choices; multi lets several be chosen.',
+  component: () => null,
+});
+
+type ClarifyNode = { props?: { id?: unknown; label?: unknown; multi?: unknown; options?: unknown; value?: unknown } };
+const DIET_VALUES: readonly string[] = DIETS;
+const MEAL_VALUES: readonly string[] = MEALS;
+
+/**
+ * What is asked before a meal is recommended: what the guest does not eat, and the kind of meal.
+ * Both can be left blank. One button answers; it is asked once a visit.
+ */
+export const Clarify = defineComponent({
+  name: 'Clarify',
+  props: z.object({ request: z.string(), groups: z.array(ClarifyGroup.ref) }),
+  description: 'Asks what the guest does not eat and the kind of meal before a request for a meal (request) is answered.',
+  component: function ClarifyView({ props }) {
+    const ctx = useTripPlanner();
+    const [picked, setPicked] = useState<Record<string, string[]>>({});
+    const [done, setDone] = useState(false);
+    const groups = (Array.isArray(props.groups) ? props.groups : []).flatMap((g) => {
+      const q = (g as ClarifyNode)?.props;
+      const id = text(q?.id);
+      const options = (Array.isArray(q?.options) ? q.options : []).flatMap((o) => {
+        const r = (o as ClarifyNode)?.props;
+        return text(r?.value) && text(r?.label) ? [{ value: text(r?.value), label: text(r?.label) }] : [];
+      });
+      return (id === 'diet' || id === 'meal') && text(q?.label) && options.length ? [{ id, label: text(q?.label), multi: q?.multi === true, options }] : [];
+    });
+    const request = typeof props.request === 'string' ? props.request.trim() : '';
+    if (!ctx || !request || !groups.length) return null;
+    const toggle = (id: string, value: string, multi: boolean) => {
+      if (done) return;
+      setPicked((was) => {
+        const now = was[id] ?? [];
+        const next = now.includes(value) ? now.filter((v) => v !== value) : multi ? [...now, value] : [value];
+        return { ...was, [id]: next };
+      });
+    };
+    const answer = (skip: boolean) => {
+      if (done) return;
+      setDone(true);
+      if (skip) setPicked({});
+      const diet = skip ? [] : (picked.diet ?? []).filter((v): v is Diet => DIET_VALUES.includes(v));
+      const meal = skip ? null : ((picked.meal ?? []).find((v): v is Meal => MEAL_VALUES.includes(v)) ?? null);
+      ctx.onAction({ type: 'AnswerClarify', request, diet, meal });
+    };
+    return (
+      <form
+        className="trip-clarify"
+        onSubmit={(e) => {
+          e.preventDefault();
+          answer(false);
+        }}
+      >
+        {groups.map((g) => (
+          <fieldset key={g.id} className="trip-choice">
+            <legend className="trip-clarify__ask">{g.label}</legend>
+            <div className="trip-clarify__options">
+              {g.options.map((o) => {
+                const on = (picked[g.id] ?? []).includes(o.value);
+                return (
+                  <button key={o.value} type="button" className={`trip-chip trip-clarify__option${on ? ' is-picked' : ''}`} aria-pressed={on} aria-disabled={done ? true : undefined} onClick={() => toggle(g.id, o.value, g.multi)}>
+                    {on ? <Icon name="check" className="trip-icon trip-icon--sm" /> : null}
+                    {o.label}
+                  </button>
+                );
+              })}
+            </div>
+          </fieldset>
+        ))}
+        <div className="trip-clarify__go">
+          <button type="submit" className="trip-add" aria-disabled={done ? true : undefined}>
+            Show me places
           </button>
-        )}
-      </div>
+          <button type="button" className="trip-link" aria-disabled={done ? true : undefined} onClick={() => answer(true)}>
+            Skip this
+          </button>
+        </div>
+      </form>
     );
   },
 });
@@ -652,4 +814,4 @@ export const Route = defineComponent({
   },
 });
 
-export const blocks = [Place, OwnPlan, Summary, Route, Stop, Stay, Arrive, Option, Choice, Next, Schedule, WeddingEvent, Calendar, CalendarDay, CalendarEvent];
+export const blocks = [Place, OwnPlan, Nearby, NearbyPlace, Clarify, ClarifyGroup, ClarifyOption, Summary, Route, Stop, Stay, Arrive, Option, Choice, Next, Schedule, WeddingEvent, Calendar, CalendarDay, CalendarEvent];

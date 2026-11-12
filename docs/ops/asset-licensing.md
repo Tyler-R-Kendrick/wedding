@@ -371,6 +371,23 @@ Bundled under `src/domain/travel/data/` (regenerate with `node scripts/build-tra
 
 Used only to suggest editable defaults on `/guests/travel`; no outbound geocoding calls.
 
+### Places near the hotel (the planner's "Also nearby")
+
+Places that are not the couple's own recommendations come from **OpenStreetMap**, by way of its
+search service, Nominatim (`src/providers/place-search`). The data is © OpenStreetMap contributors
+under the **ODbL 1.0** (<https://www.openstreetmap.org/copyright>): every list of them on the site
+is credited "Places from OpenStreetMap contributors", linked to that page, and headed as not being
+the couple's own picks.
+
+| What | Source | License |
+|---|---|---|
+| Live results on Your Trip | Nominatim search, a kind of place within about a mile of the hotel | ODbL 1.0 (credit shown beside the list) |
+| `src/providers/place-search/fixture.json` | The same search, recorded 2026-11-12, for tests and evals | ODbL 1.0 |
+
+What is sent is a kind of place ("restaurant") and the hotel's position: never a guest's words,
+and nothing about the guest. Nominatim's usage policy is kept in the adapter: at most one request
+a second, an application named in the User-Agent, and answers kept for a day.
+
 ## 6. Commands, in one place
 
 ```bash

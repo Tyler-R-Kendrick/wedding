@@ -1,9 +1,10 @@
 import { DAY_NAME, dateLabel, isWeddingTime, onWeekend, stayFacts, weekendDate } from './facts';
-import { understand } from './intent';
+import { saysCuisine, understand } from './intent';
 import { matchItinerary } from './itineraries';
 import { scheduleOf, type ScheduleItem } from './schedule';
 import { fitToPart, orderByNearest } from './route';
-import type { Day, Intent, Part, Plan, PlanPick, PlannerItinerary, PlannerPlace, SavedItem, Theme, WeddingEventInput } from './types';
+import { dietPhrase, outsideQueryFor } from './outside';
+import type { ClarifyGroup, Day, Diet, Intent, Meal, Part, Plan, PlanPick, PlannerItinerary, PlannerPlace, Prefs, SavedItem, Theme, WeddingEventInput } from './types';
 import { DAYS, PARTS } from './types';
 
 /**
@@ -90,7 +91,8 @@ function themeScore(theme: Theme, p: PlannerPlace): number {
     case 'water':
       return /\b(river|boat|cruise|lake|riverwalk)\b/.test(t) ? 2.5 : 0;
     case 'love':
-      return p.why ? 3 : 0;
+      // The couple's own reason for it, or their own story told in what it is ("the final stop on our fourth date").
+      return p.why || /\b(our|we)\b[^.]*\b(dates?|first|met|love|special|proposed|engaged|anniversary)\b/i.test(p.what) ? 3 : 0;
   }
 }
 
@@ -286,12 +288,15 @@ function duration(minutes: number): string {
 }
 
 function nextFor(intent: Intent, saved: readonly SavedItem[], shape: Plan['shape']): string[] {
+  const meal = intent.kind === 'places' && intent.themes.some((t) => t === 'dinner' || t === 'food' || t === 'breakfast');
   const pool: [boolean, string][] = [
     // A request for the wedding's own hours was planned around them; the schedule is one tap away.
     [intent.weddingTime && shape !== 'schedule', 'The wedding day'],
     [saved.length >= 1 && shape !== 'calendar', 'Show my plans'],
-    [!intent.kids && shape !== 'stay' && shape !== 'arrive' && shape !== 'calendar', 'Make it kid-friendly'],
-    [intent.minutes === null && (shape === 'picks' || shape === 'route'), 'I only have two hours'],
+    // After a meal the next thing is a drink or a coffee, not a time budget.
+    [meal && !intent.themes.includes('drinks'), 'A drink afterwards'],
+    [!intent.kids && !meal && shape !== 'stay' && shape !== 'arrive' && shape !== 'calendar', 'Make it kid-friendly'],
+    [intent.minutes === null && !meal && (shape === 'picks' || shape === 'route'), 'I only have two hours'],
     [!intent.themes.includes('dinner') && shape !== 'switch', 'Where should we get dinner?'],
     [!intent.themes.includes('coffee'), 'Show me coffee nearby'],
     [shape !== 'weekend' && shape !== 'calendar', 'Plan my whole weekend'],
@@ -508,9 +513,130 @@ export function draftPlan(args: {
   itineraries?: readonly PlannerItinerary[];
   /** The wedding's own events on this guest's invitation, for a question about the day itself. */
   events?: readonly WeddingEventInput[];
+  /** What the guest has told the planner about themselves in this visit (what they eat, the kind of meal). */
+  prefs?: Prefs;
+  /** The last meal they asked about, which "Change what I eat" answers again. */
+  lastMeal?: string;
 }): Plan {
+  // They want to say again what they eat: the same question, for the meal they last asked about.
+  if (CHANGE_PREFS.test(args.request)) return clarifyPlan(args.lastMeal?.trim() || 'Where should we eat?');
+  const said = understand(args.request);
+  const prefs = args.prefs;
+  // What they eat and the kind of meal: from this request, else from what they told us before.
+  const diet: Diet[] = [...new Set([...said.diet, ...(prefs?.diet ?? [])])];
+  const meal: Meal | null = said.meal ?? prefs?.meal ?? null;
+  const eating = said.kind === 'places' && isMeal(said);
+  // One more fact makes a better answer: ask it once, before answering.
+  if (eating && needsAsking(said, prefs)) return clarifyPlan(args.request);
+  const intent: Intent = eating ? { ...said, meal } : said;
+  const plan = notes(basePlan(args, intent), intent);
+  return eating ? forTheTable(finish(plan, intent, eating ? diet : [], meal), diet, meal) : finish(plan, intent, [], null);
+}
+
+const CHANGE_PREFS = /^\s*(change|update|edit) (what i eat|what we eat|my (food|diet|dietary|meal)\b.*)\s*[.!]?\s*$/i;
+
+/**
+ * What we do not know, said where it matters: we hold no opening hours, no step-free details and no
+ * allergen lists for any place, so an answer to a question that turns on one says so instead of
+ * leaving the guest to assume.
+ */
+function notes(plan: Plan, intent: Intent): Plan {
+  if (plan.shape !== 'picks' && plan.shape !== 'route' && plan.shape !== 'switch' && plan.shape !== 'budget') return plan;
+  const lines: string[] = [];
+  if (intent.asksHours) lines.push('We do not hold opening hours for these, so check with the place before you go.');
+  if (intent.access) lines.push('We do not hold wheelchair or step-free details for these, so call ahead to check.');
+  if (intent.allergy) lines.push(`We cannot vouch for any kitchen on ${intent.allergy === 'food' ? 'an allergy' : `a ${intent.allergy} allergy`}: tell the restaurant when you book, and check again before you order.`);
+  if (!lines.length) return plan;
+  // A question about hours is not answered with a day of stops and our own rough times for them.
+  const base: Plan = intent.asksHours && plan.shape === 'route' ? { ...plan, shape: 'picks', route: undefined, intro: '' } : plan;
+  return { ...base, intro: [base.intro, ...lines].filter(Boolean).join(' '), fixed: [...new Set([...(base.fixed ?? []), 'intro' as const])] };
+}
+
+/** A request for a meal (not only a coffee or a drink). */
+const isMeal = (intent: Intent) => intent.themes.some((t) => t === 'dinner' || t === 'food' || t === 'breakfast');
+
+/**
+ * Whether to ask before answering: a meal, nothing said yet about what they eat or the kind of meal
+ * (in this request or earlier in the visit), and not somewhere they have already chosen (the hotel,
+ * a cuisine by name). Asked once a visit.
+ */
+function needsAsking(intent: Intent, prefs: Prefs | undefined): boolean {
+  if (prefs?.asked) return false;
+  if (intent.diet.length || intent.noDiet || intent.meal || intent.cuisine.length || intent.named.length || intent.allergy) return false;
+  if (intent.themes.includes('hotel') || intent.themes.includes('love') || intent.minutes !== null) return false;
+  // "Saturday evening" is the wedding: the answer is about that, not about a restaurant.
+  if (intent.weddingTime) return false;
+  return true;
+}
+
+const DIET_OPTIONS: ClarifyGroup['options'] = [
+  { value: 'vegetarian', label: 'Vegetarian' },
+  { value: 'vegan', label: 'Vegan' },
+  { value: 'gluten-free', label: 'Gluten-free' },
+  { value: 'halal', label: 'Halal' },
+  { value: 'kosher', label: 'Kosher' },
+];
+const MEAL_OPTIONS: ClarifyGroup['options'] = [
+  { value: 'quick', label: 'Quick and casual' },
+  { value: 'sit-down', label: 'A sit-down meal' },
+  { value: 'special', label: 'Something special' },
+];
+
+function clarifyPlan(request: string): Plan {
+  return {
+    shape: 'clarify',
+    title: 'Two things first, so the places fit',
+    intro: 'Leave either one blank if it does not matter.',
+    picks: [],
+    clarify: {
+      request,
+      groups: [
+        { id: 'diet', label: 'Anything you do not eat?', multi: true, options: DIET_OPTIONS },
+        { id: 'meal', label: 'What kind of meal?', multi: false, options: MEAL_OPTIONS },
+      ],
+    },
+    next: [],
+    fixed: ['title', 'intro'],
+  };
+}
+
+/** What a place of ours is, as a meal: read from the couple's own words about it. */
+function mealOf(p: PlannerPlace): Meal {
+  const t = `${p.name} ${p.what}`.toLowerCase();
+  if (/fine[- ]dining|tasting[- ]menu|steakhouse/.test(t)) return 'special';
+  if (p.interests.includes('quick') || /\b(quick|deep-dish|hot dog|counter|burgers?|classics)\b/.test(t)) return 'quick';
+  return 'sit-down';
+}
+
+/** Adds what to look for beyond our own list, and where a place found there would go if added. */
+function finish(plan: Plan, intent: Intent, diet: readonly Diet[], meal: Meal | null): Plan {
+  if (plan.shape !== 'picks' && plan.shape !== 'route' && plan.shape !== 'switch' && plan.shape !== 'budget') return plan;
+  const outside = outsideQueryFor(intent, diet, meal);
+  if (!outside) return plan;
+  const first = plan.picks.find((x) => x.day && x.part);
+  const slot = first?.day && first.part ? { day: first.day, part: first.part } : safeSlot(intent.days[0] ?? 'fri', intent.parts[0] ?? 'evening');
+  return { ...plan, outside, outsideSlot: slot };
+}
+
+/** A meal's answer, said for this guest: what we do not know about our own menus, and the kind of meal they asked for. */
+function forTheTable(plan: Plan, diet: readonly Diet[], meal: Meal | null): Plan {
+  if (plan.shape !== 'picks' && plan.shape !== 'switch') return plan;
+  const lines: string[] = [];
+  if (diet.length) lines.push(`We have not checked our own picks for ${dietPhrase(diet)} menus, so ask before you book.`);
+  if (meal === 'special') lines.push('For a special night, these are the ones we would book.');
+  if (meal === 'quick') lines.push('Quick and easy places first.');
+  // What they said can be said again, from any answer about a meal.
+  const next = [...plan.next.filter((n) => n !== CHANGE_WHAT_I_EAT).slice(0, 2), CHANGE_WHAT_I_EAT];
+  return { ...plan, next, ...(lines.length ? { intro: [plan.intro, ...lines].filter(Boolean).join(' '), fixed: [...new Set([...(plan.fixed ?? []), 'intro' as const])] } : {}) };
+}
+
+const CHANGE_WHAT_I_EAT = 'Change what I eat';
+
+function basePlan(
+  args: { request: string; places: PlannerPlace[]; saved: SavedItem[]; scores?: Map<string, number>; itineraries?: readonly PlannerItinerary[]; events?: readonly WeddingEventInput[] },
+  intent: Intent,
+): Plan {
   const { request, places, saved, scores, itineraries = [], events = [] } = args;
-  const intent = understand(request);
 
   if (intent.kind === 'schedule') return schedulePlan(intent, request, events);
   if (intent.kind === 'own' && intent.own) {
@@ -532,6 +658,16 @@ export function draftPlan(args: {
     return ownPlan(intent, intent.own, saved);
   }
 
+  if (intent.kind === 'errand') {
+    return {
+      shape: 'ask',
+      title: 'That one is not on our list',
+      intro: 'We only suggest places we know, and that is not something we have looked into. The front desk at the hotel can point you to the nearest one.',
+      picks: [],
+      next: ['Show my plans', 'Where should we get dinner?', 'Show me coffee nearby'].filter((n) => n !== 'Show my plans' || saved.length > 0),
+      fixed: ['title', 'intro'],
+    };
+  }
   if (intent.kind === 'stay') {
     return {
       shape: 'stay',
@@ -562,7 +698,24 @@ export function draftPlan(args: {
   }
   if (intent.kind === 'weekend') return weekendPlan(intent, places, saved, scores);
 
-  const ranked = scorePlaces(intent, places, scores);
+  let ranked = byMeal(scorePlaces(intent, places, scores), intent.meal).filter((r) => !ruledOut(r.place, intent));
+  // With small children along and nothing else asked for, only what is for them.
+  const eatingNow = intent.themes.some((t) => t === 'dinner' || t === 'food' || t === 'breakfast' || t === 'coffee' || t === 'drinks');
+  if (intent.kids && !eatingNow) ranked = ranked.filter((r) => isKid(r.place));
+  // "Anything free": the places we ourselves call free, and nothing else.
+  if (intent.free) {
+    const gratis = places.filter((p) => /\bfree\b/i.test(p.what) && !ruledOut(p, intent));
+    if (gratis.length) {
+      return {
+        shape: 'picks',
+        title: 'Free, from our list',
+        intro: `${COUNT_WORD[Math.min(gratis.length, 6)] ?? 'A few'} ${gratis.length === 1 ? 'place' : 'places'} we know to cost nothing to walk into.`,
+        picks: gratis.slice(0, MOST_PICKS).map((p) => ({ id: p.id, ...slotFor(p, intent) })),
+        next: nextFor(intent, saved, 'picks'),
+        fixed: ['title', 'intro'],
+      };
+    }
+  }
   const itinerary = matchItinerary(intent, itineraries, new Set(places.map((p) => p.id)));
   if (itinerary) {
     const plan = itineraryPlan(intent, itinerary, places, saved, ranked);
@@ -575,8 +728,40 @@ export function draftPlan(args: {
   return plan;
 }
 
+/** Where the hotel is, for "not far". (The page's own hotel position is the same place; this is the planner's.) */
+const HOTEL_AT = { lat: 41.8815, lng: -87.6246 };
+
+/** A place of a kind the guest ruled out ("NOT a museum"): by what it is, or by its own name saying so. */
+function ruledOut(p: PlannerPlace, intent: Intent): boolean {
+  // A cuisine they ruled out, read from our own words about the place ("Burgers, fries, and shakes").
+  if (intent.avoidCuisine.length && saysCuisine(`${p.name} ${p.what}`, intent.avoidCuisine)) return true;
+  // Too hot or too wet to be outside: nothing that is a walk, a park or a zoo.
+  if (intent.indoors && !inHotel(p) && (p.category === 'outdoors' || has(p, 'outdoors') || /\b(park|zoo|garden|walking tour|riverwalk)\b/i.test(`${p.name} ${p.what}`))) return true;
+  // Somebody cannot go far: only what is near, where we know where it is.
+  if (intent.within && !inHotel(p)) {
+    const hotel = HOTEL_AT;
+    if (typeof p.lat !== 'number' || typeof p.lng !== 'number') return true;
+    if (kmBetween(hotel, { lat: p.lat, lng: p.lng }) * 1000 > intent.within * 1.6) return true;
+  }
+  return intent.avoid.some((t) => themeScore(t, p) > 0 || (t === 'museum' && (p.category === 'culture' || /museum/i.test(p.name))) || ((t === 'dinner' || t === 'food') && isFood(p) && !isCoffee(p) && !/cocktail|drinks?\b|bar\b|lounge/i.test(p.what)));
+}
+
+/** The kind of meal asked for comes first among the places that fit; a splurge leaves the quick ones out, and the other way round. */
+function byMeal(ranked: Scored[], meal: Meal | null): Scored[] {
+  if (!meal) return ranked;
+  const opposite: Meal | null = meal === 'special' ? 'quick' : meal === 'quick' ? 'special' : null;
+  return ranked
+    .map((r) => {
+      if (r.score <= 0 || !isFood(r.place)) return r;
+      const is = mealOf(r.place);
+      return { ...r, score: is === meal ? r.score * 2 : is === opposite ? 0 : r.score };
+    })
+    .sort((a, b) => b.score - a.score);
+}
+
 /** The answer from the couple's places, by the rules and the matcher's scores. */
-function placesPlan(intent: Intent, places: readonly PlannerPlace[], saved: readonly SavedItem[], scores: ReadonlyMap<string, number> | undefined, ranked: Scored[]): Plan {
+function placesPlan(intent: Intent, places: readonly PlannerPlace[], saved: readonly SavedItem[], scores: ReadonlyMap<string, number> | undefined, all: Scored[]): Plan {
+  let ranked = all;
   const hits = wordHits(intent, places);
   if (intent.kind === 'open' && !(scores && scores.size) && hits.length) {
     // No kind of thing the rules know, but the request names something in our own words ("bocce"):
@@ -608,6 +793,8 @@ function placesPlan(intent: Intent, places: readonly PlannerPlace[], saved: read
     };
   }
 
+  // "Without leaving the hotel" means exactly that: nothing down the street, however well it fits.
+  if (intent.themes.includes('hotel')) ranked = ranked.filter((r) => inHotel(r.place));
   const chosen = choose(ranked, intent, MOST_PICKS);
   // One fitting place is a thin answer: add the best of the rest for the same time of day.
   if (chosen.length === 1) {
@@ -772,17 +959,31 @@ const capital = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
  * named, a part with no day). The wedding's own hours are never offered.
  */
 function ownPlan(intent: Intent, title: string, saved: readonly SavedItem[]): Plan {
+  // A day outside the wedding weekend: it has a place in My plans once that day is added there, and is never filed under another day.
+  if (intent.otherDay) {
+    return {
+      shape: 'own',
+      title: `${intent.otherDay} is outside the wedding weekend`,
+      intro: `Add ${intent.otherDay} to My plans first (the button above Friday or below Sunday), then add this to it there.`,
+      picks: [],
+      next: saved.length ? ['Show my plans'] : [],
+      fixed: ['title', 'intro'],
+    };
+  }
   const days = intent.days.length ? intent.days : DAYS;
   const parts = intent.parts.length ? intent.parts : PARTS;
-  const slots = days.flatMap((day) => parts.map((part) => ({ day, part }))).filter((s) => !(s.day === 'sat' && s.part !== 'morning'));
+  // "Friday afternoon and Sunday morning" is two times, not every afternoon and morning of both days.
+  const every = intent.ownSlots?.length ? intent.ownSlots.map(([day, part]) => ({ day, part })) : days.flatMap((day) => parts.map((part) => ({ day, part })));
+  const slots = every.filter((s) => !(s.day === 'sat' && s.part !== 'morning'));
   const busy = title === 'Busy';
   if (!slots.length) {
     return { shape: 'own', title: 'That is the wedding', intro: 'Saturday afternoon and evening are the ceremony and the reception, so there is nothing to add then.', picks: [], next: ['The wedding day', 'Show my plans'], fixed: ['title', 'intro'] };
   }
+  const wedding = slots.length < every.length ? ' Saturday afternoon and evening are the wedding, so they are not offered.' : '';
   return {
     shape: 'own',
     title: busy ? 'Mark that time as busy' : `Add “${title}” to your plans`,
-    intro: slots.length > 1 ? 'Choose when, and it goes into My plans and your calendar.' : 'One tap puts it in My plans and your calendar.',
+    intro: `${slots.length > 1 ? 'Choose when, and it goes into My plans and your calendar.' : 'One tap puts it in My plans and your calendar.'}${wedding}`,
     picks: [],
     own: { title, slots },
     next: [saved.length ? 'Show my plans' : 'Plan my whole weekend', 'Where should we get dinner?'].filter((n) => !(busy && n === 'Plan my whole weekend')),

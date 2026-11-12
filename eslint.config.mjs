@@ -7,6 +7,7 @@ const asArray = (c) => (Array.isArray(c) ? c : [c]);
 export default defineConfig([
   globalIgnores([
     '.next/**', 'node_modules/**', '.data/**', '.claude/**', '.impeccable/**', 'coverage/**',
+    'evals/planner/.build/**', 'evals/planner/.results/**', 'evals/planner/node_modules/**',
     'playwright-report/**', 'test-results/**', 'src/db/migrations/**', 'scripts/**', 'docs/**', 'next-env.d.ts',
     'stages/*/.next/**', 'stages/*/out/**', 'public/_stages/**', 'public/ort/**', 'stages/*/next-env.d.ts', 'stages/04-placeholder/public/**',
   ]),

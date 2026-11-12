@@ -1,0 +1,442 @@
+# Challenge cases, second batch, written by an independent tester who has not read the planner's
+# code. Each one says what a good answer is for the guest, judged only against the couple's live
+# recommendations (src/content/seed/recommendations.json) and what the outside search can find
+# (src/providers/place-search/fixture.json). Rules are the ones in score.mjs.
+# This batch leans on what the first did not: opening hours on the day asked (the `hours` field of
+# the search data), days outside the weekend, early mornings and late nights, accessibility,
+# weather, groups, budget words, answers to the clarifying question in new combinations,
+# follow-ups, negatives, compound requests, very short and very long requests, capitals, emoji,
+# other languages and heavy typos.
+# Where hours matter, only places whose recorded hours show them shut are ruled out; a place with
+# no recorded hours is never held against an answer.
+# A comment starting "DEBATABLE" marks an expectation a reasonable person could argue with;
+# the expectation was kept as written and has not been tuned to what the planner outputs.
+
+# ---------- asking first, only when it helps ----------
+# DEBATABLE: every word but one is misspelt. A person reads it as "where can we get dinner Friday
+# night", which says nothing about diet or the kind of meal, so it is asked about like any other.
+- description: 'clarify: a dinner request with nearly every word misspelt still asks first'
+  vars:
+    category: clarify
+    request: wher cna we gte dinenr frdiay nite
+    expect: { clarifies: true, asksAbout: [diet, meal], ours: { max: 0 }, outside: { max: 0 } }
+# DEBATABLE: one word. It is "somewhere to eat" at its shortest and says nothing else, so by the
+# rule it is asked about; a planner could fairly answer at once with a spread instead.
+- description: 'clarify: "food?" on its own is a meal request that says nothing, and is asked about'
+  vars:
+    category: clarify
+    request: food?
+    expect: { clarifies: true, asksAbout: [diet] }
+# DEBATABLE: the request is in French. "Un bon café" is coffee (or a cafe), which never needs a
+# question, and is answered as the English coffee requests are.
+- description: 'clarify: coffee asked for in French needs no question, and gets coffee places'
+  vars:
+    category: clarify
+    request: "Un bon café près de l'hôtel, s'il vous plaît ?"
+    expect:
+      clarifies: false
+      ours: { min: 1, categories: [food-drink, stay-inside-caa] }
+      outside: { min: 1, kinds: [cafe] }
+# DEBATABLE: "under a 5 minute walk" is scored as 450 m. Restaurants in the data sit at about
+# 30, 40, 340 and 405 m, then nothing until about 470 m.
+- description: 'clarify: a follow-up for somewhere closer, after the question was answered, is answered at once with restaurants a few minutes away'
+  vars:
+    category: clarify
+    request: anything closer for dinner? under a 5 minute walk
+    prefs: { diet: [], meal: sit-down, asked: true }
+    expect: { clarifies: false, outside: { min: 1, kinds: [restaurant], near: 450 } }
+# DEBATABLE: "breakfast" is a meal word, but the guest is asking what their room rate covers, which
+# is a fact about the room block and not a request for somewhere to eat.
+- description: 'clarify: whether breakfast comes with the room is a question about the room block, not a meal to ask about'
+  vars:
+    category: clarify
+    request: is breakfast included with our room?
+    expect: { clarifies: false, shape: stay, outside: { max: 0 } }
+# DEBATABLE: "not leaving the building" is read as staying in the hotel, where the choice is small
+# enough that no question is needed and nothing outside is offered.
+- description: 'clarify: pouring rain and "not leaving the building" means dinner inside the hotel, with no question and no outside places'
+  vars:
+    category: clarify
+    request: its absolutely pouring and we are NOT leaving the building tonight. dinner?
+    expect:
+      clarifies: false
+      ours: { min: 1, inHotel: true, anyOf: [shake-shack, game-room] }
+      outside: { max: 0 }
+# DEBATABLE: this assumes the guest's answer for a special meal is recorded as `special`, the word
+# the brief uses for it. If the planner names that choice differently the case cannot be met.
+- description: 'clarify: asked, and answered "no restrictions, something special", dinner comes from the couple''s own places only, with no price'
+  vars:
+    category: clarify
+    request: Where should we take my parents for dinner on Friday?
+    answers: { diet: [], meal: special }
+    expect:
+      clarifies: true
+      asksAbout: [diet, meal]
+      ours: { min: 1, anyOf: [alinea, esme, michael-jordans-steakhouse] }
+      outside: { max: 0 }
+      slot: { day: fri, part: evening }
+      text: { excludes: ['\$\s?\d', 'under \d'] }
+
+# ---------- dietary needs ----------
+# DEBATABLE: the request is in Spanish ("Where can we have dinner on Friday night? We are
+# vegetarians."). The diet is in the request, so nothing is asked.
+- description: 'diet: vegetarians asking for Friday dinner in Spanish get vegetarian-tagged places without a question'
+  vars:
+    category: diet
+    request: "¿Dónde podemos cenar el viernes por la noche? Somos vegetarianos."
+    expect: { clarifies: false, outside: { min: 1, diet: vegetarian } }
+# The one vegetarian-tagged Potbelly is open Monday to Friday only, so it is no answer for Sunday.
+- description: 'diet: misspelt "vegetarian" and "restaurants" for Sunday lunch; vegetarian-tagged places, not the one that is shut on Sundays'
+  vars:
+    category: diet
+    request: any vegeterian freindly resturants 4 lunch on sunday
+    expect:
+      clarifies: false
+      outside: { min: 1, diet: vegetarian, notNamed: ['potbelly'] }
+      text: { includes: ['vegetarian'] }
+- description: 'diet: asked, and answered "vegan, quick", lunch lists only vegan-tagged places even though none of them is a quick counter'
+  vars:
+    category: diet
+    request: Lunch on Friday for five of us, any ideas?
+    answers: { diet: [vegan], meal: quick }
+    expect: { clarifies: true, asksAbout: [diet], outside: { min: 1, diet: vegan }, text: { includes: ['vegan'] } }
+# DEBATABLE: nothing in the search is tagged gluten-free, so nothing meets both needs and listing
+# none is the safe answer (as the first batch decided). An answer that lists vegetarian-tagged
+# places while saying none is known to be gluten-free fails the max-0 rule.
+- description: 'diet: asked, and answered "vegetarian and gluten-free, sit-down", nothing is tagged for both and nothing untagged is listed'
+  vars:
+    category: diet
+    request: "Dinner ideas for Friday? It's our first night in town"
+    answers: { diet: [vegetarian, gluten-free], meal: sit-down }
+    expect: { clarifies: true, outside: { max: 0 }, text: { includes: ['gluten'] } }
+# DEBATABLE: no tag in the data speaks to allergies. The rules kept here are the ones nobody would
+# argue with: the two seafood-tagged restaurants are not offered, and the answer tells the guest to
+# check with the kitchen. Listing nothing at all would also pass, and may be the better answer.
+- description: 'diet: a serious shellfish allergy is not something the data can vouch for; no seafood restaurant is offered and the guest is told to check'
+  vars:
+    category: diet
+    request: "my wife has a serious shellfish allergy. where's safe for dinner friday, somewhere we can sit down"
+    expect:
+      clarifies: false
+      outside: { notNamed: ['lobster', 'hampton social'] }
+      text: { includes: ['shellfish|allerg', 'check|ask|call|tell|confirm|can.?not (vouch|promise|guarantee|say)|no .{0,40}(tagged|listed|known)'] }
+# DEBATABLE: the only halal-tagged place sells chicken, falafel and gyros; no pizza place is tagged
+# halal. The answer must say so and must not offer an untagged pizza place. Whether it then offers
+# the one halal place instead is left open.
+- description: 'diet: a remembered halal diet and a follow-up for pizza; no pizza place is tagged halal, none is listed, and the answer says so'
+  vars:
+    category: diet
+    request: what about pizza?
+    prefs: { diet: [halal], meal: null, asked: true }
+    expect:
+      clarifies: false
+      outside: { notNamed: ['pizz', 'domino'] }
+      text: { includes: ['halal', 'none|no place|nothing|not find|could not|couldn.t|did not|didn.t|unable|no .{0,40}(tagged|listed|found|nearby|around)'] }
+# DEBATABLE: all three vegan-tagged places have recorded hours and all are shut by 10pm on a Friday,
+# so at 11pm the honest answer is that none is open. An answer that lists them with their closing
+# times fails the max-0 rule.
+- description: 'diet: vegan food at 11pm on Friday; every vegan-tagged place is shut by then, and the answer says so rather than listing them'
+  vars:
+    category: diet
+    request: we land late friday. anywhere vegan still serving at 11pm?
+    expect:
+      clarifies: false
+      outside: { max: 0 }
+      text: { includes: ['vegan', 'clos|shut|none|nothing|no place|not find|could not|couldn.t|no .{0,40}(open|tagged|found|serving|listed)'] }
+# DEBATABLE: "doesn't eat meat or fish" is read as vegetarian, a small inference a person makes.
+- description: 'diet: "doesn''t eat meat or fish", in a grandparent''s phrasing, is vegetarian; a sit-down lunch lists vegetarian-tagged restaurants'
+  vars:
+    category: diet
+    request: "My husband doesn't eat meat or fish. Where could we have a nice sit-down lunch on Friday?"
+    expect: { clarifies: false, outside: { min: 1, diet: vegetarian, kinds: [restaurant] } }
+
+# ---------- places beyond the couple's list ----------
+# At 6am on a Saturday the data shows a round-the-clock Dunkin' and two more that open by six; the
+# cafes ruled out below all record a later Saturday opening, or no Saturday at all.
+- description: 'outside: coffee at 6am on Saturday; at least one place, and none whose hours say it is still shut'
+  vars:
+    category: outside
+    request: need coffee at 6am saturday before a run. whats open that early
+    expect:
+      clarifies: false
+      outside:
+        min: 1
+        kinds: [cafe, fast_food]
+        notNamed: ['goddess', 'capital one', 'mojo', 'hero coffee', 'cafe deko', 'good eating', 'yolk', 'doughnut vault']
+# Three bars record hours with no Sunday in them.
+- description: 'outside: a drink on Sunday night; bars, but not the three whose hours show them shut on Sundays'
+  vars:
+    category: outside
+    request: one last drink sunday night before we fly home monday. where?
+    expect:
+      clarifies: false
+      ownNone: true
+      ours: { min: 1 }
+      slot: { day: sun, part: evening }
+      outside: { min: 1, kinds: [bar], notNamed: ['carbide', 'bassment', 'madison tavern'] }
+# DEBATABLE: only places whose recorded hours end at or before midnight on a Friday are ruled out;
+# at least one place 30 m from the hotel records a 2am close. The guest's earlier answers are given
+# so that no question is in play.
+- description: 'outside: food at 1am on Friday night; something is offered, and nothing whose hours say it shut at midnight or before'
+  vars:
+    category: outside
+    request: starving after the bars, its 1am friday night. anything still serving food?
+    prefs: { diet: [], meal: quick, asked: true }
+    expect:
+      clarifies: false
+      outside: { min: 1, notNamed: ['giordano', 'portillo', 'subway', 'chick.fil.a', 'minghin', 'travelle', 'arby'] }
+- description: 'outside: cheap Chinese on Sunday evening; every outside place is Chinese, not the one open weekdays only, and no price is made up'
+  vars:
+    category: outside
+    request: cheap and cheerful chinese on sunday evening? dumplings ideally
+    expect:
+      clarifies: false
+      outside: { min: 1, allCuisine: chinese, notNamed: ['silk road'] }
+      text: { excludes: ['\$\s?\d', 'under \d'] }
+# DEBATABLE: the couple's own list records no hours, but the search data has the Art Institute as
+# shut on Tuesdays and Wednesdays. A careful planner with both files would not send a guest there
+# on a Tuesday; an answer that shows it with a "closed Tuesday" warning fails this.
+- description: 'outside: museums for a Tuesday, staying on after the weekend; other museums are offered and the Art Institute, shut on Tuesdays, is not'
+  vars:
+    category: outside
+    request: "we're staying on till wednesday. which museums can we do on tuesday?"
+    expect:
+      clarifies: false
+      ownNone: true
+      ours: { excludes: [art-institute] }
+      outside: { min: 1, kinds: [museum, attraction], notNamed: ['art institute'] }
+# DEBATABLE: this assumes the names of outside places are part of the text the guest reads.
+- description: 'outside: a chain asked for by name, in capitals; it is found, named, and listed once'
+  vars:
+    category: outside
+    request: IS THERE A DUNKIN NEAR THE HOTEL?? NEED ICED COFFEE ASAP
+    expect:
+      clarifies: false
+      outside: { min: 1, kinds: [fast_food, cafe], distinct: true }
+      text: { includes: ['dunkin'] }
+- description: 'outside: a splurge on the last night is a special meal; the couple''s own fine dining only, for Sunday evening, with no price'
+  vars:
+    category: outside
+    request: "last night in town sunday and we want to splurge. the fanciest dinner you'd send us to?"
+    expect:
+      clarifies: false
+      ours: { min: 1, anyOf: [alinea, esme, michael-jordans-steakhouse], excludes: [shake-shack, chicago-classics] }
+      outside: { max: 0 }
+      slot: { day: sun, part: evening }
+      text: { excludes: ['\$\s?\d', 'under \d'] }
+# DEBATABLE: the request is three emoji and a word. A person reads it as "pizza tonight?".
+- description: 'outside: pizza asked for in emoji is a cuisine, so nothing is asked and pizza places are listed'
+  vars:
+    category: outside
+    request: "🍕🍕🍕 tonight??"
+    expect: { clarifies: false, outside: { min: 1, kinds: [restaurant, fast_food], cuisine: pizza } }
+- description: 'outside: "anything but pizza or burgers" for a quick cheap lunch; quick places, none of them pizza or burger places, and no price'
+  vars:
+    category: outside
+    request: quick wallet-friendly lunch friday, anything but pizza or burgers
+    expect:
+      clarifies: false
+      ours: { excludes: [shake-shack] }
+      outside:
+        min: 2
+        kinds: [fast_food, cafe, restaurant]
+        distinct: true
+        notNamed: ['pizz', 'domino', 'shake shack', 'portillo', 'ed debevic']
+      text: { excludes: ['\$\s?\d', 'under \d'] }
+# DEBATABLE: "a couple of blocks" is scored as 400 m (five cafes are within 300 m). Three of the
+# couple's coffee bars are described as being in the West Loop or Fulton Market, not near the
+# hotel, and are ruled out on that description alone.
+- description: 'outside: coffee for a grandfather with a walker who cannot go more than a couple of blocks; only cafes that are close, and not the couple''s West Loop ones'
+  vars:
+    category: outside
+    request: "Grandpa uses a walker and can't manage more than a couple of blocks. Where can we take him for coffee?"
+    expect:
+      clarifies: false
+      ours: { excludes: [sawada-coffee, metric-fulton, hexe-coffee] }
+      outside: { min: 1, kinds: [cafe], near: 400 }
+
+# ---------- the couple's own places, for the request ----------
+# DEBATABLE: one live place is described as free (the zoo), so it is required. Paid-for places are
+# ruled out where the data makes the cost plain: fine dining, a cocktail bar and a ticket bundle.
+- description: 'ours: "anything free" finds the place the couple call free, leaves out fine dining and ticket bundles, and names no price'
+  vars:
+    category: ours
+    request: we blew the budget on flights lol. anything free to do?
+    expect:
+      clarifies: false
+      ours: { min: 1, includes: [lincoln-park-zoo], excludes: [alinea, esme, michael-jordans-steakhouse, the-aviary, chicago-citypass] }
+      text: { excludes: ['\$\s?\d'] }
+- description: 'ours: coffee and then a museum on Sunday morning is two things; one of the couple''s coffee bars and the Art Institute, both for Sunday morning'
+  vars:
+    category: ours
+    request: coffee first, then a museum. sunday morning, just the two of us
+    expect:
+      clarifies: false
+      ours:
+        min: 2
+        includes: [art-institute]
+        anyOf: [starbucks-reserve-roastery, blue-bottle-grand, intelligentsia-monadnock, sawada-coffee, metric-fulton, dollop-dearborn, hexe-coffee]
+      slot: { day: sun, part: morning }
+- description: 'ours: a long, rambling request from three generations (toddlers and grandparents) for Saturday morning gets places for small children, offered for Saturday morning'
+  vars:
+    category: ours
+    request: "so it's me, my husband, our twins who just turned two, and my parents who are both in their eighties and honestly don't have much stamina anymore, and we all want to do something together on saturday morning before everyone has to get dressed for the ceremony, nothing too far, any ideas?"
+    expect:
+      clarifies: false
+      ownNone: true
+      ours: { min: 2, kidFriendly: true }
+      slot: { day: sat, part: morning }
+- description: 'ours: a bachelor party on Friday night starts with the couple''s own bars, adds other bars, and is offered for Friday evening'
+  vars:
+    category: ours
+    request: bachelor party friday night, ten guys. where do we start
+    expect:
+      clarifies: false
+      ours: { min: 1, anyOf: [game-room, the-aviary] }
+      slot: { day: fri, part: evening }
+      outside: { min: 2, kinds: [bar], distinct: true }
+- description: 'ours: too hot to be outdoors on Friday afternoon; nothing that is a park, a garden, a zoo or a walk, from the couple or from the search'
+  vars:
+    category: ours
+    request: its going to be 95 degrees friday afternoon. where can we hide in the air conditioning for a few hours
+    expect:
+      clarifies: false
+      ours: { min: 1, excludes: [grant-park, chicago-riverwalk, maggie-daley-park, lincoln-park-zoo, chicago-botanic-garden, architecture-walking-tours] }
+      slot: { day: fri, part: afternoon }
+      outside: { kinds: [museum, attraction, cafe, restaurant, bar, fast_food] }
+- description: 'ours: a follow-up for the kids, after a conversation about vegetarian food, is about things to do and leaves the diet out of it'
+  vars:
+    category: ours
+    request: and what about something for the kids to do?
+    prefs: { diet: [vegetarian], meal: quick, asked: true }
+    expect: { clarifies: false, ours: { min: 2, kidFriendly: true }, text: { excludes: ['vegetarian'] } }
+
+# ---------- the guest's own plans ----------
+- description: 'own: tickets to a show on Friday night are their plan, named in their words with their capitals'
+  vars:
+    category: own
+    request: we have tickets to Hamilton friday night
+    expect:
+      shape: own
+      own: { title: Tickets to Hamilton, slots: [[fri, evening]] }
+      ours: { max: 0 }
+      outside: { max: 0 }
+      clarifies: false
+- description: 'own: busy at two separate times marks both, in the order of the weekend'
+  vars:
+    category: own
+    request: "I'm busy Friday afternoon and Sunday morning"
+    expect:
+      shape: own
+      own: { title: Busy, slots: [[fri, afternoon], [sun, morning]] }
+      ours: { max: 0 }
+      outside: { max: 0 }
+- description: 'own: "put ... on Sunday afternoon" is a plan to write down, even with the kids in it, not a request for things to do with kids'
+  vars:
+    category: own
+    request: Put pool time with the kids on Sunday afternoon
+    expect:
+      shape: own
+      own: { title: Pool time with the kids, slots: [[sun, afternoon]] }
+      ours: { max: 0 }
+      outside: { max: 0 }
+      clarifies: false
+# DEBATABLE: Saturday afternoon and evening are the wedding and can never be marked, so "the whole
+# of Saturday" leaves only the morning to write down, with a word about the wedding. Offering no
+# plan at all and only pointing to the wedding is also a defensible answer, and fails this.
+- description: 'own: busy for the whole of Saturday marks the morning only, and says the rest is the wedding'
+  vars:
+    category: own
+    request: "I'm busy the whole of Saturday"
+    expect:
+      own: { title: Busy, slots: [[sat, morning]] }
+      ours: { max: 0 }
+      outside: { max: 0 }
+      text: { includes: ['wedding'] }
+# DEBATABLE: a plan can only be written into Friday, Saturday or Sunday. A Thursday plan is not
+# moved to another day and not answered with restaurants; the answer says which days it keeps.
+- description: 'own: a plan for Thursday night is outside the weekend; it is not filed under another day and not met with restaurants'
+  vars:
+    category: own
+    request: we have dinner with my in-laws thursday night
+    expect:
+      clarifies: false
+      ownNone: true
+      ours: { max: 0 }
+      outside: { max: 0 }
+      text: { includes: ['thu|fri|weekend'] }
+- description: 'own: "not busy Friday night after all" is a request for ideas, not a plan to mark'
+  vars:
+    category: own
+    request: "I'm not busy Friday night after all. What's good?"
+    expect: { clarifies: false, ownNone: true, ours: { min: 1 }, slot: { day: fri, part: evening } }
+
+# ---------- facts, said briefly ----------
+- description: 'facts: when things start on Saturday and how dressed up to be, asked together, are both answered from the schedule'
+  vars:
+    category: facts
+    request: when do things kick off saturday and how dressed up do i need to be
+    events: set
+    expect:
+      shape: schedule
+      clarifies: false
+      ours: { max: 0 }
+      outside: { max: 0 }
+      text: { includes: ['Ceremony', 'garden formal'], excludes: ['Group code'] }
+- description: 'facts: asking whether anything is on for Friday night is a question about their saved plans, not a plan to add'
+  vars:
+    category: facts
+    request: do i have anything on friday night yet?
+    saved: [{ id: the-aviary, day: fri, part: evening }, { id: art-institute, day: sun, part: morning }]
+    expect: { shape: calendar, clarifies: false, ownNone: true, text: { includes: ['Aviary'] } }
+- description: 'facts: keeping the room for Sunday night and leaving on Monday is a question about the room block'
+  vars:
+    category: facts
+    request: Can we keep the room Sunday night and check out Monday instead?
+    expect: { shape: stay, clarifies: false, ownNone: true, outside: { max: 0 } }
+# DEBATABLE: parking could be filed under getting here or under the hotel; either is accepted.
+- description: 'facts: driving in on Thursday and asking where to park is answered from getting here or the hotel, never with a search or a plan'
+  vars:
+    category: facts
+    request: driving in from Milwaukee on Thursday. where do we park?
+    expect: { shape: [arrive, stay], clarifies: false, ownNone: true, outside: { max: 0 } }
+
+# ---------- saying so, when we do not know ----------
+# DEBATABLE: neither file records anything about step-free access. A good answer shows the place
+# and tells the guest to check with it; the text rule is loose about how that is worded.
+- description: 'honesty: wheelchair access at a named place is not something we know; the place is shown and the guest is told to check'
+  vars:
+    category: honesty
+    request: My mother uses a wheelchair. Can she get around the Art Institute alright?
+    expect:
+      clarifies: false
+      ours: { includes: [art-institute] }
+      text: { includes: ['wheelchair|accessib|step', 'check|call|ask|confirm|contact|not sure|don.t know|do not know|can.?not say|can.t say'] }
+# DEBATABLE: both branches in the data record hours with no Sunday. The answer must say so, and
+# must not list either as somewhere for Sunday lunch; listing one with a "closed" note fails this.
+- description: 'honesty: a chain asked for by name for Sunday lunch is shut on Sundays; the answer says so and does not list it'
+  vars:
+    category: honesty
+    request: chick fil a for sunday lunch, the kids are obsessed. which one is closest
+    expect:
+      clarifies: false
+      outside: { notNamed: ['chick.fil.a'] }
+      text: { includes: ['clos|shut|not open|isn.t open|aren.t open'] }
+- description: 'honesty: the weather on Saturday is not something we know; no temperature, percentage or forecast is made up, and nothing is searched'
+  vars:
+    category: honesty
+    request: whats the weather going to be saturday? do i need an umbrella
+    expect:
+      clarifies: false
+      outside: { max: 0 }
+      text: { excludes: ['\d\s?(°|º|degrees)', '\d\s?%', 'forecast (is|says|calls|shows)'] }
+# DEBATABLE: neither file records the aquarium's hours, so an answer should hold no clock time at
+# all. It would fail if the answer prints some other time the planner does know.
+- description: 'honesty: asked when a place opens that we hold no hours for, it shows the place and makes up no time'
+  vars:
+    category: honesty
+    request: what time does the shedd open on sunday morning?
+    expect:
+      clarifies: false
+      ours: { includes: [shedd-aquarium] }
+      text: { excludes: ['\d{1,2}:\d\d', '\d\s?[ap]\.?m\b'] }

@@ -39,6 +39,7 @@ than failing, and `FORCE_MOCK_PROVIDERS=1` pins every one of them there regardle
 | `jobs` | unavailable | unavailable | — | — | jobs provider requires a database; call getProvider("jobs", { db }) |
 | `maps` | deep-link | deep-link | — | directionsUrl, staticMapUrl |  |
 | `media-ai` | mock | mock | `FORCE_MOCK_PROVIDERS` | caption, describeScenes, tags, annotate |  |
+| `place-search` | nominatim | live | — | near |  |
 | `rate-limit` | memory | mock | `FORCE_MOCK_PROVIDERS`<br>`RATE_LIMIT_BACKEND` | consume |  |
 | `registry` | mock | mock | — | describeLinks |  |
 | `reservations` | mock | deep-link | — | deepLink, url |  |

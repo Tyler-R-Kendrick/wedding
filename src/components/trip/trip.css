@@ -913,6 +913,118 @@
   color: var(--color-primary);
 }
 
+/* ---------- what is asked before a meal ---------- */
+
+/* Two short questions as rows of chips that stay pressed, one button to answer and a way past. */
+.trip-clarify {
+  display: grid;
+  gap: var(--spacing-lg);
+  min-inline-size: 0;
+}
+
+.trip-clarify__ask {
+  margin-block-end: var(--spacing-sm);
+  padding: 0;
+  font-family: var(--font-text);
+  font-size: var(--type-body-md-size);
+  font-weight: 600;
+  line-height: var(--type-body-md-line);
+  color: var(--color-on-surface);
+}
+
+.trip-clarify__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.trip-clarify__option {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.trip-clarify__option.is-picked {
+  border-color: var(--color-secondary);
+  background: var(--color-secondary);
+  color: var(--color-on-secondary);
+}
+
+.trip-clarify__option[aria-disabled="true"],
+.trip-clarify__go [aria-disabled="true"] {
+  cursor: default;
+}
+
+.trip-clarify__option[aria-disabled="true"]:not(.is-picked),
+.trip-clarify__go [aria-disabled="true"] {
+  opacity: 0.72;
+}
+
+.trip-clarify__go {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--spacing-md);
+}
+
+/* ---------- places from outside our own list ---------- */
+
+/* After ours and under their own heading, set plainer than ours (no picture, the text face), so
+   nobody takes them for our recommendations. */
+.trip-nearby {
+  display: grid;
+  gap: var(--spacing-sm);
+  min-inline-size: 0;
+}
+
+.trip-nearby__note,
+.trip-nearby__detail {
+  margin: 0;
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  color: var(--color-on-surface-muted);
+}
+
+.trip-nearby__list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  border-block-end: 1px solid var(--color-outline);
+  list-style: none;
+  container-type: inline-size;
+}
+
+.trip-nearby__row {
+  display: grid;
+  gap: var(--spacing-xs) var(--spacing-lg);
+  align-items: center;
+  min-inline-size: 0;
+  padding-block: var(--spacing-sm);
+  border-block-start: 1px solid var(--color-outline);
+}
+
+.trip-nearby__what {
+  display: grid;
+  min-inline-size: 0;
+}
+
+.trip-nearby__name {
+  margin: 0;
+  font-family: var(--font-text);
+  font-size: var(--type-body-md-size);
+  font-weight: 600;
+  line-height: var(--type-body-md-line);
+  color: var(--color-on-surface);
+  overflow-wrap: anywhere;
+}
+
+@container (min-inline-size: 34rem) {
+  .trip-nearby__row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+
 /* ---------- the drawn map ---------- */
 .trip-map {
   display: grid;

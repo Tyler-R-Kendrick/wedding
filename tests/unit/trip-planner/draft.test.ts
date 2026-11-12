@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { draftPlan, MAX_PICKS, stayFacts, type Plan, type SavedItem } from '@/domain/trip-planner';
+import { draftPlan, MAX_PICKS, stayFacts, type Plan, type SavedItem, type Prefs } from '@/domain/trip-planner';
 import { kmBetween, scorePlaces, WALK_KM } from '@/domain/trip-planner/draft';
 import { understand } from '@/domain/trip-planner';
-import { BY_ID, PLACES } from './fixtures';
+import { ASKED, BY_ID, PLACES } from './fixtures';
 
-const draft = (request: string, saved: SavedItem[] = [], scores?: Map<string, number>) => draftPlan({ request, places: PLACES, saved, scores });
+// Asked already, so a meal is answered at once; the question itself has its own tests below.
+const draft = (request: string, saved: SavedItem[] = [], scores?: Map<string, number>, prefs: Prefs = { ...ASKED, diet: [] }) => draftPlan({ request, places: PLACES, saved, scores, prefs });
 const ids = (plan: Plan) => plan.picks.map((p) => p.id);
 const place = (id: string) => BY_ID.get(id)!;
 const isCoffee = (id: string) => /coffee|espresso|roast/i.test(`${place(id).name} ${place(id).what}`);
@@ -244,5 +245,66 @@ describe('draftPlan', () => {
     const plan = draft('Somewhere for coffee');
     expect(plan.candidates!.length).toBeLessThanOrEqual(12);
     for (const id of ids(plan)) expect(plan.candidates).toContain(id);
+  });
+
+  it('a meal with nothing said about what they eat or the kind of meal asks first, once a visit', () => {
+    const fresh: Prefs = { diet: [], meal: null, asked: false };
+    const asked = draft('Where should we get dinner?', [], undefined, fresh);
+    expect(asked.shape).toBe('clarify');
+    expect(asked.picks).toEqual([]);
+    expect(asked.clarify?.request).toBe('Where should we get dinner?');
+    expect(asked.clarify?.groups.map((g) => [g.id, g.multi, g.options.map((o) => o.value)])).toEqual([
+      ['diet', true, ['vegetarian', 'vegan', 'gluten-free', 'halal', 'kosher']],
+      ['meal', false, ['quick', 'sit-down', 'special']],
+    ]);
+    // Not asked again, and not asked when the request says it already.
+    for (const q of ['Where can a vegetarian get dinner?', 'Somewhere cheap for lunch', 'Where can we get pizza?', 'no dietary restrictions, a good dinner on Friday', 'Somewhere to eat without leaving the hotel']) {
+      expect(draft(q, [], undefined, fresh).shape, q).not.toBe('clarify');
+    }
+    expect(draft('Where should we get dinner?').shape).not.toBe('clarify');
+    // Never for coffee, a drink, things to do, facts or their own plans.
+    for (const q of ['Somewhere for coffee', 'A cocktail on Friday night', 'Something to do with kids', 'What time is the ceremony?', "I'm busy Friday night", 'what is there to do after dinner on friday']) {
+      expect(draft(q, [], undefined, fresh).shape, q).not.toBe('clarify');
+    }
+    // "Change what I eat" asks again, for the meal they last asked about.
+    const again = draftPlan({ request: 'Change what I eat', places: PLACES, saved: [], prefs: { diet: ['vegan'], meal: null, asked: true }, lastMeal: 'Lunch on Sunday?' });
+    expect(again.shape).toBe('clarify');
+    expect(again.clarify?.request).toBe('Lunch on Sunday?');
+  });
+
+  it('what they eat is honoured: said of our own menus that they are unchecked, and looked for outside our list', () => {
+    const veg = draft('Where should we get dinner?', [], undefined, { diet: ['vegetarian'], meal: null, asked: true });
+    expect(veg.intro).toMatch(/not checked our own picks for vegetarian menus/);
+    expect(veg.outside?.diet).toEqual(['vegetarian']);
+    expect(veg.next).toContain('Change what I eat');
+    // Said in the request, it joins what they told us before.
+    expect(draft('Somewhere gluten-free for lunch', [], undefined, { diet: ['vegetarian'], meal: null, asked: true }).outside?.diet.sort()).toEqual(['gluten-free', 'vegetarian']);
+    // A diet changes nothing that is not a meal.
+    const museum = draft('A museum for Sunday morning', [], undefined, { diet: ['vegan'], meal: null, asked: true });
+    expect(museum.intro).not.toMatch(/vegan/);
+    expect(museum.outside?.diet ?? []).toEqual([]);
+  });
+
+  it('what to look for beyond our list follows the request, and is nothing where the answer is ours alone', () => {
+    const kinds = (q: string, prefs?: Prefs) => draft(q, [], undefined, prefs).outside?.kinds ?? null;
+    expect(kinds('Somewhere for coffee')).toEqual(['cafe']);
+    expect(kinds('A bar for a drink on Friday night')).toEqual(['bar']);
+    expect(kinds('Where can we get pizza?')).toEqual(['restaurant', 'fast_food', 'cafe']);
+    expect(draft('Where can we get pizza?').outside?.cuisine).toEqual(['pizza']);
+    expect(kinds('Where should we get dinner?', { diet: [], meal: 'quick', asked: true })).toEqual(['fast_food', 'cafe', 'restaurant']);
+    // A special dinner is ours to recommend; so is the hotel, the wedding, the room block and their own plans.
+    expect(kinds('Where should we get dinner?', { diet: [], meal: 'special', asked: true })).toBeNull();
+    for (const q of ['Somewhere to eat without leaving the hotel', 'What should I wear?', 'Where should I stay?', "I'm busy Friday night", 'I have two hours', 'Plan my whole weekend']) expect(kinds(q), q).toBeNull();
+    // What they rule out is not looked for, by kind or by name.
+    const indoors = draft("something indoors for sunday morning that's NOT a museum");
+    expect(indoors.outside?.kinds ?? []).not.toContain('museum');
+    expect(ids(indoors).some((id) => /museum/i.test(place(id).name))).toBe(false);
+  });
+
+  it('an errand is not something we know, and is said so with no places', () => {
+    const plan = draft('Is there a pharmacy near the hotel?');
+    expect(plan.title).toBe('That one is not on our list');
+    expect(plan.picks).toEqual([]);
+    expect(plan.outside).toBeUndefined();
   });
 });

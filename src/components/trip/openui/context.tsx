@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
-import { arrivalFacts, stayFacts, type ArrivalFacts, type CalendarDayModel, type Day, type Part, type PlannerPlace, type SavedItem, type StayFacts } from '@/domain/trip-planner';
+import { arrivalFacts, stayFacts, type ArrivalFacts, type CalendarDayModel, type Day, type Diet, type Meal, type Part, type PlannerPlace, type SavedItem, type StayFacts } from '@/domain/trip-planner';
 
 /**
  * What the page hands the planner's components: the couple's places, the guest's saved weekend,
@@ -14,7 +14,9 @@ export type TripAction =
   | { type: 'AddToWeekend'; id: string; day?: Day; part?: Part }
   | { type: 'RemoveFromWeekend'; id: string }
   /** Something of the guest's own ("Busy", "Dinner with my parents"), written into a part of a weekend day. */
-  | { type: 'AddOwn'; title: string; day: Day; part: Part }
+  | { type: 'AddOwn'; title: string; day: Day; part: Part; date?: string }
+  /** The guest's answer to what was asked before a meal: the request is then answered with it. */
+  | { type: 'AnswerClarify'; request: string; diet: Diet[]; meal: Meal | null }
   /** Open My plans with this saved place picked up, ready to be given another time. */
   | { type: 'MovePlan'; id: string }
   | { type: 'OpenPlans' }

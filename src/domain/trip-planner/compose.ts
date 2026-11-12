@@ -1,6 +1,8 @@
 import { fitIn } from './draft';
 import { DAY_NAME, dateLabel, weekendDate } from './facts';
 import { aboutHowLong, clockSpan, planRoute, routeFacts, type Leg } from './route';
+import { CUISINE_NAME } from './intent';
+import { dietPhrase } from './outside';
 import { scheduleOf } from './schedule';
 import { DAYS, PARTS, type ComposeContext, type Day, type Part, type Plan, type PlanPick, type PlannerPlace } from './types';
 
@@ -28,7 +30,43 @@ function begin(plan: Plan): Program {
   return p;
 }
 
-function end(p: Program, plan: Plan): string {
+/**
+ * Places from outside our own list, after ours and under their own heading: what the search found
+ * and `pickOutside` chose. Not searched (or the search failed): nothing is said. Searched for a
+ * diet and nothing is tagged for it: that is said, rather than listing places that are not.
+ */
+function addOutside(p: Program, plan: Plan, ctx: ComposeContext): void {
+  const query = plan.outside;
+  if (!query || ctx.outside === undefined) return;
+  const found = ctx.outside.filter((o) => o && typeof o.name === 'string' && o.name.trim()).slice(0, query.limit);
+  const diet = dietPhrase(query.diet);
+  if (!found.length) {
+    // Asked for by name and not found: said, rather than answered with something else.
+    const cuisine = query.cuisine.map((c) => CUISINE_NAME[c]).find(Boolean);
+    const chain = (query.named ?? [])[0];
+    const then = query.at ? ' that is open then' : '';
+    const none = chain
+      ? `We could not find a ${chain.replace(/\b[a-z]/g, (m) => m.toUpperCase())} near the hotel${query.at ? ' that is open then: the ones nearby are shut at that time' : ''}.`
+      : diet
+        ? `We could not find a place tagged ${diet}${cuisine ? ` for ${cuisine}` : ''} near the hotel${then}. Most kitchens will tell you what they can do if you call ahead.`
+        : cuisine
+          ? `We could not find ${cuisine} near the hotel${then} on the map we search.`
+          : query.at
+            ? 'We could not find one nearby that we know to be open then.'
+            : null;
+    if (!none) return;
+    p.root.push('nearbyNone');
+    p.lines.push(`nearbyNone = Text(${str(none)}, "md", "muted")`);
+    return;
+  }
+  const slot = plan.outsideSlot;
+  const rows = found.map((o) => `NearbyPlace(${[str(o.name), str(o.detail), opt(o.address), opt(o.website), opt(slot?.day), opt(slot?.part)].join(', ').replace(/(, null)+$/, '')})`);
+  p.root.push('nearby');
+  p.lines.push(`nearby = Nearby(${str(diet ? `Tagged ${diet}, near the hotel` : 'Also nearby')}, ${list(rows)})`);
+}
+
+function end(p: Program, plan: Plan, ctx?: ComposeContext): string {
+  if (ctx) addOutside(p, plan, ctx);
   const next = (plan.next ?? []).filter((n) => typeof n === 'string' && n.trim()).slice(0, 3);
   if (next.length) {
     p.root.push('next');
@@ -153,7 +191,7 @@ function picksProgram(plan: Plan, ctx: ComposeContext, route: boolean): string {
     const heading = plan.route && !plan.itinerary ? (LATER[extras.length] ?? 'More ideas') : (MORE[extras.length] ?? 'More from our list');
     p.lines.push(`more = Col([Title(${str(heading)}, "md"), ${grid(extras)}], 2)`);
   }
-  return end(p, plan);
+  return end(p, plan, ctx);
 }
 
 function budgetProgram(plan: Plan, ctx: ComposeContext): string {
@@ -162,7 +200,7 @@ function budgetProgram(plan: Plan, ctx: ComposeContext): string {
   const minutesOf = (x: PlanPick) => (typeof x.minutes === 'number' && x.minutes > 0 ? x.minutes : ctx.places.get(x.id)?.minutes);
   const rows = knownPicks(plan, ctx).filter((x) => typeof minutesOf(x) === 'number');
   const have = Math.min(600, Math.max(15, Math.round((plan.minutes ?? 120) / 15) * 15));
-  if (!rows.length) return end(p, plan);
+  if (!rows.length) return end(p, plan, ctx);
   const timed = new Map(rows.map((r) => [r.id, { ...ctx.places.get(r.id)!, minutes: minutesOf(r)! }]));
   // An itinerary's stops start ticked (those that fit); otherwise the best rows that fit.
   const offered = plan.itinerary ? rows.slice(0, plan.itinerary.stops) : rows;
@@ -177,7 +215,7 @@ function budgetProgram(plan: Plan, ctx: ComposeContext): string {
     p.root.push('more');
     p.lines.push(`more = Col([Title(${str(cards.length ? (LATER[rest.length] ?? 'More ideas') : 'Each of these takes longer')}, "md"), ${grid(rest, false)}], 2)`);
   }
-  return end(p, plan);
+  return end(p, plan, ctx);
 }
 
 function switchProgram(plan: Plan, ctx: ComposeContext): string {
@@ -191,7 +229,7 @@ function switchProgram(plan: Plan, ctx: ComposeContext): string {
       p.root.push('stops');
       p.lines.push(`stops = ${grid(picks)}`);
     }
-    return end(p, plan);
+    return end(p, plan, ctx);
   }
   p.state.push(`$set = ${str(groups[0]!.label)}`);
   p.root.push('choose', 'picks');
@@ -201,7 +239,7 @@ function switchProgram(plan: Plan, ctx: ComposeContext): string {
     .slice(0, -1)
     .reduceRight((acc, g, i) => `$set == ${str(g.label)} ? g${i} : ${acc}`, `g${groups.length - 1}`);
   p.lines.push(`picks = ${pick}`);
-  return end(p, plan);
+  return end(p, plan, ctx);
 }
 
 function askProgram(plan: Plan, ctx: ComposeContext): string {
@@ -277,6 +315,19 @@ function scheduleProgram(plan: Plan, ctx: ComposeContext): string {
   return end(p, plan);
 }
 
+/** What is asked before a meal is recommended: what they do not eat, and the kind of meal. */
+function clarifyProgram(plan: Plan): string {
+  const p = begin(plan);
+  const c = plan.clarify;
+  const groups = (c?.groups ?? []).filter((g) => g && (g.id === 'diet' || g.id === 'meal') && Array.isArray(g.options) && g.options.length);
+  if (c && typeof c.request === 'string' && c.request.trim() && groups.length) {
+    const lines = groups.map((g) => `ClarifyGroup(${str(g.id)}, ${str(g.label)}, ${g.multi ? 'true' : 'false'}, ${list(g.options.map((o) => `ClarifyOption(${str(o.value)}, ${str(o.label)})`))})`);
+    p.root.push('ask');
+    p.lines.push(`ask = Clarify(${str(c.request)}, ${list(lines)})`);
+  }
+  return end(p, plan);
+}
+
 /** The guest's own plan, and a button for each time it could go. */
 function ownProgram(plan: Plan): string {
   const p = begin(plan);
@@ -324,6 +375,8 @@ export function compose(plan: Plan, ctx: ComposeContext): string {
       return scheduleProgram(safe, ctx);
     case 'own':
       return ownProgram(safe);
+    case 'clarify':
+      return clarifyProgram(safe);
     case 'picks':
     default:
       return picksProgram(safe, ctx, false);

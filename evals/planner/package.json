@@ -1,0 +1,15 @@
+{
+  "name": "wedding-planner-evals",
+  "private": true,
+  "description": "Response-quality evals for the Your Trip planner (promptfoo). Kept apart from the site so its packages stay as they are.",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "eval": "node build.mjs && (PROMPTFOO_DISABLE_TELEMETRY=1 PROMPTFOO_DISABLE_UPDATE=1 PROMPTFOO_DISABLE_SHARING=1 promptfoo eval -c promptfooconfig.yaml --no-cache --no-progress-bar --no-table > .results/run.log 2>&1; node report.mjs)",
+    "report": "node report.mjs",
+    "view": "promptfoo view"
+  },
+  "devDependencies": {
+    "promptfoo": "0.125.1"
+  }
+}

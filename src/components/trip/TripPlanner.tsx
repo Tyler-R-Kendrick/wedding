@@ -38,8 +38,13 @@ import {
   weddingEntries,
   type CalendarEntry,
   type Day,
+  type Diet,
+  type Meal,
+  type OutsidePick,
+  type OutsideQuery,
   type Part,
   type Plan,
+  type Prefs,
   type PlannerItinerary,
   type PlannerPlace,
   type SavedItem,
@@ -78,6 +83,8 @@ export type PlannerActions = {
   /** The guest's own plan ("Dinner with family"): added, or with `itemId` moved or reworded. */
   saveOwn(input: { itemId?: string; title: string; day: Day; part: Part; date?: string }): Promise<{ ok: true; itemId: string } | { ok: false; message: string }>;
   removeOwn(input: { itemId: string }): Promise<{ ok: true } | { ok: false; message: string }>;
+  /** Places near the hotel from outside our own list, for one answer. Absent: answers are ours alone. */
+  searchNearby?(query: OutsideQuery, ours: string[]): Promise<{ ok: true; places: OutsidePick[] } | { ok: false }>;
 };
 
 export type TripPlannerProps = {
@@ -150,8 +157,13 @@ const PART_LABEL: Record<Part, string> = { morning: 'Morning', afternoon: 'After
 const PART_ICON: Record<Part, IconName> = { morning: 'sunrise', afternoon: 'sun', evening: 'moon' };
 /** How long an answer may wait for the matcher's ranking before it is shown without it. */
 const MATCH_WAIT_MS = 1200;
+/** How long an answer waits for the search of the neighbourhood before it is shown without it. */
+const SEARCH_WAIT_MS = 4500;
+const NO_PREFS: Prefs = { diet: [], meal: null, asked: false };
+const DIET_LABEL: Record<Diet, string> = { vegetarian: 'Vegetarian', vegan: 'Vegan', 'gluten-free': 'Gluten-free', halal: 'Halal', kosher: 'Kosher' };
+const MEAL_LABEL: Record<Meal, string> = { quick: 'Quick and casual', 'sit-down': 'A sit-down meal', special: 'Something special' };
 /** Answers that are facts, not a choice of places: nothing to rank. */
-const NO_RANKING = new Set<Plan['shape']>(['calendar', 'stay', 'arrive', 'schedule']);
+const NO_RANKING = new Set<Plan['shape']>(['calendar', 'stay', 'arrive', 'schedule', 'own', 'clarify']);
 const SAVE_FAILED = 'We could not save that just now. Please try again in a moment.';
 const REMOVE_FAILED = 'We could not take that out just now. Please try again in a moment.';
 const TOAST_MS = 5000;
@@ -322,37 +334,62 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
   const liveCalendar = useMemo(() => calendarModel(entriesFor(saved)), [entriesFor, saved]);
 
   const composeFor = useCallback(
-    (plan: Plan) => compose(plan, { places: byId, saved: savedRef.current, events, hotel, ...(plan.shape === 'calendar' ? { calendar: calendarModel(calendarEntries()) } : {}) }),
+    (plan: Plan, outside?: readonly OutsidePick[]) =>
+      compose(plan, { places: byId, saved: savedRef.current, events, hotel, ...(plan.shape === 'calendar' ? { calendar: calendarModel(calendarEntries()) } : {}), ...(outside ? { outside } : {}) }),
     [byId, events, hotel, calendarEntries],
   );
+  // What the guest has said about themselves this visit (what they eat, the kind of meal), and the
+  // last meal they asked about, so "Change what I eat" can answer it again.
+  const prefs = useRef<Prefs>(NO_PREFS);
+  const lastMeal = useRef<string | null>(null);
 
   const send = useCallback(
-    (raw: string) => {
+    (raw: string, opts: { as?: string } = {}) => {
       const request = raw.trim();
       if (!request) return;
       ctl.current?.abort();
       const ac = new AbortController();
       ctl.current = ac;
       const id = nextId.current++;
-      const first = draftPlan({ request, places, saved: savedRef.current, itineraries, events });
+      const about = { request, places, saved: savedRef.current, itineraries, events, prefs: prefs.current, ...(lastMeal.current ? { lastMeal: lastMeal.current } : {}) };
+      const first = draftPlan(about);
+      if (first.shape === 'clarify' && first.clarify) lastMeal.current = first.clarify.request;
       const matcher = getLocalModels().matcher.state;
       // The first use may start the matcher's install; this answer does not wait for it.
       if (matcher !== 'ready' && matcher !== 'unsupported') void ensureLocal('matcher', { userGesture: true }).catch(() => false);
       const rank = matcher === 'ready' && !NO_RANKING.has(first.shape);
-      // An earlier question still being ranked is answered as it stands.
-      setTurns((all) => [...all.map((t) => (t.waiting ? { ...t, waiting: false } : t)), { id, request, program: composeFor(first), waiting: rank }]);
+      // Places beyond our own list are searched for before the answer is shown, so it is whole when it appears.
+      const search = first.outside && actions?.searchNearby ? actions.searchNearby : null;
+      const waiting = rank || !!search;
+      // An earlier question still being answered is shown as it stands.
+      setTurns((all) => [...all.map((t) => (t.waiting ? { ...t, waiting: false } : t)), { id, request: opts.as ?? request, program: composeFor(first), waiting }]);
       setDraft('');
       // A note about the last change is not carried into the next answer.
       closeToast();
       show('things');
-      if (!rank) return;
-      void Promise.race([matchScores(request, places, ac.signal).catch(() => null), wait(MATCH_WAIT_MS, ac.signal)]).then((scores) => {
+      if (!waiting) return;
+      const ranked = rank ? Promise.race([matchScores(request, places, ac.signal).catch(() => null), wait(MATCH_WAIT_MS, ac.signal)]) : Promise.resolve(null);
+      const found = search
+        ? Promise.race([search(first.outside!, places.map((p) => p.name)).then((r) => (r.ok ? r.places : null), () => null), wait(SEARCH_WAIT_MS, ac.signal).then(() => null)])
+        : Promise.resolve(null);
+      void Promise.all([ranked, found]).then(([scores, outside]) => {
         if (ac.signal.aborted) return;
-        const better = scores ? draftPlan({ request, places, saved: savedRef.current, scores, itineraries, events }) : null;
-        patch(id, { ...(better ? { program: composeFor(better) } : {}), waiting: false });
+        const better = scores ? draftPlan({ ...about, saved: savedRef.current, scores }) : first;
+        patch(id, { program: composeFor(better, outside ?? undefined), waiting: false });
       });
     },
-    [places, itineraries, events, composeFor, patch, show, closeToast],
+    [places, itineraries, events, actions, composeFor, patch, show, closeToast],
+  );
+
+  /** The guest's answer to what was asked before a meal: remembered for the visit, and the meal is answered with it. */
+  const answerClarify = useCallback(
+    (request: string, diet: Diet[], meal: Meal | null) => {
+      prefs.current = { diet, meal, asked: true };
+      lastMeal.current = request;
+      const said = [...diet.map((d) => DIET_LABEL[d]), ...(meal ? [MEAL_LABEL[meal]] : [])];
+      send(request, { as: said.length ? said.join(', ') : 'No preference' });
+    },
+    [send],
   );
 
   const startOver = useCallback(() => {
@@ -361,6 +398,8 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
     setTurns([]);
     setTarget(null);
     setDraft('');
+    prefs.current = NO_PREFS;
+    lastMeal.current = null;
     closeToast();
     // Back at the suggestions, at the planner's start (the long thread under the guest is gone).
     const root = rootRef.current;
@@ -571,7 +610,9 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
         case 'RemoveFromWeekend':
           return remove(action.id);
         case 'AddOwn':
-          return addOwn({ date: weekendDate(action.day), part: action.part }, action.title);
+          return addOwn({ date: action.date ?? weekendDate(action.day), part: action.part }, action.title);
+        case 'AnswerClarify':
+          return answerClarify(action.request, action.diet, action.meal);
         case 'SetWeekend':
           return replaceWeekend(action.items);
         case 'MovePlan':
@@ -586,7 +627,7 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
           return send(action.message);
       }
     },
-    [add, remove, addOwn, replaceWeekend, movePlan, show, exportCalendar, send],
+    [add, remove, addOwn, answerClarify, replaceWeekend, movePlan, show, exportCalendar, send],
   );
 
   // ---------- speech ----------

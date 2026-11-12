@@ -24,6 +24,7 @@
     "test:unit": "vitest run --project unit --project ui --project \"stage:*\"",
     "test:integration": "vitest run --project integration",
     "test:evals": "vitest run --project evals",
+    "evals:planner": "npm --prefix evals/planner run -s eval",
     "test:e2e": "playwright test tests/e2e",
     "test:security": "playwright test tests/security",
     "test:e2e:server": "node scripts/test-server-specs.mjs",

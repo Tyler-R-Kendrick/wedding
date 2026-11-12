@@ -25,6 +25,9 @@ export const PLACES: PlannerPlace[] = [
 
 export const BY_ID = new Map(PLACES.map((p) => [p.id, p]));
 
+/** A guest who has already been asked what they eat this visit: a meal is answered at once. */
+export const ASKED = { diet: [], meal: null, asked: true } as const satisfies { diet: readonly string[]; meal: null; asked: boolean };
+
 /** Neutral itineraries shaped like the couple's: a time, who is coming, a kind of thing, and one with words but no stops yet. */
 export const ITINERARIES: PlannerItinerary[] = [
   {

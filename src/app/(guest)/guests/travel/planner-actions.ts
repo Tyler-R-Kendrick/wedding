@@ -1,11 +1,12 @@
 'use server';
 
 import { findAdventures } from '@/capabilities/find_adventures';
+import { findPlacesNearby } from '@/capabilities/find_places_nearby';
 import { addTripItemCapability, getMyTrip, removeTripItemCapability, updateTripItemCapability } from '@/capabilities/travel';
 import { WEDDING_TIMEZONE } from '@/contracts/lifecycle';
 import { newId } from '@/contracts/ids';
 import { WEDDING_DATE_ISO } from '@/contracts/lifecycle';
-import { addDays, isWeddingTime, PART_HOURS, slotForDate, weekendDate, type Day, type Part } from '@/domain/trip-planner';
+import { addDays, DIETS, isWeddingTime, MEALS, OUTSIDE_KINDS, PART_HOURS, slotForDate, weekendDate, type Day, type OutsidePick, type OutsideQuery, type Part } from '@/domain/trip-planner';
 import { runAsUi } from './_shared/server';
 
 /**
@@ -169,4 +170,42 @@ export async function removePlannerOwn(input: { itemId: string }): Promise<Plann
   // Already gone is what the guest asked for.
   if (!row.id) return { ok: true };
   return (await removeRow(row.id)) ? { ok: true } : { ok: false, message: NOT_REMOVED };
+}
+
+// ---------- places beyond our own list ----------
+
+export type PlannerNearbyResult = { ok: true; places: OutsidePick[] } | { ok: false };
+
+/**
+ * What a search of the neighbourhood finds for one answer: the kinds of place the planner asked
+ * for, chosen and ordered on the server. Only what the planner itself can ask for is passed on
+ * (kinds, diets, cuisines and a kind of meal from its own lists), and the names of our own places
+ * in the answer so none is listed twice. A failure is no list: the answer stands without it.
+ */
+export async function searchPlannerNearby(query: OutsideQuery, ours: string[] = []): Promise<PlannerNearbyResult> {
+  const kinds = (Array.isArray(query?.kinds) ? query.kinds : []).filter((k) => (OUTSIDE_KINDS as readonly string[]).includes(k)).slice(0, 4);
+  if (!kinds.length) return { ok: false };
+  const diet = (Array.isArray(query?.diet) ? query.diet : []).filter((d) => (DIETS as readonly string[]).includes(d));
+  const cuisine = (Array.isArray(query?.cuisine) ? query.cuisine : []).filter((c) => typeof c === 'string' && /^[a-z_]{2,20}$/.test(c)).slice(0, 4);
+  const meal = (MEALS as readonly string[]).includes(String(query?.meal)) ? query.meal : undefined;
+  const names = (Array.isArray(ours) ? ours : []).filter((n) => typeof n === 'string').map((n) => n.slice(0, 120)).slice(0, 60);
+  // The rest of what the planner may ask for, each checked for shape; anything else from the page is dropped.
+  const strings = (v: unknown, re: RegExp, max: number) => (Array.isArray(v) ? v : []).filter((x): x is string => typeof x === 'string' && re.test(x)).slice(0, max);
+  const at = query?.at && [query.at.weekday, query.at.from, query.at.to].every((n) => Number.isInteger(n)) && query.at.weekday >= 0 && query.at.weekday <= 6 && query.at.from >= 0 && query.at.from <= 1440 && query.at.to >= 0 && query.at.to <= 2880 ? { weekday: query.at.weekday, from: query.at.from, to: query.at.to } : undefined;
+  const within = Number.isInteger(query?.within) && query.within! >= 100 && query.within! <= 3000 ? query.within : undefined;
+  const r = await runAsUi(findPlacesNearby, {
+    kinds,
+    diet,
+    cuisine,
+    ...(meal ? { meal } : {}),
+    limit: Math.min(8, Math.max(1, Number(query?.limit) || 5)),
+    notNamed: strings(query?.notNamed, /^[a-z ]{3,20}$/, 4),
+    words: strings(query?.words, /^[a-z]{3,20}$/, 8),
+    named: strings(query?.named, /^[a-z' -]{3,24}$/, 2),
+    notCuisine: strings(query?.notCuisine, /^[a-z_]{2,20}$/, 8),
+    ...(within ? { within } : {}),
+    ...(at ? { at } : {}),
+    ours: names,
+  });
+  return r.ok ? { ok: true, places: r.value.data.places } : { ok: false };
 }
