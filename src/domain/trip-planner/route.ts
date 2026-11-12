@@ -288,6 +288,6 @@ export function routeFacts(route: RoutePlan): string[] {
   const rides = legs.some((l) => l?.mode === 'ride' || l?.mode === 'drive');
   if (walks && rides) facts.push('Walking and a ride or two');
   else if (rides) facts.push('By car or rideshare');
-  else if (walks) facts.push('All on foot');
+  else if (walks && route.walkKm < 0.3) facts.push('All on foot');
   return facts;
 }

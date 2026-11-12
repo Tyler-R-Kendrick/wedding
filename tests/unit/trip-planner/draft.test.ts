@@ -155,17 +155,48 @@ describe('draftPlan', () => {
     expect(draft('Getting here from the airport').shape).toBe('arrive');
   });
 
-  it('the calendar comes once three places are saved, and asks first otherwise', () => {
+  it('the guest’s plans are shown whenever they are asked for, however few there are', () => {
     const three: SavedItem[] = [
       { id: 'park-walk', day: 'sat', part: 'morning' },
       { id: 'steakhouse', day: 'fri', part: 'evening' },
       { id: 'art-museum', day: 'sun', part: 'morning' },
     ];
-    expect(draft('These are my plans', three).shape).toBe('calendar');
-    const early = draft('These are my plans', three.slice(0, 1));
-    expect(early.shape).toBe('ask');
-    expect(early.question?.options.length).toBeGreaterThanOrEqual(2);
-    expect(draft('Somewhere for coffee', three).next[0]).toBe('Put my weekend in my calendar');
+    for (const q of ['These are my plans', 'What is my weekend looking like?', 'Show my plans', 'what are my plans', 'when does my flight land']) {
+      expect(draft(q, three).shape, q).toBe('calendar');
+      expect(draft(q, []).shape, q).toBe('calendar');
+    }
+    expect(draft('Show my plans', []).intro).toMatch(/Nothing of your own is in your plans yet/);
+    // One saved place is enough to offer them after any answer; a summary of them does not offer itself.
+    expect(draft('Somewhere for coffee', three.slice(0, 1)).next[0]).toBe('Show my plans');
+    expect(draft('Show my plans', three).next).not.toContain('Show my plans');
+    expect(draft('Show my plans', three).next).not.toContain('Make it kid-friendly');
+  });
+
+  it('something of the guest’s own is theirs to add, never answered with our places', () => {
+    const busy = draft("I'm busy Friday night");
+    expect(busy.shape).toBe('own');
+    expect(busy.picks).toEqual([]);
+    expect(busy.own).toEqual({ title: 'Busy', slots: [{ day: 'fri', part: 'evening' }] });
+    // Their words and their capitals; the day and the part of it come off the name.
+    expect(draft("We're having lunch with Aunt Ruth on Sunday").own).toEqual({ title: 'Lunch with Aunt Ruth', slots: [{ day: 'sun', part: 'afternoon' }] });
+    expect(draft('add dinner with my parents on Friday').own).toEqual({ title: 'Dinner with my parents', slots: [{ day: 'fri', part: 'evening' }] });
+    expect(draft('Block off Sunday morning').own).toEqual({ title: 'Busy', slots: [{ day: 'sun', part: 'morning' }] });
+    // A day with no part of it named offers each part; never the wedding's own hours.
+    expect(draft('We have a family thing on Saturday').own?.slots).toEqual([{ day: 'sat', part: 'morning' }]);
+    expect(draft("I'm busy on Sunday").own?.slots.map((s) => s.part)).toEqual(['morning', 'afternoon', 'evening']);
+    const wedding = draft("We're busy Saturday evening");
+    expect(wedding.shape).toBe('own');
+    expect(wedding.own).toBeUndefined();
+    expect(wedding.title).toBe('That is the wedding');
+  });
+
+  it('a request for ideas is still a request for ideas, and a place of ours named to add is that place', () => {
+    for (const q of ['I have two hours', 'I have a free Saturday morning', 'Something to do Friday night', 'What should I do Friday night?', 'Ideas for Friday evening', 'Where should we get dinner on Friday?']) {
+      expect(draft(q).shape, q).not.toBe('own');
+    }
+    const named = draft('Add The Steakhouse to Friday evening');
+    expect(named.shape).toBe('picks');
+    expect(named.picks).toEqual([{ id: 'steakhouse', day: 'fri', part: 'evening' }]);
   });
 
   it('a too-open request asks one question with at most two places', () => {

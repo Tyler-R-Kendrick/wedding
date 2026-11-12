@@ -180,7 +180,7 @@ describe('compose', () => {
     walk(r.root, (n) => {
       // A weekend day is a route: each saved place is a numbered stop.
       if (n.typeName === 'Place' || n.typeName === 'Stop') shown.push(String(n.props.id));
-      if (n.typeName === 'Button' && n.props.label === 'Use this plan') applied = JSON.stringify(n.props.action);
+      if (n.typeName === 'Button' && n.props.label === 'Put all of these in my plans') applied = JSON.stringify(n.props.action);
     });
     for (const s of saved) {
       expect(shown, s.id).toContain(s.id);
@@ -188,12 +188,34 @@ describe('compose', () => {
     }
   });
 
-  it('binds the time tool, the switch and the map to $variables', () => {
+  it('binds the switch and the map to $variables; an answer about time has nothing to bind', () => {
     const budget = parse(compose(draftPlan({ request: 'I have two hours', places: PLACES, saved: [] }), { places: BY_ID, saved: [] }));
-    expect(Object.keys(budget.stateDeclarations).sort()).toEqual(['$have', '$picked']);
+    expect(Object.keys(budget.stateDeclarations)).toEqual([]);
     const sw = parse(compose(draftPlan({ request: 'Where should we get dinner?', places: PLACES, saved: [] }), { places: BY_ID, saved: [] }));
     expect(Object.keys(sw.stateDeclarations)).toEqual(['$set']);
     const route = parse(compose(draftPlan({ request: 'A walk on Friday afternoon, on foot', places: PLACES, saved: [] }), { places: BY_ID, saved: [] }));
     expect(Object.keys(route.stateDeclarations)).toEqual(['$stop']);
+  });
+
+  it('an answer about time is the stops that fit, then the rest under their own heading', () => {
+    const r = expectClean(compose(draftPlan({ request: 'I have two hours', places: PLACES, saved: [] }), { places: BY_ID, saved: [] }));
+    const kinds: string[] = [];
+    walk(r.root, (n) => kinds.push(n.typeName));
+    expect(kinds).toContain('Route');
+    expect(kinds).toContain('Summary');
+    for (const gone of ['Slider', 'Pressable', 'Badge', 'Card']) expect(kinds).not.toContain(gone);
+  });
+
+  it('the guest’s own plan is a button for each time it could go, and a fact about the wedding has no room block after it', () => {
+    const own = expectClean(compose(draftPlan({ request: "I'm busy on Sunday", places: PLACES, saved: [] }), { places: BY_ID, saved: [] }));
+    const slots: string[] = [];
+    walk(own.root, (n) => n.typeName === 'OwnPlan' && slots.push(`${n.props.title} ${n.props.day} ${n.props.part}`));
+    expect(slots).toEqual(['Busy sun morning', 'Busy sun afternoon', 'Busy sun evening']);
+    const events = [{ id: 'e1', name: 'Ceremony', dateIso: '2027-07-17', dressCode: 'Garden formal' }];
+    const wear = compose(draftPlan({ request: 'What should I wear?', places: PLACES, saved: [], events }), { places: BY_ID, saved: [], events });
+    expect(wear).toContain('Schedule(');
+    expect(wear).not.toContain('Stay(');
+    const day = compose(draftPlan({ request: 'The wedding day', places: PLACES, saved: [], events }), { places: BY_ID, saved: [], events });
+    expect(day).toContain('Stay(');
   });
 });

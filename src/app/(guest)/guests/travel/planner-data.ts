@@ -153,11 +153,14 @@ export async function loadPlanner(principal: Principal): Promise<PlannerData> {
   const seen = new Set<string>();
   const saved: PlannerSaved[] = items.flatMap((i) => {
     const d = i.details;
-    if (i.provider !== 'planner' || i.status === 'cancelled' || !d.placeId || !d.day || !d.part) return [];
-    if (!DAYS.includes(d.day) || !PARTS.includes(d.part) || seen.has(d.placeId)) return [];
-    seen.add(d.placeId);
-    // A place saved for a day before or after the weekend keeps that day's own date.
+    if (i.provider !== 'planner' || i.status === 'cancelled' || !d.day || !d.part) return [];
+    if (!DAYS.includes(d.day) || !PARTS.includes(d.part)) return [];
+    // A plan for a day before or after the weekend keeps that day's own date.
     const date = typeof d.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d.date) ? d.date : undefined;
+    // The guest's own plan ("Dinner with family"): no place of ours behind it, keyed by its own item.
+    if (!d.placeId) return [{ id: `own:${i.id}`, day: d.day, part: d.part, ...(date ? { date } : {}), name: i.title, itemId: i.id, own: true }];
+    if (seen.has(d.placeId)) return [];
+    seen.add(d.placeId);
     return [{ id: d.placeId, day: d.day, part: d.part, ...(date ? { date } : {}), name: i.title, itemId: i.id }];
   });
   const bookings: TripItemInput[] = items

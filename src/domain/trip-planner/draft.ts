@@ -4,6 +4,7 @@ import { matchItinerary } from './itineraries';
 import { scheduleOf, type ScheduleItem } from './schedule';
 import { fitToPart, orderByNearest } from './route';
 import type { Day, Intent, Part, Plan, PlanPick, PlannerItinerary, PlannerPlace, SavedItem, Theme, WeddingEventInput } from './types';
+import { DAYS, PARTS } from './types';
 
 /**
  * The deterministic planner: intent rules, then keyword and tag scoring over the couple's own
@@ -288,8 +289,8 @@ function nextFor(intent: Intent, saved: readonly SavedItem[], shape: Plan['shape
   const pool: [boolean, string][] = [
     // A request for the wedding's own hours was planned around them; the schedule is one tap away.
     [intent.weddingTime && shape !== 'schedule', 'The wedding day'],
-    [saved.length >= 3 && shape !== 'calendar', 'Put my weekend in my calendar'],
-    [!intent.kids && shape !== 'stay' && shape !== 'arrive', 'Make it kid-friendly'],
+    [saved.length >= 1 && shape !== 'calendar', 'Show my plans'],
+    [!intent.kids && shape !== 'stay' && shape !== 'arrive' && shape !== 'calendar', 'Make it kid-friendly'],
     [intent.minutes === null && (shape === 'picks' || shape === 'route'), 'I only have two hours'],
     [!intent.themes.includes('dinner') && shape !== 'switch', 'Where should we get dinner?'],
     [!intent.themes.includes('coffee'), 'Show me coffee nearby'],
@@ -328,7 +329,7 @@ function weekendPlan(intent: Intent, places: readonly PlannerPlace[], saved: rea
   for (const s of saved) {
     if (!onWeekend(s) || picks.some((p) => p.id === s.id)) continue;
     const slot = safeSlot(s.day, s.part);
-    picks.push({ id: s.id, day: slot.day, part: slot.part, note: 'Already in your weekend.' });
+    picks.push({ id: s.id, day: slot.day, part: slot.part, note: 'Already in your plans.' });
   }
   // Only the fill-ins are capped.
   for (const slot of WEEKEND_SLOTS) {
@@ -467,7 +468,7 @@ function itineraryPlan(intent: Intent, it: PlannerItinerary, places: readonly Pl
         ...base,
         shape: 'budget',
         itinerary: { slug: it.slug, stops: timed.length },
-        intro: [own, moved, 'Our stops are ticked; tick or untick anything and the total follows. The times are our own rough guide.'].filter(Boolean).join(' '),
+        intro: [own, moved, 'What fits the time you have comes first. The times are our own rough guide.'].filter(Boolean).join(' '),
         picks,
         minutes: intent.minutes,
         next: nextFor(intent, saved, 'budget'),
@@ -491,7 +492,7 @@ function itineraryPlan(intent: Intent, it: PlannerItinerary, places: readonly Pl
   return {
     ...base,
     shape: route ? 'route' : 'picks',
-    intro: [own, moved, own ? '' : 'In the order we would do them.', 'Tap the heart to add one to your weekend.'].filter(Boolean).join(' '),
+    intro: [own, moved, own ? '' : 'In the order we would do them.'].filter(Boolean).join(' '),
     picks,
     next: nextFor(intent, saved, route ? 'route' : 'picks'),
     candidates: candidatesOf(ranked, picks),
@@ -512,6 +513,24 @@ export function draftPlan(args: {
   const intent = understand(request);
 
   if (intent.kind === 'schedule') return schedulePlan(intent, request, events);
+  if (intent.kind === 'own' && intent.own) {
+    // "Add The Aviary to Friday evening": a place of ours by name is answered with that place, to add.
+    const plain = (s: string) => s.toLowerCase().replace(/^the\s+/, '').replace(/[^a-z0-9]+/g, ' ').trim();
+    const named = places.find((p) => plain(p.name) === plain(intent.own!));
+    const [day] = intent.days;
+    const [part] = intent.parts;
+    if (named) {
+      return {
+        shape: 'picks',
+        title: named.name,
+        intro: 'It is on our list. Add it to the time you want.',
+        picks: [{ id: named.id, ...(day ? { day } : {}), ...(part ? { part } : {}) }],
+        next: nextFor(intent, saved, 'picks'),
+        fixed: ['title', 'intro'],
+      };
+    }
+    return ownPlan(intent, intent.own, saved);
+  }
 
   if (intent.kind === 'stay') {
     return {
@@ -532,22 +551,13 @@ export function draftPlan(args: {
     };
   }
   if (intent.kind === 'calendar') {
-    if (saved.length >= 3) {
-      return {
-        shape: 'calendar',
-        title: 'Your weekend, ready for your calendar',
-        intro: 'Everything you saved, beside our wedding events. Add it all to your calendar in one file.',
-        picks: [],
-        next: nextFor(intent, saved, 'calendar'),
-      };
-    }
+    // Always answered: the wedding's own events are plans enough to show, and to save as a calendar file.
     return {
-      shape: 'ask',
-      title: 'Save a few places first',
-      intro: `Once three or more places are in your weekend, we can put it all in your calendar. ${saved.length ? `${COUNT_WORD[saved.length] ?? 'Some'} saved so far.` : 'Nothing is saved yet.'}`,
+      shape: 'calendar',
+      title: 'Your plans, day by day',
+      intro: saved.length ? 'Our wedding events with everything in your plans. You can change any of it in My plans.' : 'Our wedding events so far. Nothing of your own is in your plans yet; add to them in My plans.',
       picks: [],
-      question: { text: 'Which part of the weekend should we fill first?', options: [{ label: 'Friday afternoon' }, { label: 'Saturday morning' }, { label: 'Sunday' }, { label: 'Plan my whole weekend' }] },
-      next: [],
+      next: nextFor(intent, saved, 'calendar'),
     };
   }
   if (intent.kind === 'weekend') return weekendPlan(intent, places, saved, scores);
@@ -575,7 +585,7 @@ function placesPlan(intent: Intent, places: readonly PlannerPlace[], saved: read
     return {
       shape: 'picks',
       title: headline(intent, chosen.map((p) => slotFor(p, intent))),
-      intro: `${COUNT_WORD[chosen.length] ?? 'A few'} ${chosen.length === 1 ? 'place' : 'places'} from our own list that ${chosen.length === 1 ? 'fits' : 'fit'}. Tap the heart to add one to your weekend.`,
+      intro: `${COUNT_WORD[chosen.length] ?? 'A few'} ${chosen.length === 1 ? 'place' : 'places'} from our own list that ${chosen.length === 1 ? 'fits' : 'fit'}.`,
       picks: chosen.map((p) => ({ id: p.id, ...slotFor(p, intent) })),
       next: nextFor(intent, saved, 'picks'),
       // The writer may word and reorder these, never trade them for places that do not say it.
@@ -628,7 +638,7 @@ function placesPlan(intent: Intent, places: readonly PlannerPlace[], saved: read
       return {
         shape: 'budget',
         title: ((t) => `${duration(intent.minutes!)}${t === 'Our picks for you' ? ', well spent' : `: ${t.charAt(0).toLowerCase()}${t.slice(1)}`}`)(titleFor(rows)),
-        intro: `${moved}Tick what you want to do and the total follows. The times are our own rough guide.`,
+        intro: `${moved}What fits the time you have comes first. The times are our own rough guide.`,
         picks: rows.map((p) => ({ id: p.id, note: `About ${p.minutes} minutes, by our rough guide.`, ...slotFor(p, intent) })),
         minutes: intent.minutes,
         next: nextFor(intent, saved, 'budget'),
@@ -675,7 +685,7 @@ function placesPlan(intent: Intent, places: readonly PlannerPlace[], saved: read
     return {
       shape: 'route',
       title: titleFor(ordered.slice(0, fits)),
-      intro: `${moved}In the order we would do them${later ? `, as much as fits one ${slot.part}` : ''}. Tap the heart to add one to your weekend.`,
+      intro: `${moved}In the order we would do them${later ? `, as much as fits one ${slot.part}` : ''}.`,
       picks,
       route: { stops: fits },
       next: nextFor(intent, saved, 'route'),
@@ -686,7 +696,7 @@ function placesPlan(intent: Intent, places: readonly PlannerPlace[], saved: read
   return {
     shape: 'picks',
     title,
-    intro: `${moved}${COUNT_WORD[chosen.length] ?? 'A few'} ${chosen.length === 1 ? 'place' : 'places'} from our own list that ${chosen.length === 1 ? 'fits' : 'fit'}. Tap the heart to add one to your weekend.`,
+    intro: `${moved}${COUNT_WORD[chosen.length] ?? 'A few'} ${chosen.length === 1 ? 'place' : 'places'} from our own list that ${chosen.length === 1 ? 'fits' : 'fit'}.`,
     picks,
     next: nextFor(intent, saved, 'picks'),
     candidates: candidatesOf(ranked, picks),
@@ -749,7 +759,33 @@ function schedulePlan(intent: Intent, request: string, events: readonly WeddingE
     picks: [],
     next: ['Getting here from the airport', 'A free Saturday morning', 'Where should we get dinner on Friday?'],
     fixed: ['title', 'intro'],
+    // One fact was asked for: the answer is that fact and the events, not the room block as well.
+    ...(items.length && (intent.asks.dress || intent.asks.time) ? { brief: true } : {}),
   };
 }
 
 const capital = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+/**
+ * The guest told us about a plan of their own. We do not answer with places: we offer to write it
+ * into their plans at the time they named, or at each time it could mean (a day with no part of it
+ * named, a part with no day). The wedding's own hours are never offered.
+ */
+function ownPlan(intent: Intent, title: string, saved: readonly SavedItem[]): Plan {
+  const days = intent.days.length ? intent.days : DAYS;
+  const parts = intent.parts.length ? intent.parts : PARTS;
+  const slots = days.flatMap((day) => parts.map((part) => ({ day, part }))).filter((s) => !(s.day === 'sat' && s.part !== 'morning'));
+  const busy = title === 'Busy';
+  if (!slots.length) {
+    return { shape: 'own', title: 'That is the wedding', intro: 'Saturday afternoon and evening are the ceremony and the reception, so there is nothing to add then.', picks: [], next: ['The wedding day', 'Show my plans'], fixed: ['title', 'intro'] };
+  }
+  return {
+    shape: 'own',
+    title: busy ? 'Mark that time as busy' : `Add “${title}” to your plans`,
+    intro: slots.length > 1 ? 'Choose when, and it goes into My plans and your calendar.' : 'One tap puts it in My plans and your calendar.',
+    picks: [],
+    own: { title, slots },
+    next: [saved.length ? 'Show my plans' : 'Plan my whole weekend', 'Where should we get dinner?'].filter((n) => !(busy && n === 'Plan my whole weekend')),
+    fixed: ['title', 'intro'],
+  };
+}

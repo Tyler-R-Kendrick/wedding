@@ -66,7 +66,7 @@ vi.mock('@/app/(guest)/guests/travel/_shared/server', () => ({
 
 import { addDays, weekendDate } from '@/domain/trip-planner';
 
-const { savePlannerPlace, removePlannerPlace } = await import('@/app/(guest)/guests/travel/planner-actions');
+const { savePlannerPlace, removePlannerPlace, savePlannerOwn, removePlannerOwn } = await import('@/app/(guest)/guests/travel/planner-actions');
 const { loadPlanner } = await import('@/app/(guest)/guests/travel/planner-data');
 
 const planner = (placeId: string, day = 'sat', part = 'morning', id = ulid(store.next++)): Row => ({
@@ -149,6 +149,64 @@ describe('planner actions, keyed on the place', () => {
     store.rows = [];
     expect(await savePlannerPlace({ placeId: 'bean-house', day: 'sun', part: 'morning', itemId: gone } as never)).toMatchObject({ ok: true });
     expect(plannerRows('bean-house')).toHaveLength(1);
+  });
+});
+
+describe('the guest’s own plans', () => {
+  const own = () => store.rows.filter((r) => r.provider === 'planner' && !r.details.placeId);
+
+  it('saves a plan in the guest’s words as an item of theirs with no place, moves it by its item, and removes only it', async () => {
+    const first = await savePlannerOwn({ title: '  Dinner with   family ', day: 'fri', part: 'evening' });
+    expect(first).toMatchObject({ ok: true });
+    expect(own()).toHaveLength(1);
+    expect(own()[0]).toMatchObject({ kind: 'other', title: 'Dinner with family', details: { day: 'fri', part: 'evening' } });
+    expect(own()[0]!.startAt.startsWith(weekendDate('fri'))).toBe(true);
+    const itemId = (first as { itemId: string }).itemId;
+    // The same plan at another time is the same item, not a second one.
+    expect(await savePlannerOwn({ itemId, title: 'Dinner with family', day: 'sun', part: 'morning' })).toMatchObject({ ok: true, itemId });
+    expect(own()).toHaveLength(1);
+    expect(own()[0]!.details).toMatchObject({ day: 'sun', part: 'morning' });
+    // Two plans with the same words are two plans.
+    await savePlannerOwn({ title: 'Dinner with family', day: 'fri', part: 'evening' });
+    expect(own()).toHaveLength(2);
+    expect(await removePlannerOwn({ itemId })).toEqual({ ok: true });
+    expect(own()).toHaveLength(1);
+    // Already gone is what was asked for.
+    expect(await removePlannerOwn({ itemId })).toEqual({ ok: true });
+  });
+
+  it('keeps a day of the stay outside the weekend, and refuses the wedding’s hours, a day outside the stay and an empty name', async () => {
+    const thu = addDays(weekendDate('fri'), -1);
+    expect(await savePlannerOwn({ title: 'Busy', day: 'fri', part: 'morning', date: thu })).toMatchObject({ ok: true });
+    expect(own()[0]!.details).toMatchObject({ date: thu, part: 'morning' });
+    expect(await savePlannerOwn({ title: 'Busy', day: 'sat', part: 'evening' })).toMatchObject({ ok: false });
+    expect(await savePlannerOwn({ title: 'Busy', day: 'sat', part: 'morning' })).toMatchObject({ ok: true });
+    expect(await savePlannerOwn({ title: 'Busy', day: 'fri', part: 'morning', date: addDays(weekendDate('fri'), -40) })).toMatchObject({ ok: false });
+    expect(await savePlannerOwn({ title: '   ', day: 'fri', part: 'morning' })).toMatchObject({ ok: false });
+    // The page's field stops at 80 characters; anything longer did not come from it.
+    expect(await savePlannerOwn({ title: 'x'.repeat(80), day: 'fri', part: 'morning' })).toMatchObject({ ok: true });
+    expect(await savePlannerOwn({ title: 'x'.repeat(81), day: 'fri', part: 'morning' })).toMatchObject({ ok: false });
+  });
+
+  it('never edits or deletes a booking or a saved place, whatever id the browser sends', async () => {
+    const booking = flight();
+    const place = planner('bean-house');
+    store.rows.push(booking, place);
+    const before = structuredClone([booking, place]);
+    for (const itemId of [booking.id, place.id, 'not-an-id']) {
+      await savePlannerOwn({ itemId, title: 'Mine now', day: 'fri', part: 'morning' });
+      await removePlannerOwn({ itemId });
+    }
+    expect(store.rows.filter((r) => r.id === booking.id || r.id === place.id)).toEqual(before);
+  });
+
+  it('comes back from loadPlanner as the guest’s own, beside their saved places', async () => {
+    await savePlannerOwn({ title: 'Brunch with Aunt Ruth', day: 'sun', part: 'morning' });
+    store.rows.push(planner('bean-house'));
+    const data = await loadPlanner({ kind: 'guest', guestId: 'g', householdId: 'h' } as never);
+    const mine = data.saved.find((s) => s.own)!;
+    expect(mine).toMatchObject({ id: `own:${own()[0]!.id}`, name: 'Brunch with Aunt Ruth', day: 'sun', part: 'morning', itemId: own()[0]!.id });
+    expect(data.saved.filter((s) => !s.own).map((s) => s.id)).toEqual(['bean-house']);
   });
 });
 

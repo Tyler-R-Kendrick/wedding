@@ -55,9 +55,9 @@ export type Part = (typeof PARTS)[number];
  * on a day of the guest's stay outside Friday to Sunday carries that day's own `date` ("YYYY-MM-DD")
  * too, and `day` is then the weekend day nearest it, never one the weekend planner plans around.
  */
-export type SavedItem = { id: string; day: Day; part: Part; name?: string; date?: string };
+export type SavedItem = { id: string; day: Day; part: Part; name?: string; date?: string; /** The guest's own plan ("Dinner with family"), not one of our places. */ own?: boolean };
 
-export type PlanShape = 'picks' | 'route' | 'budget' | 'switch' | 'stay' | 'arrive' | 'ask' | 'weekend' | 'calendar' | 'schedule';
+export type PlanShape = 'picks' | 'route' | 'budget' | 'switch' | 'stay' | 'arrive' | 'ask' | 'weekend' | 'calendar' | 'schedule' | 'own';
 
 export type PlanPick = {
   id: string;
@@ -95,6 +95,10 @@ export type Plan = {
   route?: { stops: number };
   /** Words the writer must leave alone: the couple's own, or an answer that must say exactly this. */
   fixed?: ('title' | 'intro')[];
+  /** `own`: something of the guest's own to put in their plans, and the times it could go. */
+  own?: { title: string; slots: { day: Day; part: Part }[] };
+  /** `schedule`: one fact was asked for (a time, what to wear), so the answer stops at the events. */
+  brief?: boolean;
 };
 
 export type Theme =
@@ -118,7 +122,7 @@ export type Theme =
 
 /** What a request asks for, read by plain rules. */
 export type Intent = {
-  kind: 'places' | 'stay' | 'arrive' | 'weekend' | 'calendar' | 'schedule' | 'open';
+  kind: 'places' | 'stay' | 'arrive' | 'weekend' | 'calendar' | 'schedule' | 'open' | 'own';
   days: Day[];
   parts: Part[];
   /** "two hours", "90 minutes". */
@@ -134,6 +138,8 @@ export type Intent = {
   weddingTime: boolean;
   /** A question about the wedding itself: what time something starts, or what to wear. */
   asks: { time: boolean; dress: boolean };
+  /** The guest told us something of their own ("I'm busy Friday night", "add dinner with my parents on Friday"): its name. */
+  own?: string;
 };
 
 /**
@@ -175,6 +181,8 @@ export type CalendarEntry = {
   url?: string;
   /** A wedding event whose time is not announced yet. */
   tbd?: boolean;
+  /** A plan the guest put in a part of a day: it has no clock time of its own, only that part. */
+  part?: Part;
 };
 
 export type CalendarDayModel = {

@@ -33,6 +33,8 @@ const PATHS: Record<string, string> = {
   landmark: 'M3 9l9-5 9 5zM5 9v9M9.5 9v9M14.5 9v9M19 9v9M3 20.5h18',
   balloon: 'M12 15c-3 0-5.5-2.9-5.5-6.5a5.5 5.5 0 0 1 11 0C17.5 12.1 15 15 12 15zM12 15l-1 2h2zM12 17c0 1.5-1.5 2-.5 4',
   dinner: 'M7 3v5a2 2 0 0 0 4 0V3M9 3v5M9 10v11M17 21V3c-2 1.5-3 4-3 7v3h3',
+  plus: 'M12 5v14M5 12h14',
+  pencil: 'M4 20l1-4L16 5l3 3L8 19zM14 7l3 3',
   'calendar-plus': 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4M12 12.5v5M9.5 15h5',
   rings: 'M9 21a5 5 0 1 0 0-10 5 5 0 0 0 0 10zM15 21a5 5 0 1 0 0-10 5 5 0 0 0 0 10zM9 11L7.5 8.5 9 6l1.5 2.5z',
   sunrise: 'M3 18h18M7 18a5 5 0 0 1 10 0M12 5v3M5 10.5l1.5 1.5M19 10.5L17.5 12M8 21h8',

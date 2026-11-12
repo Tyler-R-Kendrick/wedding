@@ -18,29 +18,43 @@ function show(program: string, saved: SavedItem[] = []) {
 const programFor = (request: string, saved: SavedItem[] = []) => compose(draftPlan({ request, places: PLACES, saved }), { places: BY_ID, saved });
 
 describe('trip OpenUI library', () => {
-  it('renders the composed place cards with their own copy and a details link to the place page', async () => {
+  it('renders the composed place rows with their own copy, the name linking to the place page', async () => {
     show(programFor('Somewhere for coffee'));
     expect(await screen.findByRole('heading', { level: 3, name: 'Coffee, from our list' })).toBeTruthy();
     const card = screen.getByRole('heading', { level: 4, name: 'Bean House Coffee' }).closest('article')!;
     expect(within(card).getByText('A small roaster with a long counter.')).toBeTruthy();
-    const details = within(card).getByRole('link', { name: /Details/ });
+    const details = within(card).getByRole('link', { name: 'Bean House Coffee' });
     expect(details.getAttribute('href')).toBe('/guests/things-to-do/bean-house');
     expect(details.getAttribute('target')).toBeNull();
   });
 
-  it('the heart fires AddToWeekend with the day and part, and offers to take the place out once saved', async () => {
-    const { onAction } = show(programFor('Somewhere for coffee'));
+  it('the Add button says where the place will go and fires AddToWeekend; once saved the row says so and offers a new time or to take it out', async () => {
+    const { onAction, unmount } = show(programFor('Somewhere for coffee'));
     const card = (await screen.findByRole('heading', { level: 4, name: 'Bean House Coffee' })).closest('article')!;
-    const heart = within(card).getByRole('button', { name: 'Add Bean House Coffee to my weekend' });
-    expect(heart.getAttribute('aria-pressed')).toBe('false');
-    await act(async () => fireEvent.click(heart));
+    const add = within(card).getByRole('button', { name: 'Add Bean House Coffee to Saturday morning' });
+    expect(add.textContent).toBe('Add to Saturday morning');
+    await act(async () => fireEvent.click(add));
     expect(onAction).toHaveBeenCalledWith({ type: 'AddToWeekend', id: 'bean-house', day: 'sat', part: 'morning' });
+    unmount();
 
-    const { onAction: again } = show(programFor('Somewhere for coffee'), [{ id: 'bean-house', day: 'sat', part: 'morning' }]);
-    const saved = screen.getAllByRole('button', { name: 'Remove Bean House Coffee from my weekend' })[0]!;
-    expect(saved.getAttribute('aria-pressed')).toBe('true');
-    await act(async () => fireEvent.click(saved));
+    const { onAction: again } = show(programFor('Somewhere for coffee'), [{ id: 'bean-house', day: 'sun', part: 'afternoon' }]);
+    const saved = (await screen.findByRole('heading', { level: 4, name: 'Bean House Coffee' })).closest('article')!;
+    expect(within(saved).getByText('In your plans: Sunday afternoon')).toBeTruthy();
+    expect(within(saved).queryByRole('button', { name: /^Add / })).toBeNull();
+    await act(async () => fireEvent.click(within(saved).getByRole('button', { name: 'Change the time for Bean House Coffee' })));
+    expect(again).toHaveBeenCalledWith({ type: 'MovePlan', id: 'bean-house' });
+    await act(async () => fireEvent.click(within(saved).getByRole('button', { name: 'Remove Bean House Coffee from my plans' })));
     expect(again).toHaveBeenCalledWith({ type: 'RemoveFromWeekend', id: 'bean-house' });
+  });
+
+  it('while the guest is filling a part of a day, every Add goes there and says so', async () => {
+    const onAction = vi.fn<(a: TripAction) => void>();
+    render(
+      <TripPlannerProvider places={BY_ID} saved={[]} target={{ date: weekendDate('fri'), part: 'evening' }} hotel={null} onAction={onAction}>
+        <TripRenderer response={'root = Col([a])\na = Place("bean-house", null, "sat", "morning")'} />
+      </TripPlannerProvider>,
+    );
+    expect((await screen.findByRole('button', { name: 'Add Bean House Coffee to Friday evening' })).textContent).toBe('Add to Friday evening');
   });
 
   it('a Choice option sends the follow-up request', async () => {
@@ -73,22 +87,39 @@ describe('trip OpenUI library', () => {
     expect(onAction).toHaveBeenCalledWith(expect.objectContaining({ type: 'Ask', message: 'Where should we get dinner?' }));
   });
 
-  it('the time tool totals the ticked rows, and the total changes when a row is ticked', async () => {
+  it('a request with a length of time shows what fits as places to add: nothing to tick, slide or total', async () => {
     show(programFor('I have two hours'));
-    const total = () => screen.getByText(/^Planned: \d+ of \d+ min$/).textContent;
-    await screen.findByText(/^Planned:/);
-    const before = total();
-    expect(before).toBe('Planned: 105 of 120 min');
-    expect(screen.getByText('Fits')).toBeTruthy();
-    const row = screen.getByRole('checkbox', { name: /Hotel Cafe/ });
-    expect(row.getAttribute('aria-checked')).toBe('false');
-    await act(async () => fireEvent.click(row));
-    expect(total()).toBe('Planned: 135 of 120 min');
-    expect(screen.getByText('Over by 15 min')).toBeTruthy();
-    expect(screen.getByRole('checkbox', { name: /Hotel Cafe/ }).getAttribute('aria-checked')).toBe('true');
-    // The keyboard does the same.
-    await act(async () => fireEvent.keyDown(screen.getByRole('checkbox', { name: /Hotel Cafe/ }), { key: ' ' }));
-    expect(total()).toBe('Planned: 105 of 120 min');
+    const stops = await screen.findByRole('list', { name: 'The stops, in order' });
+    // Each stop says how long it takes; none is given a time of day the guest never named.
+    expect(stops.textContent).toMatch(/About (\d+ minutes|an hour)/);
+    expect(stops.textContent).not.toMatch(/\d:\d\d/);
+    expect(screen.queryByRole('checkbox')).toBeNull();
+    expect(screen.queryByRole('slider')).toBeNull();
+    expect(document.body.textContent).not.toMatch(/Planned:|Fits|Over by/);
+    // Every place is a row with one thing to do: add it to a time.
+    const rows = [...document.querySelectorAll('article.trip-place')];
+    expect(rows.length).toBeGreaterThanOrEqual(2);
+    for (const r of rows) expect(within(r as HTMLElement).getByRole('button', { name: /^Add .+ to (Friday|Saturday|Sunday) (morning|afternoon|evening)$/ })).toBeTruthy();
+  });
+
+  it('a long list shows its first three places and the rest on request, with focus on the first that appears', async () => {
+    const ids = ['bean-house', 'corner-roastery', 'art-museum', 'park-walk', 'steakhouse', 'aquarium'].filter((id) => BY_ID.has(id));
+    expect(ids.length).toBeGreaterThanOrEqual(5);
+    show(`root = Col([g])\ng = Grid([${ids.map((id) => `Place("${id}")`).join(', ')}])`);
+    await screen.findByRole('heading', { level: 4, name: BY_ID.get(ids[0]!)!.name });
+    expect(document.querySelectorAll('article.trip-place')).toHaveLength(3);
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: `Show ${ids.length - 3} more` })));
+    expect(document.querySelectorAll('article.trip-place')).toHaveLength(ids.length);
+    expect(screen.queryByRole('button', { name: /^Show \d+ more$/ })).toBeNull();
+    expect(document.activeElement).toBe(screen.getByRole('link', { name: BY_ID.get(ids[3]!)!.name }));
+  });
+
+  it('four places are shown whole', async () => {
+    const ids = ['bean-house', 'art-museum', 'park-walk', 'steakhouse'];
+    show(`root = Col([g])\ng = Grid([${ids.map((id) => `Place("${id}")`).join(', ')}])`);
+    await screen.findByRole('heading', { level: 4, name: 'Bean House Coffee' });
+    expect(document.querySelectorAll('article.trip-place')).toHaveLength(4);
+    expect(screen.queryByRole('button', { name: /^Show/ })).toBeNull();
   });
 
   it('the segmented control switches between the hotel and going out', async () => {
@@ -108,10 +139,12 @@ describe('trip OpenUI library', () => {
     expect(pins.length).toBeGreaterThanOrEqual(2);
     await act(async () => fireEvent.click(pins[0]!));
     expect(pins[0]!.getAttribute('aria-pressed')).toBe('true');
-    expect(screen.getByText(/^Pin: /)).toBeTruthy();
+    // The chosen pin's name is marked in the list under the map; the map explains nothing in a sentence.
+    expect(document.querySelectorAll('.trip-map__legend li.is-selected')).toHaveLength(1);
+    expect(map.closest('figure')!.textContent).not.toMatch(/Pins are|Tap a numbered pin/);
   });
 
-  it('draws the pins over the site’s atlas, numbered in plan order, and a chosen pin updates the bound caption', async () => {
+  it('draws the pins over the site’s atlas, numbered in plan order, and a chosen pin marks its name in the list', async () => {
     const plan = draftPlan({ request: 'For the architecture people', places: PLACES, saved: [], itineraries: ITINERARIES });
     const { container } = show(compose(plan, { places: BY_ID, saved: [] }));
     const figure = (await screen.findByRole('img', { name: 'Map with 2 places and the hotel' })).closest('figure')!;
@@ -124,12 +157,13 @@ describe('trip OpenUI library', () => {
     const pins = within(figure).getAllByRole('button', { name: /^\d\. / });
     expect(pins.map((b) => b.getAttribute('aria-label'))).toEqual(['1. Walk the Building', '2. River Boat Tour']);
     expect(container.querySelector('.trip-map__route')).toBeTruthy();
-    expect(screen.getByText('Tap a numbered pin to see which place it is.')).toBeTruthy();
+    const chosen = () => [...figure.querySelectorAll('.trip-map__legend li.is-selected')].map((li) => li.textContent);
+    expect(chosen()).toEqual([]);
     await act(async () => fireEvent.click(pins[1]!));
     expect(pins[1]!.getAttribute('aria-pressed')).toBe('true');
-    expect(screen.getByText('Pin: River Boat Tour')).toBeTruthy();
+    expect(chosen()).toEqual(['River Boat Tour']);
     await act(async () => fireEvent.click(pins[1]!));
-    expect(screen.getByText('Tap a numbered pin to see which place it is.')).toBeTruthy();
+    expect(chosen()).toEqual([]);
   });
 
   it('moves pins that would cover each other apart, each still a full-size target with a line back to its spot', async () => {
@@ -151,7 +185,7 @@ describe('trip OpenUI library', () => {
     expect(screen.queryByRole('img', { name: /^Map with/ })).toBeNull();
   });
 
-  it('the calendar lists a wedding event as to be announced, and the button fires ExportCalendar', async () => {
+  it('the plans summary lists a wedding event as to be announced and a plan by its part of the day; its buttons open My plans and the calendar file', async () => {
     const saved: SavedItem[] = [
       { id: 'park-walk', day: 'sat', part: 'morning' },
       { id: 'steakhouse', day: 'fri', part: 'evening' },
@@ -163,14 +197,35 @@ describe('trip OpenUI library', () => {
     const wedding = (await screen.findByText('Ceremony and reception')).closest('li')!;
     expect(wedding.className).toContain('trip-cal__event--wedding');
     expect(within(wedding).getByText('Time to be announced')).toBeTruthy();
-    expect(screen.getByText('The Steakhouse')).toBeTruthy();
+    // A plan has a part of the day, never hours we made up for it.
+    const dinner = screen.getByText('The Steakhouse').closest('li')!;
+    expect(within(dinner).getByText('Evening')).toBeTruthy();
+    expect(dinner.textContent).not.toMatch(/\d:\d\d/);
+    // Nothing in the summary is drawn as a control: the two buttons under it are the only ones.
+    expect(within(screen.getByRole('region', { name: 'Your plans' })).getAllByRole('button').map((b) => b.textContent)).toEqual(['Change my plans', 'Add to my calendar']);
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Change my plans' })));
+    expect(onAction).toHaveBeenCalledWith({ type: 'OpenPlans' });
     await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Add to my calendar' })));
     expect(onAction).toHaveBeenCalledWith({ type: 'ExportCalendar' });
   });
 
-  it('"Use this plan" sends SetWeekend with only valid slots', async () => {
+  it('a plans summary already in the thread follows the plans as they change', async () => {
+    const before: SavedItem[] = [{ id: 'steakhouse', day: 'fri', part: 'evening' }];
+    const program = compose(draftPlan({ request: 'Show my plans', places: PLACES, saved: before }), { places: BY_ID, saved: before, calendar: calendarModel(planEntries(before, BY_ID)) });
+    const now: SavedItem[] = [{ id: 'own:1', own: true, name: 'Dinner with family', day: 'sun', part: 'evening' }];
+    render(
+      <TripPlannerProvider places={BY_ID} saved={now} calendar={calendarModel(planEntries(now, BY_ID))} hotel={null} onAction={() => {}}>
+        <TripRenderer response={program} />
+      </TripPlannerProvider>,
+    );
+    expect(await screen.findByText('Dinner with family')).toBeTruthy();
+    expect(screen.queryByText('The Steakhouse')).toBeNull();
+    expect(screen.getAllByText('Nothing planned').length).toBeGreaterThan(0);
+  });
+
+  it('"Put all of these in my plans" sends SetWeekend with only valid slots', async () => {
     const { onAction } = show(programFor('Plan my whole weekend'));
-    await act(async () => fireEvent.click(await screen.findByRole('button', { name: 'Use this plan' })));
+    await act(async () => fireEvent.click(await screen.findByRole('button', { name: 'Put all of these in my plans' })));
     const call = onAction.mock.calls.find(([a]) => a.type === 'SetWeekend')?.[0] as Extract<TripAction, { type: 'SetWeekend' }>;
     expect(call.items.length).toBeGreaterThanOrEqual(4);
     expect(call.items.some((i) => i.day === 'sat' && i.part !== 'morning')).toBe(false);
@@ -184,7 +239,7 @@ describe('trip OpenUI library', () => {
     expect(await screen.findByText('Parking at the hotel')).toBeTruthy();
   });
 
-  it('a CC BY photograph shows its credit under the picture, linked to its source in a new tab', async () => {
+  it('a CC BY photograph shows its credit as the last line of its row, linked to its source in a new tab', async () => {
     const credited = { ...BY_ID.get('art-museum')!, image: { src: '/media/places/x.webp', alt: 'The museum steps', credit: { text: 'Photo: someone, cropped', href: 'https://example.org/photo', license: { name: 'CC BY 2.0', href: 'https://creativecommons.org/licenses/by/2.0/' } } } };
     const plain = { ...BY_ID.get('park-walk')!, image: { src: '/media/places/y.webp', alt: 'The park path' } };
     const places = new Map(BY_ID);
@@ -204,7 +259,8 @@ describe('trip OpenUI library', () => {
     expect(licence.getAttribute('rel')).toContain('license');
     expect(screen.getByRole('img', { name: 'The museum steps' })).toBeTruthy();
     // A public-domain photo carries no credit line.
-    expect(screen.getByRole('img', { name: 'The park path' }).closest('figure')?.querySelector('figcaption')).toBeNull();
+    expect(screen.getByRole('img', { name: 'The park path' }).closest('article')!.querySelector('.trip-place__credit')).toBeNull();
+    expect(credit.closest('article')!.querySelector('.trip-place__foot')!.lastElementChild).toBe(credit.closest('.trip-place__credit'));
   });
 
   it("the map lists every stop in the plan's order, numbering a stop without coordinates without giving it a pin", async () => {
@@ -249,7 +305,7 @@ describe('trip OpenUI library', () => {
     expect(list.textContent?.match(/About 45 minutes/g)).toHaveLength(2);
   });
 
-  it('every card has its picture: a photo, else the place on our map, else the mark for its kind; and how long it takes', async () => {
+  it('every row starts with a picture of the same shape: a photo, else the mark for its kind; and says how long it takes', async () => {
     const photo = { ...BY_ID.get('art-museum')!, image: { src: '/media/places/x.webp', alt: 'The museum steps' } };
     const mapped = { ...BY_ID.get('park-walk')!, image: undefined };
     const nowhere = { ...BY_ID.get('steakhouse')!, image: undefined, lat: undefined, lng: undefined };
@@ -264,9 +320,10 @@ describe('trip OpenUI library', () => {
     const cards = Array.from(document.querySelectorAll('article.trip-place'));
     expect(cards.map((c) => c.firstElementChild?.className)).toEqual([
       expect.stringContaining('trip-place__media'),
-      expect.stringContaining('trip-place__media--map'),
+      expect.stringContaining('trip-place__media--mark'),
       expect.stringContaining('trip-place__media--mark'),
     ]);
+    expect(cards[0]!.firstElementChild!.className).not.toContain('--mark');
     // Until it arrives, the photo's slot is a placeholder of the same size.
     expect(cards[0]!.querySelector('.trip-place__media')!.classList.contains('is-loaded')).toBe(false);
     // Each card says about how long it takes, the couple's own minutes or a guess from its kind.

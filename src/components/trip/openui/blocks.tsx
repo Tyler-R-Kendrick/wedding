@@ -3,11 +3,9 @@
 import { defineAction, defineComponent, useIsStreaming, useTriggerAction, type ActionPlan } from '@openuidev/react-lang';
 import { useEffect, useRef, useState } from 'react';
 import { z } from 'zod/v4';
-import { aboutHowLong, blockDateLines, DAY_NAME, stopMinutes, TIME_TBA, type Day, type Part, type PlannerPlace } from '@/domain/trip-planner';
-import { ATLAS_W, MAX_ZOOM, fitView, project, unitsPerKm, viewBox } from '@/themes/shared/atlas/projection';
+import { aboutHowLong, blockDateLines, safeSlot, savedDate, slotName, stopMinutes, TIME_TBA, weekendDate, type Day, type Part, type PlannerPlace } from '@/domain/trip-planner';
 import { Icon, type IconName } from '@/themes/shared/icons';
 import { useTripPlanner } from './context';
-import { AtlasGround } from './map';
 
 /**
  * The wedding's own blocks: a place from the couple's list with the heart that saves it, the room
@@ -68,80 +66,96 @@ function Fact({ icon, children }: { icon: IconName; children: string }) {
   );
 }
 
-/** A place from the couple's list, by id: photo or a plain ground, what it is, our note, the heart and a link to its page. */
+/** A place from the couple's list, by id: its picture, what it is, our note, and the button that puts it in the guest's plans. */
 export const Place = defineComponent({
   name: 'Place',
   props: z.object({ id: z.string(), note: z.string().optional(), day: z.string().optional(), part: z.string().optional() }),
-  description: "A place from the couple's list, by id, with a heart that saves it to the guest's weekend at day and part.",
+  description: "A place from the couple's list, by id, with a button that adds it to the guest's plans at day and part.",
   component: ({ props }) => <PlaceView id={props.id} note={props.note} day={props.day} part={props.part} />,
 });
 
 /**
- * A place's card. `inRoute` leaves out how long it takes, which the route says above the card, and
- * lets the route lay the card out beside its photo where there is room.
+ * A place as one row: a small picture, then its name (the link to its page), what it is, how long it
+ * takes and where, our note, and what the guest can do with it. The button always says where the
+ * place will go ("Add to Saturday morning"); once it is in the plans the row says so, with the two
+ * things that can be done next. `inRoute` leaves out how long it takes, which the route says above.
  */
 function PlaceView({ id, note, day: dayProp, part: partProp, inRoute = false }: { id: unknown; note?: unknown; day?: unknown; part?: unknown; inRoute?: boolean }) {
-  const props = { id, note: typeof note === 'string' && note.trim() ? note : undefined, day: dayProp, part: partProp };
   const ctx = useTripPlanner();
   const streaming = useIsStreaming();
   const trigger = useTriggerAction();
-  const place = typeof props.id === 'string' ? ctx?.places.get(props.id) : undefined;
+  const place = typeof id === 'string' ? ctx?.places.get(id) : undefined;
   if (!ctx || !place) return null;
-  const saved = ctx.saved.some((s) => s.id === place.id);
-  const day = isDay(props.day) ? props.day : undefined;
-  const part = isPart(props.part) ? props.part : undefined;
-  const toggle = () => {
-    if (saved) void trigger(`Take ${place.name} out of my weekend`, undefined, custom(RemoveFromWeekend.name, { id: place.id }));
-    else void trigger(`Add ${place.name} to my weekend`, undefined, custom(AddToWeekend.name, { id: place.id, ...(day ? { day } : {}), ...(part ? { part } : {}) }));
-  };
-  const when = day && part ? `${DAY_NAME[day]} ${part}` : null;
-  const label = saved ? `Remove ${place.name} from my weekend` : `Add ${place.name} to my weekend`;
-  // How long it takes, always: the couple's own minutes, else a guess from the kind of place (./route).
+  const words = typeof note === 'string' && note.trim() ? note : null;
+  const mine = ctx.saved.find((s) => s.id === place.id);
+  const day = isDay(dayProp) ? dayProp : undefined;
+  const part = isPart(partProp) ? partProp : undefined;
+  // Where "Add" puts it: the time the guest is filling, else the answer's own time for it, else a free part of the weekend.
+  const slot = safeSlot(day ?? 'sat', part ?? 'morning');
+  const going = ctx.target ? slotName(ctx.target.date, ctx.target.part) : slotName(weekendDate(slot.day), slot.part);
+  const add = () => void trigger(`Add ${place.name} to my plans`, undefined, custom(AddToWeekend.name, { id: place.id, day: slot.day, part: slot.part }));
+  const remove = () => void trigger(`Take ${place.name} out of my plans`, undefined, custom(RemoveFromWeekend.name, { id: place.id }));
   const howLong = inRoute ? null : aboutHowLong(stopMinutes(place).minutes);
+  const credit = place.image?.credit;
   return (
-    // Seven rows, always all seven (an empty one where a card has nothing to say), so a row of
-    // cards can share them through a subgrid and every card's name, text, facts and links line up.
-    <article className={`trip-place${inRoute ? ' trip-place--route' : ''}`}>
+    <article className={`trip-place${inRoute ? ' trip-place--route' : ''}${mine ? ' is-saved' : ''}`}>
       <PlaceMedia place={place} />
       <div className="trip-place__head">
-        <p className="bd-eyebrow">{AREA[place.category] ?? place.category}</p>
-        <h4 className="trip-place__name">{place.name}</h4>
-        <button type="button" className={`trip-round trip-heart${saved ? ' is-on' : ''}`} aria-pressed={saved} aria-label={label} title={label} disabled={streaming} onClick={toggle}>
-          <Icon name="heart" filled={saved} className="trip-icon" />
-        </button>
-      </div>
-      <p className="trip-place__what">{place.what}</p>
-      <ul className="trip-facts trip-place__facts">
-        {howLong ? <Fact icon="clock">{howLong}</Fact> : null}
-        {place.address ? <Fact icon="pin">{place.address}</Fact> : null}
-      </ul>
-      <div className="trip-place__extra">
-        {props.note ? <p className="trip-place__note">{props.note}</p> : null}
+        <h4 className="trip-place__name">
+          <a className="bd-link" href={place.href}>
+            {place.name}
+          </a>
+        </h4>
+        <p className="trip-place__what">{place.what}</p>
+        {words ? <p className="trip-place__note">{words}</p> : null}
         {place.why ? <p className="trip-place__why">{place.why}</p> : null}
       </div>
-      <div className="trip-place__actions">
-        {saved ? (
-          <p className="trip-caption trip-place__when is-saved">
-            <Icon name="heart" filled className="trip-icon" />
-            In my weekend
-          </p>
-        ) : when ? (
-          <p className="trip-caption trip-place__when">
-            <Icon name="calendar" className="trip-icon trip-icon--accent" />
-            <span className="sr-only">Saves to </span>
-            {when[0]!.toUpperCase() + when.slice(1)}
+      <div className="trip-place__foot">
+        <ul className="trip-facts trip-place__facts">
+          <Fact icon={AREA_ICON[place.category] ?? 'compass'}>{AREA[place.category] ?? place.category}</Fact>
+          {howLong ? <Fact icon="clock">{howLong}</Fact> : null}
+          {place.address ? <Fact icon="pin">{place.address}</Fact> : null}
+        </ul>
+        <div className="trip-place__actions">
+          {mine ? (
+            <>
+              <p className="trip-place__in">
+                <Icon name="check" className="trip-icon trip-icon--sm" />
+                {`In your plans: ${slotName(savedDate(mine), mine.part)}`}
+              </p>
+              <button type="button" className="trip-link" disabled={streaming} aria-label={`Change the time for ${place.name}`} onClick={() => ctx.onAction({ type: 'MovePlan', id: place.id })}>
+                Change the time
+              </button>
+              <button type="button" className="trip-link" disabled={streaming} aria-label={`Remove ${place.name} from my plans`} onClick={remove}>
+                Remove
+              </button>
+            </>
+          ) : (
+            <button type="button" className="trip-add" disabled={streaming} aria-label={`Add ${place.name} to ${going}`} onClick={add}>
+              <Icon name="plus" className="trip-icon trip-icon--sm" />
+              {`Add to ${going}`}
+            </button>
+          )}
+        </div>
+        {credit ? (
+          <p className="trip-place__credit">
+            <a href={credit.href} target="_blank" rel="noopener noreferrer">
+              {credit.text}
+              <External />
+            </a>
+            {', '}
+            <a href={credit.license.href} target="_blank" rel="license noopener noreferrer">
+              {credit.license.name}
+              <External />
+            </a>
           </p>
         ) : null}
-        <a className="bd-link trip-place__details" href={place.href}>
-          Details<span className="sr-only">{`: ${place.name}`}</span>
-          <Icon name="chevron" className="trip-icon trip-icon--sm" />
-        </a>
       </div>
     </article>
   );
 }
 
-/** What kind of place it is, as a mark: for a place we have neither a photograph nor a position for. */
+/** What kind of place it is, as a mark: beside its kind in the facts, and in place of a photograph we do not have. */
 const AREA_ICON: Record<string, IconName> = {
   'stay-inside-caa': 'building',
   architecture: 'landmark',
@@ -153,18 +167,13 @@ const AREA_ICON: Record<string, IconName> = {
   neighborhood: 'compass',
 };
 
-const MEDIA_ASPECT = 4 / 3;
-/** A place's own map shows about this much of the city across, so a street or two and the lakefront read. */
-const PLACE_MAP_KM = 2.5;
-
 /**
- * The card's picture, always the same size so a row of cards lines up before anything has loaded:
- * a licensed photograph, faded in over a plain placeholder as it arrives; else where the place is,
- * on the site's own drawn map with the hotel when it is near; else the mark for its kind. Never a
- * blank box. A CC BY or BY-SA photograph carries its credit on it (docs/ops/asset-licensing.md).
+ * The row's picture, always the same size so every row starts at the same edge before anything has
+ * loaded: a licensed photograph, faded in over a plain ground as it arrives, else the mark for the
+ * kind of place. Never a blank box. A CC BY or BY-SA photograph's credit is the row's last line
+ * (docs/ops/asset-licensing.md).
  */
 function PlaceMedia({ place }: { place: PlannerPlace }) {
-  const ctx = useTripPlanner();
   const img = useRef<HTMLImageElement>(null);
   const [loaded, setLoaded] = useState(false);
   // A photo already in the browser's cache can finish before React listens for it.
@@ -172,44 +181,10 @@ function PlaceMedia({ place }: { place: PlannerPlace }) {
     if (img.current?.complete && img.current.naturalWidth > 0) setLoaded(true);
   }, [place.image?.src]);
   if (place.image) {
-    const credit = place.image.credit;
     return (
-      <figure className={`trip-place__media${loaded ? ' is-loaded' : ''}`}>
+      <div className={`trip-place__media${loaded ? ' is-loaded' : ''}`}>
         {/* eslint-disable-next-line @next/next/no-img-element -- a place's own photo, already sized by the site's media pipeline */}
         <img ref={img} className="trip-place__photo" src={place.image.src} alt={place.image.alt} loading="lazy" decoding="async" onLoad={() => setLoaded(true)} />
-        {credit ? (
-          <figcaption className="trip-place__credit">
-            <a href={credit.href} target="_blank" rel="noopener noreferrer">
-              {credit.text}
-              <External />
-            </a>
-            {', '}
-            <a href={credit.license.href} target="_blank" rel="license noopener noreferrer">
-              {credit.license.name}
-              <External />
-            </a>
-          </figcaption>
-        ) : null}
-      </figure>
-    );
-  }
-  if (typeof place.lat === 'number' && typeof place.lng === 'number') {
-    const at = project(place.lat, place.lng);
-    const hotel = ctx?.hotel ?? null;
-    const hotelAt = hotel ? project(hotel.lat, hotel.lng) : null;
-    const span = unitsPerKm(place.lat) * PLACE_MAP_KM;
-    const view = fitView([at], MEDIA_ASPECT, { pad: 0.3, maxK: Math.min(MAX_ZOOM, ATLAS_W / span) });
-    const vb = viewBox(view, MEDIA_ASPECT);
-    const inView = (q: { x: number; y: number }) => q.x > vb.x && q.x < vb.x + vb.w && q.y > vb.y && q.y < vb.y + vb.h;
-    const pos = (q: { x: number; y: number }) => ({ left: `${((q.x - vb.x) / vb.w) * 100}%`, top: `${((q.y - vb.y) / vb.h) * 100}%` });
-    const showHotel = hotelAt && inView(hotelAt) && Math.hypot(hotelAt.x - at.x, hotelAt.y - at.y) > span * 0.04;
-    return (
-      <div className="trip-place__media trip-place__media--map is-loaded" aria-hidden="true">
-        <AtlasGround view={view} vb={vb} className="trip-place__atlas" />
-        {showHotel ? <span className="trip-place__hotel" style={pos(hotelAt)} /> : null}
-        <span className="trip-place__spot" style={pos(at)}>
-          <Icon name="pin" filled className="trip-icon" />
-        </span>
       </div>
     );
   }
@@ -230,6 +205,65 @@ function External() {
     </>
   );
 }
+
+/**
+ * Something of the guest's own, offered for one part of a day: a button that writes it into their
+ * plans there, and once it is there, a line that says so with the way to take it out again.
+ */
+export const OwnPlan = defineComponent({
+  name: 'OwnPlan',
+  props: z.object({ title: z.string(), day: z.string(), part: z.string() }),
+  description: "A plan in the guest's own words (title) and the part of a weekend day (day fri|sat|sun, part morning|afternoon|evening) it can be added to.",
+  component: function OwnPlanView({ props }) {
+    const ctx = useTripPlanner();
+    const streaming = useIsStreaming();
+    const title = typeof props.title === 'string' ? props.title.trim() : '';
+    if (!ctx || !title || !isDay(props.day) || !isPart(props.part)) return null;
+    const { day, part } = props;
+    if (day === 'sat' && part !== 'morning') return null;
+    const date = weekendDate(day);
+    const when = slotName(date, part);
+    const mine = ctx.saved.find((s) => s.own && s.name === title && savedDate(s) === date && s.part === part);
+    return (
+      <div className="trip-own">
+        {mine ? (
+          <>
+            <p className="trip-place__in">
+              <Icon name="check" className="trip-icon trip-icon--sm" />
+              {`In your plans: ${when}`}
+            </p>
+            <button type="button" className="trip-link" disabled={streaming} aria-label={`Remove ${title} from ${when}`} onClick={() => ctx.onAction({ type: 'RemoveFromWeekend', id: mine.id })}>
+              Remove
+            </button>
+          </>
+        ) : (
+          <button type="button" className="trip-add" disabled={streaming} aria-label={`Add ${title} to ${when}`} onClick={() => ctx.onAction({ type: 'AddOwn', title, day, part })}>
+            <Icon name="plus" className="trip-icon trip-icon--sm" />
+            {`Add to ${when}`}
+          </button>
+        )}
+      </div>
+    );
+  },
+});
+
+/** A few short facts as one line ("Saturday morning · About 2 hours · All on foot"). */
+export const Summary = defineComponent({
+  name: 'Summary',
+  props: z.object({ facts: z.array(z.string()) }),
+  description: 'A few short facts, read as one line.',
+  component: ({ props }) => {
+    const facts = (Array.isArray(props.facts) ? props.facts : []).filter((f): f is string => typeof f === 'string' && !!f.trim());
+    if (!facts.length) return null;
+    return (
+      <ul className="trip-summary">
+        {facts.map((f) => (
+          <li key={f}>{f}</li>
+        ))}
+      </ul>
+    );
+  },
+});
 
 /** Our room block, with the facts from the travel domain and the booking button. `dates` adds the block's check-in and check-out days. */
 export const Stay = defineComponent({
@@ -477,62 +511,67 @@ export const CalendarDay = defineComponent({
   component: () => null,
 });
 
-const KIND_LABEL: Record<string, string> = { wedding: 'Wedding', plan: 'Your plan', trip: 'Your travel' };
-const KIND_ICON: Record<string, IconName> = { wedding: 'rings', plan: 'heart', trip: 'suitcase' };
+const KIND_ICON: Record<string, IconName> = { wedding: 'rings', plan: 'pin', trip: 'suitcase' };
 
-/** The weekend day by day, the wedding's own events set apart, and the button that saves it all as a calendar file. */
+/**
+ * The guest's plans day by day, to read: the wedding's events, their travel and what they have added.
+ * It is a summary, drawn as plain lines so nothing in it looks like something to press; changing a
+ * plan happens in My plans, which the first button opens.
+ */
 export const Calendar = defineComponent({
   name: 'Calendar',
   props: z.object({ days: z.array(CalendarDay.ref) }),
-  description: "The guest's weekend by day with the wedding's events, and a button to add it to their calendar.",
+  description: "The guest's plans by day with the wedding's events, a button to change them and a button to add them to their calendar.",
   component: function CalendarView({ props }) {
+    const ctx = useTripPlanner();
     const streaming = useIsStreaming();
     const trigger = useTriggerAction();
-    const days = (Array.isArray(props.days) ? props.days : []).flatMap((d) => {
-      const p = (d as Node)?.props;
-      if (!p || !text(p.label)) return [];
-      const events = (Array.isArray(p.events) ? p.events : []).flatMap((e) => {
-        const q = (e as Node)?.props;
-        return q && text(q.title) ? [{ title: text(q.title), time: text(q.time) || null, kind: text(q.kind) || 'plan', note: text(q.note) }] : [];
-      });
-      return [{ label: text(p.label), date: text(p.date), events }];
-    });
+    // The plans as they are now when the page gives them; else the ones the answer was written with.
+    const days = ctx?.calendar
+      ? ctx.calendar.map((d) => ({ label: d.label, date: d.date, events: d.entries.map((e) => ({ title: e.title, time: e.time, kind: e.source as string, note: e.note ?? '' })) }))
+      : (Array.isArray(props.days) ? props.days : []).flatMap((d) => {
+          const p = (d as Node)?.props;
+          if (!p || !text(p.label)) return [];
+          const events = (Array.isArray(p.events) ? p.events : []).flatMap((e) => {
+            const q = (e as Node)?.props;
+            return q && text(q.title) ? [{ title: text(q.title), time: text(q.time) || null, kind: text(q.kind) || 'plan', note: text(q.note) }] : [];
+          });
+          return [{ label: text(p.label), date: text(p.date), events }];
+        });
     return (
-      <section className="trip-cal" aria-label="Your weekend">
+      <section className="trip-cal" aria-label="Your plans">
         <ol className="trip-cal__days">
           {days.map((d) => (
             <li key={d.date || d.label} className="trip-cal__day">
-              <h4 className="trip-title trip-title--md">
+              <h4 className="trip-cal__date">
                 <time dateTime={d.date || undefined}>{d.label}</time>
               </h4>
               {d.events.length ? (
                 <ul className="trip-cal__events">
                   {d.events.map((e, i) => (
                     <li key={`${e.title}-${i}`} className={`trip-cal__event trip-cal__event--${e.kind}`}>
-                      <span className="trip-cal__time">
-                        {e.time ? <Icon name="clock" className="trip-icon trip-icon--caps" /> : null}
-                        {e.time ?? TIME_TBA}
-                      </span>
-                      <span className="trip-cal__what">
-                        <span className="trip-cal__kind">
-                          <Icon name={KIND_ICON[e.kind] ?? 'heart'} className="trip-icon trip-icon--caps trip-icon--accent" />
-                          {KIND_LABEL[e.kind] ?? KIND_LABEL.plan}
-                        </span>
-                        <span className="trip-cal__title">{e.title}</span>
-                      </span>
+                      <Icon name={KIND_ICON[e.kind] ?? 'pin'} className="trip-icon trip-icon--sm trip-icon--accent" />
+                      <span className="trip-cal__time">{e.time ?? TIME_TBA}</span>
+                      <span className="trip-cal__title">{e.title}</span>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="trip-text trip-text--sm trip-text--muted">Nothing planned yet.</p>
+                <p className="trip-cal__none">Nothing planned</p>
               )}
             </li>
           ))}
         </ol>
-        <button type="button" className="bd-btn bd-btn--primary trip-button trip-button--icon" disabled={streaming} onClick={() => void trigger('Add my weekend to my calendar', undefined, custom(ExportCalendar.name))}>
-          <Icon name="calendar-plus" className="trip-icon" />
-          <span>Add to my calendar</span>
-        </button>
+        <div className="trip-cal__actions">
+          <button type="button" className="bd-btn bd-btn--primary trip-button trip-button--icon" disabled={streaming} onClick={() => ctx?.onAction({ type: 'OpenPlans' })}>
+            <Icon name="calendar" className="trip-icon" />
+            <span>Change my plans</span>
+          </button>
+          <button type="button" className="bd-btn bd-btn--secondary trip-button trip-button--icon" disabled={streaming} onClick={() => void trigger('Add my plans to my calendar', undefined, custom(ExportCalendar.name))}>
+            <Icon name="calendar-plus" className="trip-icon" />
+            <span>Add to my calendar</span>
+          </button>
+        </div>
       </section>
     );
   },
@@ -613,4 +652,4 @@ export const Route = defineComponent({
   },
 });
 
-export const blocks = [Place, Route, Stop, Stay, Arrive, Option, Choice, Next, Schedule, WeddingEvent, Calendar, CalendarDay, CalendarEvent];
+export const blocks = [Place, OwnPlan, Summary, Route, Stop, Stay, Arrive, Option, Choice, Next, Schedule, WeddingEvent, Calendar, CalendarDay, CalendarEvent];

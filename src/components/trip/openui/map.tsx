@@ -212,7 +212,6 @@ export const MapView = defineComponent({
               </li>
             ))}
           </ol>
-          <span className="trip-caption">Pins are at their real places; a thin line leads back to one moved aside to be read.</span>
         </figcaption>
       </figure>
     );

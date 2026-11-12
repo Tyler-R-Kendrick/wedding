@@ -1,8 +1,9 @@
 'use client';
 
 import { action, defineComponent, reactive, useFormName, useIsStreaming, useStateField, useTriggerAction } from '@openuidev/react-lang';
-import { useId, useRef, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react';
 import { z } from 'zod/v4';
+import { Icon } from '@/themes/shared/icons';
 
 /**
  * The layout, text and input pieces an answer is built from, in the site's own look. Ported in
@@ -48,8 +49,33 @@ export const Grid = defineComponent({
   name: 'Grid',
   props: z.object({ children }),
   description: 'Cards side by side where there is room, one column on a phone.',
-  component: ({ props, renderNode }) => <div className="trip-grid">{renderNode(props.children)}</div>,
+  component: function GridView({ props, renderNode }) {
+    const all = Array.isArray(props.children) ? props.children : [];
+    const [open, setOpen] = useState(false);
+    const list = useRef<HTMLDivElement>(null);
+    // The first three, and the rest one tap away: a long list is the guest's choice, not the answer's.
+    // (Four are shown whole: "Show 1 more" would cost a tap to save one row.)
+    const short = !open && all.length > GRID_FIRST + 1;
+    useEffect(() => {
+      // Opened by the guest: the keyboard goes to the first place that appeared.
+      if (open) list.current?.querySelectorAll<HTMLElement>(':scope > .trip-place')[GRID_FIRST]?.querySelector<HTMLElement>('a')?.focus({ preventScroll: true });
+    }, [open]);
+    return (
+      <div className="trip-grid" ref={list}>
+        {renderNode(short ? all.slice(0, GRID_FIRST) : all)}
+        {short ? (
+          <button type="button" className="trip-more" onClick={() => setOpen(true)}>
+            <Icon name="plus" className="trip-icon trip-icon--sm" />
+            {`Show ${all.length - GRID_FIRST} more`}
+          </button>
+        ) : null}
+      </div>
+    );
+  },
 });
+
+/** How many places a list shows before the rest are asked for. */
+const GRID_FIRST = 3;
 
 export const Card = defineComponent({
   name: 'Card',

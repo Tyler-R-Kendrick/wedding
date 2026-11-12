@@ -75,7 +75,9 @@ const HOTEL_AS_PLACE = /\b(near|from|in|inside|at|around|by|close to|leaving|bac
 const STAY = /\b(where (should|do|can|could) (i|we) stay|place to stay|room block|book (a|the|our) room|rooms?\b.*\bblock|hotels?|accommodations?|lodging|stay(ing)? (at|in|nearby|near)|check[ -]in|group rate|group code)\b/;
 const ARRIVE = /\b(where (do|can|should|could) (i|we) park|airports?|fly|flying|flights?|o['’]?hare|midway|parking|park (the|my|our) car|driv(e|ing) (in|here|there|to)|getting (here|there|in|downtown)|get (here|there|downtown)|arriv\w*|blue line|valet|train from)\b/;
 const WEEKEND = /\b((whole|entire|full|all) (of )?(the |my |our )?weekend|plan (my|our|the) (whole )?(weekend|trip|stay)|weekend plan|plan everything|fill (my|our) weekend)\b/;
-const CALENDAR = /\b(calendar|ics|confirm (my|our) (plans?|weekend)|(these|those) are (my|our) plans|(my|our) (plans are|weekend is) (set|done|final)|that'?s my (plan|weekend)|i'?m (set|done) planning|export)\b/;
+/** The guest's own plans, as they stand: "show my calendar", "what are my plans", "what is my weekend looking like". */
+const CALENDAR =
+  /\b(calendar|ics|confirm (my|our) (plans?|weekend)|(these|those) are (my|our) plans|(my|our) (plans are|weekend is) (set|done|final)|that'?s my (plan|weekend)|i'?m (set|done) planning|export|what(('?s| is| are) (my|our) (plans?|itinerary|schedule|weekend)| (have|do) (i|we) (have |got )?(planned|saved|on))|(show|see) (me )?(my|our) (plans?|weekend|itinerary|schedule)|(my|our) flights?|(my|our) (weekend|plans?|itinerary|schedule) (is |are )?look(s|ing)?)\b/;
 /**
  * The wedding itself. A named part of the day or what to wear is always a question about the
  * schedule ("what time is the ceremony", "is there a dress code"); a looser one ("Saturday night",
@@ -89,6 +91,32 @@ const AROUND_WEDDING = /\b(before|after|around|ahead of) the (wedding|ceremony|r
 const LOOKING = /\b(something|somewhere|anything|things to|ideas?|plan|visit|explore|free|(to|we|i|you) do)\b/;
 const ASKS_TIME = /\b(what time|when|start(s|ing)?|begin(s|ning)?|end(s|ing)?|finish(es)?|times?|schedule|timeline)\b/;
 const ASKS_DRESS = /\b(dress[ -]?code|attire|wear|dress|black[ -]tie|formal)\b/;
+
+/**
+ * Something of the guest's own, said rather than asked: they are busy then, or they want a plan of
+ * theirs written down. It is theirs to add, never a request for our places.
+ */
+const BUSY = /\b(i'?m|i am|we'?re|we are|i'?ll be|we'?ll be|i will be|we will be|mark (me|us)( as)?) (busy|not free|unavailable|booked|tied up|out)\b|\b(i|we) (can'?t|cannot|won'?t) (make|do) (it |anything )?\b/;
+const ADD_OWN = /^\s*(?:please |can you |could you )?(?:add|put|pencil in|write down|note|block(?: off| out)?|schedule)\s+(.+?)\s*$/;
+const HAVE_OWN = /^\s*(?:i|we)(?:'m| am|'re| are)? (?:(?:have|having|got|'ve got|have got|going to|going)\s+(.+?)|((?:meeting|seeing|visiting)\s+.+?))\s*$/;
+/** Where and when, said at the end of such a sentence: taken off its name. */
+const OWN_TAIL = /\s*\b(?:(?:on|for|to|in|at|this|that)\s+)?(?:(?:the|my|our)\s+)?(?:fri(?:day)?|sat(?:urday)?|sun(?:day)?|morning|afternoon|evening|night|tonight|plans?|calendar|itinerary|weekend|schedule)\b\s*/g;
+
+/** The name of the guest's own plan, in their words and their capitals, or null when the request is not one. */
+function ownTitle(request: string, text: string, hasWhen: boolean, looking: boolean): string | null {
+  if (!hasWhen) return null;
+  if (BUSY.test(text)) return 'Busy';
+  if (looking) return null;
+  const raw = String(request ?? '').replace(/[’]/g, "'").replace(/\s+/g, ' ').trim().replace(/[.!?]+$/, '');
+  const m = ADD_OWN.exec(raw.toLowerCase()) ?? HAVE_OWN.exec(raw.toLowerCase());
+  const said = m?.[1] ?? m?.[2];
+  if (!said) return null;
+  // The same span of the guest's own words, so "Aunt Ruth" keeps her capitals.
+  const name = raw.slice(raw.length - said.length).replace(new RegExp(OWN_TAIL.source, 'gi'), ' ').replace(/\s+/g, ' ').replace(/^(?:a|an|to)\s+/i, '').replace(/\s+(?:on|for|to|in|at|this)$/i, '').trim();
+  // "Block off Sunday morning" names a time and nothing else: that time is taken.
+  if (name.length < 2) return /^\s*(?:please )?block\b/i.test(raw) ? 'Busy' : null;
+  return (name.charAt(0).toUpperCase() + name.slice(1)).slice(0, 80);
+}
 
 const KIDS = /\b(kids?|child(ren)?|toddlers?|bab(y|ies)|famil(y|ies)|little ones?|strollers?|son|daughter)\b/;
 const INDOORS = /\b(rain\w*|indoors?|inside|wet|storm\w*|cold|bad weather)\b/;
@@ -123,8 +151,11 @@ export function understand(request: string): Intent {
   const named = SCHEDULE_NAMED.test(text) && !AROUND_WEDDING.test(text);
   const loose = SCHEDULE_LOOSE.test(text) && !AROUND_WEDDING.test(text) && onlyTheDay && nothingElse;
 
+  const own = ownTitle(request, text, days.length + parts.length > 0, minutes !== null || LOOKING.test(text) || /\?\s*$/.test(text));
+
   let kind: Intent['kind'] = 'places';
   if (CALENDAR.test(text)) kind = 'calendar';
+  else if (own) kind = 'own';
   else if (WEEKEND.test(text)) kind = 'weekend';
   else if (named && onlyTheDay) kind = 'schedule';
   else if (ARRIVE.test(text)) kind = 'arrive';
@@ -135,5 +166,5 @@ export function understand(request: string): Intent {
   // Saturday afternoon or evening named at all, even beside another day ("Saturday or Sunday evening").
   const weddingTime = days.includes('sat') && parts.some((p) => p !== 'morning');
   const asks = kind === 'schedule' ? { time: ASKS_TIME.test(text), dress: ASKS_DRESS.test(text) } : { time: false, dress: false };
-  return { kind, days, parts, minutes, kids, indoors, onFoot, themes, words: words(text), weddingTime, asks };
+  return { kind, days, parts, minutes, kids, indoors, onFoot, themes, words: words(text), weddingTime, asks, ...(kind === 'own' && own ? { own } : {}) };
 }
