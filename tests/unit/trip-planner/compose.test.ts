@@ -1,8 +1,9 @@
 import { createParser } from '@openuidev/react-lang';
 import { describe, expect, it } from 'vitest';
 import { tripLibrary } from '@/components/trip/openui/library';
-import { calendarModel, compose, draftPlan, mergeWritten, type CalendarEntry, type Plan, type SavedItem } from '@/domain/trip-planner';
-import { BY_ID, ITINERARIES, PLACES, SET_EVENTS, UNSET_EVENTS } from './fixtures';
+import { calendarModel, compose, draftPlan, mergeWritten, type CalendarEntry, type Plan, type SavedItem, pickOutside } from '@/domain/trip-planner';
+import { PLACE_SEARCH_FIXTURE } from '@/providers/place-search';
+import { ASKED, BY_ID, ITINERARIES, PLACES, SET_EVENTS, UNSET_EVENTS } from './fixtures';
 
 /** Every composed program goes through the real OpenUI parser for the site's library: zero errors. */
 const parser = createParser(tripLibrary.toJSONSchema(), 'Col');
@@ -110,8 +111,8 @@ describe('compose', () => {
   });
 
   it('writes every shape the reference answers use', () => {
-    const shapes = new Set(REQUESTS.map((request) => draftPlan({ request, places: PLACES, saved: SAVED }).shape));
-    expect([...shapes].sort()).toEqual(['arrive', 'ask', 'budget', 'calendar', 'picks', 'route', 'schedule', 'stay', 'switch', 'weekend']);
+    const shapes = new Set(REQUESTS.flatMap((request) => [draftPlan({ request, places: PLACES, saved: SAVED }).shape, draftPlan({ request, places: PLACES, saved: SAVED, prefs: { ...ASKED, diet: [] } }).shape]));
+    expect([...shapes].sort()).toEqual(['arrive', 'ask', 'budget', 'calendar', 'clarify', 'picks', 'route', 'schedule', 'stay', 'switch', 'weekend']);
   });
 
   it('escapes strings exactly: quotes, backslashes, newlines and other scripts survive the round trip', () => {
@@ -191,7 +192,7 @@ describe('compose', () => {
   it('binds the switch and the map to $variables; an answer about time has nothing to bind', () => {
     const budget = parse(compose(draftPlan({ request: 'I have two hours', places: PLACES, saved: [] }), { places: BY_ID, saved: [] }));
     expect(Object.keys(budget.stateDeclarations)).toEqual([]);
-    const sw = parse(compose(draftPlan({ request: 'Where should we get dinner?', places: PLACES, saved: [] }), { places: BY_ID, saved: [] }));
+    const sw = parse(compose(draftPlan({ request: 'Where should we get dinner?', places: PLACES, saved: [], prefs: { ...ASKED, diet: [] } }), { places: BY_ID, saved: [] }));
     expect(Object.keys(sw.stateDeclarations)).toEqual(['$set']);
     const route = parse(compose(draftPlan({ request: 'A walk on Friday afternoon, on foot', places: PLACES, saved: [] }), { places: BY_ID, saved: [] }));
     expect(Object.keys(route.stateDeclarations)).toEqual(['$stop']);
@@ -217,5 +218,33 @@ describe('compose', () => {
     expect(wear).not.toContain('Stay(');
     const day = compose(draftPlan({ request: 'The wedding day', places: PLACES, saved: [], events }), { places: BY_ID, saved: [], events });
     expect(day).toContain('Stay(');
+  });
+
+  it('the question before a meal, and the places found beyond our list, are written as their own blocks', () => {
+    const ask = expectClean(compose(draftPlan({ request: 'Where should we get dinner?', places: PLACES, saved: [] }), { places: BY_ID, saved: [] }));
+    const groups: string[] = [];
+    walk(ask.root, (n) => n.typeName === 'ClarifyGroup' && groups.push(`${n.props.id}:${(n.props.options as unknown[]).length}`));
+    expect(groups).toEqual(['diet:5', 'meal:3']);
+
+    const plan = draftPlan({ request: 'Where should we get dinner?', places: PLACES, saved: [], prefs: { diet: ['vegetarian'], meal: null, asked: true } });
+    const found = pickOutside(plan.outside!, PLACE_SEARCH_FIXTURE, PLACES, { lat: 41.8815, lng: -87.6246 });
+    expect(found.length).toBeGreaterThan(0);
+    expect(found.every((p) => p.diet.includes('vegetarian'))).toBe(true);
+    expect(new Set(found.map((p) => p.name.toLowerCase())).size).toBe(found.length);
+    const withThem = expectClean(compose(plan, { places: BY_ID, saved: [], outside: found }));
+    const rows: string[] = [];
+    let heading = '';
+    walk(withThem.root, (n) => {
+      if (n.typeName === 'Nearby') heading = String(n.props.title);
+      if (n.typeName === 'NearbyPlace') rows.push(String(n.props.name));
+    });
+    expect(heading).toBe('Tagged vegetarian, near the hotel');
+    expect(rows).toEqual(found.map((p) => p.name));
+    // Not searched: nothing is said. Searched and nothing is tagged: that is said, and nothing untagged is listed.
+    expect(compose(plan, { places: BY_ID, saved: [] })).not.toMatch(/Nearby\(|could not find/);
+    const kosher = draftPlan({ request: 'We keep kosher, where can we have dinner?', places: PLACES, saved: [] });
+    const none = compose(kosher, { places: BY_ID, saved: [], outside: pickOutside(kosher.outside!, PLACE_SEARCH_FIXTURE, PLACES, null) });
+    expect(none).toMatch(/We could not find a place tagged kosher near the hotel/);
+    expect(none).not.toMatch(/Nearby\(/);
   });
 });

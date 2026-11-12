@@ -1,0 +1,180 @@
+# A second held-out set, written by an independent tester who has not read the planner's code.
+# Not to be tuned against. Each case says what a good answer is for the guest, judged only against
+# the couple's live recommendations and what the outside search can find. Every case is scored
+# under `holdout`; the word in brackets in each description says what it is about.
+# A comment starting "DEBATABLE" marks an expectation a reasonable person could argue with.
+
+# ---------- asking first ----------
+# DEBATABLE: an indirect request ("we're starving") never names a meal; a careful planner still
+# hears "somewhere to eat" and, knowing nothing about them, asks first.
+- description: 'holdout (clarify): "we are starving", said as a statement, is a request for somewhere to eat and asks first'
+  vars:
+    category: holdout
+    request: "we just got in and we're starving"
+    expect: { clarifies: true, asksAbout: [diet] }
+- description: 'holdout (clarify): a follow-up about breakfast, after the question was answered once, is answered at once'
+  vars:
+    category: holdout
+    request: and for breakfast sunday?
+    prefs: { diet: [], meal: quick, asked: true }
+    expect: { clarifies: false, outside: { min: 1, kinds: [cafe, fast_food, restaurant] } }
+- description: 'holdout (clarify): asked, and answered "a special meal", dinner comes from the couple''s own places only, with no price'
+  vars:
+    category: holdout
+    request: dinner friday?
+    answers: { diet: [], meal: special }
+    expect:
+      clarifies: true
+      ours: { min: 1, anyOf: [alinea, esme, michael-jordans-steakhouse] }
+      outside: { max: 0 }
+      slot: { day: fri, part: evening }
+      text: { excludes: ['\$\s?\d', 'under \d'] }
+
+# ---------- dietary needs ----------
+- description: 'holdout (diet): kosher told earlier still holds for a follow-up; nothing is tagged and the answer says so'
+  vars:
+    category: holdout
+    request: what about for friday lunch instead
+    prefs: { diet: [kosher], meal: null, asked: true }
+    expect:
+      clarifies: false
+      outside: { max: 0 }
+      text: { includes: ['kosher', 'none|no place|nothing|not find|could not|couldn.t|did not|didn.t|unable|no .{0,40}(tagged|listed|found|nearby|around)'] }
+- description: 'holdout (diet): "plant-based" means vegan'
+  vars:
+    category: holdout
+    request: plant-based dinner spots for sunday?
+    expect: { clarifies: false, outside: { min: 1, diet: vegan } }
+# DEBATABLE: the only vegetarian-tagged Potbelly is open Monday to Friday (its hours are in the
+# search data), so it is no use for Sunday lunch. This asks the planner to read opening hours,
+# which it may not claim to do.
+- description: 'holdout (diet): vegetarian lunch on Sunday lists vegetarian-tagged places, not the one that is shut at weekends'
+  vars:
+    category: holdout
+    request: vegetarian lunch on sunday, somewhere quick
+    expect: { clarifies: false, outside: { min: 1, diet: vegetarian, notNamed: ['potbelly'] } }
+
+# ---------- places beyond the couple's list ----------
+- description: 'holdout (outside): a Chicago hot dog is the couple''s "classics" note plus hot dog places nearby'
+  vars:
+    category: holdout
+    request: my dad wants a real chicago hot dog before he leaves
+    expect: { clarifies: false, ours: { includes: [chicago-classics] }, outside: { min: 1, allCuisine: 'hot.?dog' } }
+# DEBATABLE: both Chick-fil-A branches in the data are shut on Sunday (one says "Su off", the other
+# lists Monday to Saturday only). The nearest is 170 m from the hotel, so a nearest-first list of
+# quick places will include it unless opening hours are read.
+- description: 'holdout (outside): something quick on Sunday at noon never sends a family to a place shut on Sundays'
+  vars:
+    category: holdout
+    request: something quick to eat sunday around noon, the kids are melting down
+    expect:
+      clarifies: false
+      outside: { min: 2, kinds: [fast_food, cafe, restaurant], distinct: true, notNamed: ['chick.fil.a'] }
+# DEBATABLE: the couple's rooftop (Cindy's) is still a draft, so it must not be named. Nothing in
+# the search is tagged "rooftop"; the matches are by name only (ROOF on theWit, Pancho's Rooftop
+# Cantina). Assumes the names of outside places are part of the text the guest reads.
+- description: 'holdout (outside): a rooftop bar is found by its name, and the couple''s unpublished rooftop is not mentioned'
+  vars:
+    category: holdout
+    request: is there a rooftop bar nearby? want a view with my drink
+    expect:
+      clarifies: false
+      outside: { min: 1 }
+      text: { includes: ['roof on thewit|rooftop cantina'], excludes: ['cindy'] }
+# DEBATABLE: Thursday is before the planner's weekend; a guest arriving then still needs feeding.
+# "near the hotel" is held to one kilometre (the dev cases allow 1600 m for plain dinner).
+- description: 'holdout (outside): arriving late on Thursday, somewhere casual near the hotel is answered, close by'
+  vars:
+    category: holdout
+    request: we get in late thursday, like 9pm. somewhere casual to grab a bite near the hotel?
+    expect: { clarifies: false, ownNone: true, outside: { min: 2, near: 1000, distinct: true } }
+
+# ---------- the guest's own plans ----------
+- description: 'holdout (own): dinner at a restaurant they name is their plan; its capitals and ampersand are kept, and no restaurants are suggested'
+  vars:
+    category: holdout
+    request: add dinner at Girl & the Goat friday
+    expect:
+      shape: own
+      own: { title: Dinner at Girl & the Goat, slots: [[fri, evening]] }
+      ours: { max: 0 }
+      outside: { max: 0 }
+      clarifies: false
+- description: 'holdout (own): busy at two separate times marks both'
+  vars:
+    category: holdout
+    request: "we're busy friday night and sunday morning"
+    expect: { shape: own, own: { title: Busy, slots: [[fri, evening], [sun, morning]] }, ours: { max: 0 }, outside: { max: 0 } }
+# The title is not checked: "2pm tee time" and "Tee time" are both the guest's words.
+- description: 'holdout (own): a clock time (2pm) lands in the afternoon'
+  vars:
+    category: holdout
+    request: we have a 2pm tee time on friday
+    expect: { shape: own, own: { slots: [[fri, afternoon]] }, ours: { max: 0 }, outside: { max: 0 }, clarifies: false }
+# DEBATABLE: Thursday is not a day the planner holds (fri, sat, sun), so there is no slot to write
+# the plan into. The fair answer is to say so; it must not turn the statement into a restaurant
+# search, a question about diet, or a plan on some other day.
+- description: 'holdout (own): a plan for Thursday night cannot be marked, and is not answered with restaurants'
+  vars:
+    category: holdout
+    request: we have dinner with my in-laws thursday night
+    expect: { ownNone: true, clarifies: false, ours: { max: 0 }, outside: { max: 0 } }
+
+# ---------- the couple's own places ----------
+- description: 'holdout (ours): a six-year-old who loves animals gets the zoo and the aquarium, and only places for kids'
+  vars:
+    category: holdout
+    request: my daughter is obsessed with animals, shes 6
+    expect: { clarifies: false, ours: { includes: [lincoln-park-zoo, shedd-aquarium], kidFriendly: true } }
+# DEBATABLE: Monday is after the planner's weekend. A guest leaving on Monday evening still
+# deserves ideas rather than nothing; no day or part is checked.
+- description: 'holdout (ours): leaving on Monday evening, Monday morning still gets ideas'
+  vars:
+    category: holdout
+    request: we dont fly out till monday evening, anything worth doing monday morning?
+    expect: { clarifies: false, ownNone: true, ours: { min: 2 } }
+
+# ---------- facts ----------
+# DEBATABLE: "what if it rains" is about the ceremony, not a rainy-day outing. The only relevant
+# fact held is the room (Garden Room); the answer should give it and offer no museums.
+- description: 'holdout (facts): whether the ceremony is outdoors is a wedding fact, not a rainy-day search'
+  vars:
+    category: holdout
+    request: is the ceremony outside?? what happens if it rains
+    events: set
+    expect:
+      shape: schedule
+      clarifies: false
+      ours: { max: 0 }
+      outside: { max: 0 }
+      text: { includes: ['Garden Room'] }
+# DEBATABLE: "am i free" could be heard as a request for ideas. A careful planner looks at what
+# the guest saved first and says the Aviary is already there.
+- description: 'holdout (facts): "am I free Friday night" is answered from what they saved'
+  vars:
+    category: holdout
+    request: am i free friday night or did i already save something
+    saved: [{ id: the-aviary, day: fri, part: evening }]
+    expect: { shape: calendar, ownNone: true, clarifies: false, text: { includes: ['Aviary'] } }
+
+# ---------- saying so, when we do not know ----------
+# DEBATABLE: "Where can we have dinner on Friday?" in Spanish. Either it is understood, and then it
+# asks first like any plain dinner request, or it is not, and then it must not guess. Both leave no
+# outside places and at most a couple of ours; answering at once with a list of restaurants fails.
+- description: 'holdout (honesty): a dinner request in Spanish is asked about or not understood, never guessed at'
+  vars:
+    category: holdout
+    request: ¿Dónde podemos cenar el viernes?
+    expect: { ours: { max: 2 }, outside: { max: 0 } }
+# DEBATABLE: the wording of an empty calendar is the planner's own; the pattern is kept loose.
+- description: 'holdout (honesty): with nothing saved, the calendar says there is nothing yet and makes nothing up'
+  vars:
+    category: holdout
+    request: whats on my calendar
+    saved: []
+    expect:
+      shape: calendar
+      clarifies: false
+      ours: { max: 0 }
+      outside: { max: 0 }
+      text: { includes: ['nothing|no plans|not saved|empty|haven.t|have not|yet|none'] }

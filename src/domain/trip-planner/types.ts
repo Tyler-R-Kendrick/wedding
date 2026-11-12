@@ -57,7 +57,46 @@ export type Part = (typeof PARTS)[number];
  */
 export type SavedItem = { id: string; day: Day; part: Part; name?: string; date?: string; /** The guest's own plan ("Dinner with family"), not one of our places. */ own?: boolean };
 
-export type PlanShape = 'picks' | 'route' | 'budget' | 'switch' | 'stay' | 'arrive' | 'ask' | 'weekend' | 'calendar' | 'schedule' | 'own';
+export type PlanShape = 'picks' | 'route' | 'budget' | 'switch' | 'stay' | 'arrive' | 'ask' | 'weekend' | 'calendar' | 'schedule' | 'own' | 'clarify';
+
+/** What a guest does not eat, as a search can filter on it. */
+export const DIETS = ['vegetarian', 'vegan', 'gluten-free', 'halal', 'kosher'] as const;
+export type Diet = (typeof DIETS)[number];
+/** The kind of meal: we hold no prices, so "budget" is asked and answered as this. */
+export const MEALS = ['quick', 'sit-down', 'special'] as const;
+export type Meal = (typeof MEALS)[number];
+/** What the guest has told the planner about themselves in this visit. `asked`: they have been asked, so they are not asked again. */
+export type Prefs = { diet: Diet[]; meal: Meal | null; asked: boolean };
+
+/** A kind of place a search of the neighbourhood can find. */
+export const OUTSIDE_KINDS = ['restaurant', 'cafe', 'fast_food', 'bar', 'museum', 'attraction', 'park', 'playground'] as const;
+export type OutsideKind = (typeof OUTSIDE_KINDS)[number];
+/** A place that is not one of the couple's own, as a search found it (OpenStreetMap's own facts about it). */
+export type OutsidePlace = { id: string; name: string; kind: OutsideKind; cuisine: string[]; diet: Diet[]; address?: string; lat: number; lng: number; website?: string; hours?: string };
+/** What to look for near the hotel. Never the guest's own words. */
+export type OutsideQuery = {
+  kinds: OutsideKind[];
+  diet: Diet[];
+  cuisine: string[];
+  meal?: Meal;
+  limit: number;
+  /** Kinds of place ruled out, by a word in the name ("museum"). */
+  notNamed?: string[];
+  /** Words of the request, to put a place whose name has one first. They stay on our own server. */
+  words?: string[];
+  /** A chain asked for by name: only places of that name. */
+  named?: string[];
+  /** Cuisines ruled out. */
+  notCuisine?: string[];
+  /** No further than this from the hotel, in metres. */
+  within?: number;
+  /** The time asked about: places known to be shut then are left out. */
+  at?: { weekday: number; from: number; to: number };
+};
+/** A found place chosen for an answer, with how far it is and one line about it. */
+export type OutsidePick = OutsidePlace & { meters: number; detail: string };
+/** One thing a clarifying question asks, as a set of choices. */
+export type ClarifyGroup = { id: 'diet' | 'meal'; label: string; multi: boolean; options: { value: string; label: string }[] };
 
 export type PlanPick = {
   id: string;
@@ -99,6 +138,12 @@ export type Plan = {
   own?: { title: string; slots: { day: Day; part: Part }[] };
   /** `schedule`: one fact was asked for (a time, what to wear), so the answer stops at the events. */
   brief?: boolean;
+  /** `clarify`: the request, and what is asked before it is answered. */
+  clarify?: { request: string; groups: ClarifyGroup[] };
+  /** What to look for beyond our own list, for the page to search and `compose` to show after our picks. */
+  outside?: OutsideQuery;
+  /** Where a place from outside our list would go if the guest adds it. */
+  outsideSlot?: { day: Day; part: Part };
 };
 
 export type Theme =
@@ -122,7 +167,7 @@ export type Theme =
 
 /** What a request asks for, read by plain rules. */
 export type Intent = {
-  kind: 'places' | 'stay' | 'arrive' | 'weekend' | 'calendar' | 'schedule' | 'open' | 'own';
+  kind: 'places' | 'stay' | 'arrive' | 'weekend' | 'calendar' | 'schedule' | 'open' | 'own' | 'errand';
   days: Day[];
   parts: Part[];
   /** "two hours", "90 minutes". */
@@ -140,6 +185,36 @@ export type Intent = {
   asks: { time: boolean; dress: boolean };
   /** The guest told us something of their own ("I'm busy Friday night", "add dinner with my parents on Friday"): its name. */
   own?: string;
+  /** What the request says the guest does not eat. */
+  diet: Diet[];
+  /** The kind of meal the request asks for ("cheap", "a splurge"), if it says. */
+  meal: Meal | null;
+  /** Cuisines named in the request, in a search's own words ("pizza", "mexican"). */
+  cuisine: string[];
+  /** Kinds of thing the request rules out ("NOT a museum", "not dinner"). */
+  avoid: Theme[];
+  /** They said there is nothing they do not eat. */
+  noDiet: boolean;
+  /** Chains asked for by name ("chick-fil-a"), as a search spells them. */
+  named: string[];
+  /** An allergy they told us of. We can vouch for no kitchen on it, and say so. */
+  allergy: string | null;
+  /** Cuisines ruled out ("anything but pizza or burgers"). */
+  avoidCuisine: string[];
+  /** They asked for something that costs nothing. */
+  free: boolean;
+  /** How near it has to be, in metres, when they said they cannot go far. */
+  within: number | null;
+  /** They asked about wheelchair or step-free access. */
+  access: boolean;
+  /** They asked when a place opens or shuts. */
+  asksHours: boolean;
+  /** The day and time asked about, so places known to be shut then are left out. */
+  at: { weekday: number; from: number; to: number } | null;
+  /** A day outside the wedding weekend that the request is about ("Thursday"). */
+  otherDay: string | null;
+  /** A plan of their own at several times, each day with its own part ("Friday afternoon and Sunday morning"). */
+  ownSlots?: [Day, Part][];
 };
 
 /**
@@ -198,6 +273,8 @@ export type ComposeContext = {
   calendar?: readonly CalendarDayModel[];
   /** The `schedule` shape's events, as the guest's invitation carries them. */
   events?: readonly WeddingEventInput[];
+  /** What the search for `plan.outside` found and `pickOutside` chose. Absent: not searched (or it failed); empty: searched, nothing fits. */
+  outside?: readonly OutsidePick[];
   /** The wedding hotel's position: a day's route starts from it and returns to it. */
   hotel?: { lat: number; lng: number } | null;
 };

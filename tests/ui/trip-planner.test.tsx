@@ -46,11 +46,21 @@ function setup(over: Partial<Props> = {}) {
   const saveOwn = vi.fn(async (input: { itemId?: string; title: string; day: string; part: string; date?: string }) => ({ ok: true as const, itemId: input.itemId ?? ITEM(90 + input.title.length) }));
   const removeOwn = vi.fn(async (_input: { itemId: string }) => ({ ok: true as const }));
   const props: Props = { places: PLACES, saved: [], bookings: [], events: EVENTS, hotel: null, actions: { save, remove, saveOwn, removeOwn }, ...over };
+  // A test that brings its own search keeps the same stand-in saves.
+  if (over.actions) props.actions = { ...over.actions, save, remove, saveOwn, removeOwn };
   const utils = render(<TripPlanner {...props} />);
   // The planner opens on My plans; most of these tests are about Things to do, so they start there.
   fireEvent.click(screen.getByRole('tab', { name: /Things to do/ }));
   return { ...utils, save, remove, saveOwn, removeOwn };
 }
+
+/** Stand-ins `setup` replaces with its own counted ones; only the extra actions a test adds are kept. */
+const baseActions = (): NonNullable<Props['actions']> => ({
+  save: async () => ({ ok: true as const, itemId: ITEM(1) }),
+  remove: async () => ({ ok: true as const }),
+  saveOwn: async () => ({ ok: true as const, itemId: ITEM(2) }),
+  removeOwn: async () => ({ ok: true as const }),
+});
 
 async function ask(text: string) {
   fireEvent.change(screen.getByLabelText('Ask us about the weekend'), { target: { value: text } });
@@ -660,6 +670,83 @@ describe('the Your Trip planner', () => {
     expect(screen.getByRole('button', { name: 'Put it back' })).toBeTruthy();
     await act(async () => fireEvent.click(screen.getByRole('button', { name: /^Close/ })));
     expect(screen.queryByRole('button', { name: 'Put it back' })).toBeNull();
+  });
+
+  it('a plain dinner question asks first; answered, it is answered with what they said, with places from outside our list after ours', async () => {
+    const searchNearby = vi.fn(async (_query: { kinds: string[]; diet: string[]; meal?: string }, _ours: string[]) => ({
+      ok: true as const,
+      places: [
+        { id: 'osm:node/1', name: 'Potbelly', kind: 'fast_food' as const, cuisine: ['sandwich'], diet: ['vegetarian' as const], address: '1 Calhoun Pl, Chicago', lat: 41.88, lng: -87.63, meters: 600, detail: 'Sandwich · 0.4 mi from our hotel · Tagged vegetarian' },
+        { id: 'osm:node/2', name: 'Burrito Beach', kind: 'fast_food' as const, cuisine: ['mexican'], diet: ['vegetarian' as const], lat: 41.89, lng: -87.62, website: 'https://example.org/burrito', meters: 1300, detail: 'Mexican · 0.8 mi from our hotel · Tagged vegetarian' },
+      ],
+    }));
+    const { saveOwn } = setup({ actions: { ...baseActions(), searchNearby } });
+    await ask('Where should we get dinner?');
+    expect(await screen.findByRole('heading', { level: 3, name: 'Two things first, so the places fit' })).toBeTruthy();
+    const form = screen.getByText('Anything you do not eat?').closest('form')!;
+    // Nothing is recommended, and nothing is searched for, until they answer.
+    expect(document.querySelector('article.trip-place')).toBeNull();
+    expect(searchNearby).not.toHaveBeenCalled();
+    await act(async () => fireEvent.click(within(form).getByRole('button', { name: 'Vegetarian' })));
+    await act(async () => fireEvent.click(within(form).getByRole('button', { name: 'A sit-down meal' })));
+    // One kind of meal at a time; several things not eaten.
+    await act(async () => fireEvent.click(within(form).getByRole('button', { name: 'Quick and casual' })));
+    expect(within(form).getByRole('button', { name: 'A sit-down meal' }).getAttribute('aria-pressed')).toBe('false');
+    expect(within(form).getByRole('button', { name: 'Vegetarian' }).getAttribute('aria-pressed')).toBe('true');
+    await act(async () => fireEvent.click(within(form).getByRole('button', { name: 'Show me places' })));
+
+    // Their answer is their turn in the thread; the meal is then answered with it.
+    expect(screen.getByText('Vegetarian, Quick and casual')).toBeTruthy();
+    const nearby = await screen.findByRole('region', { name: 'Tagged vegetarian, near the hotel' });
+    expect(searchNearby).toHaveBeenCalledTimes(1);
+    const [query, ours] = searchNearby.mock.calls[0]!;
+    expect(query).toMatchObject({ diet: ['vegetarian'], meal: 'quick', kinds: ['fast_food', 'cafe', 'restaurant'] });
+    // Only our own places' names go with it, so none is listed twice: nothing the guest typed.
+    expect(ours).toEqual(PLACES.map((p) => p.name));
+    expect(JSON.stringify(searchNearby.mock.calls[0])).not.toContain('Where should we get dinner');
+    const turn = nearby.closest('li')!;
+    expect(within(turn).getByText(/We have not checked our own picks for vegetarian menus/)).toBeTruthy();
+    // Ours first, then theirs under their own heading, credited, and said not to be ours.
+    expect(turn.querySelector('article.trip-place')!.compareDocumentPosition(nearby) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(nearby).getByText(/Not our own picks/)).toBeTruthy();
+    expect(within(nearby).getByRole('link', { name: /OpenStreetMap contributors/ }).getAttribute('href')).toBe('https://www.openstreetmap.org/copyright');
+    expect(within(nearby).getByRole('link', { name: /Burrito Beach/ }).getAttribute('target')).toBe('_blank');
+    // A place from outside our list goes into the plans as a plan of the guest's own.
+    await act(async () => fireEvent.click(within(nearby).getByRole('button', { name: /^Add Potbelly to / })));
+    expect(saveOwn).toHaveBeenCalledWith(expect.objectContaining({ title: 'Potbelly' }));
+    expect(within(nearby).getByText(/^In your plans: /)).toBeTruthy();
+
+    // Asked once a visit: the next meal is answered at once, still for a vegetarian.
+    await ask('Lunch on Sunday?');
+    expect(screen.queryAllByRole('heading', { level: 3, name: 'Two things first, so the places fit' })).toHaveLength(1);
+    await waitFor(() => expect(searchNearby).toHaveBeenCalledTimes(2));
+    expect(searchNearby.mock.calls[1]![0]).toMatchObject({ diet: ['vegetarian'] });
+    // Until they clear the thread, which forgets it.
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Clear and start over' })));
+    await ask('Where should we get dinner?');
+    expect(await screen.findByRole('heading', { level: 3, name: 'Two things first, so the places fit' })).toBeTruthy();
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Skip this' })));
+    expect(screen.getByText('No preference')).toBeTruthy();
+    await waitFor(() => expect(searchNearby.mock.calls.at(-1)![0]).toMatchObject({ diet: [] }));
+  });
+
+  it('an answer waits for the search and appears once; a search that is slow or fails leaves our own places, with nothing added later', async () => {
+    let finish: (v: { ok: false }) => void = () => undefined;
+    const searchNearby = vi.fn(() => new Promise<{ ok: false }>((r) => (finish = r)));
+    setup({ actions: { ...baseActions(), searchNearby } });
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    await ask('Somewhere for coffee');
+    expect(screen.getByText('Finding the best fit')).toBeTruthy();
+    expect(screen.queryByRole('heading', { level: 4, name: 'Bean House Coffee' })).toBeNull();
+    await act(async () => vi.advanceTimersByTimeAsync(4600));
+    vi.useRealTimers();
+    const answer = (await screen.findByRole('heading', { level: 4, name: 'Bean House Coffee' })).closest('.trip-turn__answer')!;
+    const shown = answer.innerHTML;
+    expect(screen.queryByText('Finding the best fit')).toBeNull();
+    // The search coming back late changes nothing.
+    await act(async () => finish({ ok: false }));
+    expect(answer.innerHTML).toBe(shown);
+    expect(answer.textContent).not.toMatch(/Also nearby|OpenStreetMap/);
   });
 
   it('tries the matcher again on a request after a failed background install', async () => {

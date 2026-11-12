@@ -1,0 +1,2539 @@
+{
+ "source": "OpenStreetMap contributors (ODbL), by way of Nominatim",
+ "recorded": "2026-11-12",
+ "near": {
+  "lat": 41.8815,
+  "lng": -87.6246
+ },
+ "places": [
+  {
+   "id": "osm:node/6300753400",
+   "name": "Sofi Restaurant",
+   "kind": "restaurant",
+   "cuisine": [
+    "italian"
+   ],
+   "diet": [],
+   "address": "616 South Dearborn Street, Chicago",
+   "lat": 41.873867,
+   "lng": -87.629373,
+   "website": "https://www.sofichicago.com/",
+   "hours": "Mo-Su 16:30-12:00+"
+  },
+  {
+   "id": "osm:way/73747639",
+   "name": "Pancho's Rooftop Cantina",
+   "kind": "restaurant",
+   "cuisine": [],
+   "diet": [],
+   "address": "327 South Plymouth Court, Chicago",
+   "lat": 41.877476,
+   "lng": -87.628458,
+   "website": "https://plymouthgrill.com/"
+  },
+  {
+   "id": "osm:node/5457442616",
+   "name": "Barrio",
+   "kind": "restaurant",
+   "cuisine": [
+    "mexican"
+   ],
+   "diet": [],
+   "address": "65 West Kinzie Street, Chicago",
+   "lat": 41.889074,
+   "lng": -87.630635,
+   "website": "https://www.barriochicago.com/",
+   "hours": "Mo-Th 17:00-21:30; Fr 17:00-23:30; Sa 11:00-23:30; Su 11:00-21:30"
+  },
+  {
+   "id": "osm:node/5443126530",
+   "name": "Ila's",
+   "kind": "restaurant",
+   "cuisine": [],
+   "diet": [],
+   "address": "15 West Hubbard Street, Chicago",
+   "lat": 41.889907,
+   "lng": -87.628643,
+   "website": "https://ilaschicago.com/"
+  },
+  {
+   "id": "osm:node/5443150384",
+   "name": "Toast it iz",
+   "kind": "restaurant",
+   "cuisine": [],
+   "diet": [],
+   "address": "22 East Hubbard Street, Chicago",
+   "lat": 41.890234,
+   "lng": -87.627131,
+   "website": "https://toastitiz.com/hubbard-st"
+  },
+  {
+   "id": "osm:node/10925526109",
+   "name": "FARE",
+   "kind": "restaurant",
+   "cuisine": [],
+   "diet": [],
+   "address": "71 South Wacker Drive, Chicago",
+   "lat": 41.881184,
+   "lng": -87.635497,
+   "hours": "Mo-Fr 07:00-15:00"
+  },
+  {
+   "id": "osm:node/5460611824",
+   "name": "Luke's Lobster City Hall",
+   "kind": "restaurant",
+   "cuisine": [
+    "seafood",
+    "american"
+   ],
+   "diet": [],
+   "address": "134 North LaSalle Street, Chicago",
+   "lat": 41.884033,
+   "lng": -87.632676,
+   "website": "https://www.lukeslobster.com/location/chicago/",
+   "hours": "Mo-Fr 11:00-21:00; Sa, Su 12:00-20:00"
+  },
+  {
+   "id": "osm:node/13332967126",
+   "name": "Chicago Brü",
+   "kind": "restaurant",
+   "cuisine": [
+    "coffee_shop",
+    "crepe"
+   ],
+   "diet": [],
+   "address": "180 West Washington Street, Chicago",
+   "lat": 41.883325,
+   "lng": -87.633569
+  },
+  {
+   "id": "osm:node/10866618551",
+   "name": "Ed Debevic's",
+   "kind": "restaurant",
+   "cuisine": [
+    "burger"
+   ],
+   "diet": [],
+   "address": "159 East Ohio Street, Chicago",
+   "lat": 41.89241,
+   "lng": -87.62308,
+   "website": "https://www.eddebevics.com/",
+   "hours": "Mo-Su 08:00-21:00"
+  },
+  {
+   "id": "osm:node/6307076632",
+   "name": "Umai",
+   "kind": "restaurant",
+   "cuisine": [
+    "sushi"
+   ],
+   "diet": [],
+   "address": "730 South Clark Street, Chicago",
+   "lat": 41.872344,
+   "lng": -87.63083,
+   "website": "https://www.umaichicago.com/",
+   "hours": "Mo-Th 11:30-15:00,16:30-22:00; Fr-Sa 11:00-15:00,16:30-22:30; Su 16:30-21:30"
+  },
+  {
+   "id": "osm:node/12057574599",
+   "name": "Grant Park Bistro",
+   "kind": "restaurant",
+   "cuisine": [],
+   "diet": [],
+   "address": "South Michigan Avenue, Chicago",
+   "lat": 41.871616,
+   "lng": -87.624473
+  },
+  {
+   "id": "osm:node/6291816768",
+   "name": "Giordano's Pizzeria",
+   "kind": "restaurant",
+   "cuisine": [
+    "pizza"
+   ],
+   "diet": [],
+   "address": "130 East Randolph Street, Chicago",
+   "lat": 41.885081,
+   "lng": -87.623632,
+   "website": "https://giordanos.com/locations/prudential-plaza-millenium-park/",
+   "hours": "Mo-Sa 10:30-24:00; Su 10:30-23:00"
+  },
+  {
+   "id": "osm:node/2401014861",
+   "name": "Mammoth Poke & Ramen",
+   "kind": "restaurant",
+   "cuisine": [
+    "ramen"
+   ],
+   "diet": [],
+   "address": "53 East Lake Street, Chicago",
+   "lat": 41.88564,
+   "lng": -87.62588
+  },
+  {
+   "id": "osm:node/6269003684",
+   "name": "Bongiorno’s Italian Deli & Pizzeria",
+   "kind": "restaurant",
+   "cuisine": [],
+   "diet": [],
+   "address": "405 North Wabash Avenue, Chicago",
+   "lat": 41.889821,
+   "lng": -87.62637,
+   "website": "http://www.bongiornoschicago.com/"
+  },
+  {
+   "id": "osm:node/12817983951",
+   "name": "Monarch&Lion",
+   "kind": "restaurant",
+   "cuisine": [],
+   "diet": [],
+   "address": "302 East Illinois Street, Chicago",
+   "lat": 41.891181,
+   "lng": -87.619978
+  },
+  {
+   "id": "osm:node/6326420731",
+   "name": "MingHin Cuisine",
+   "kind": "restaurant",
+   "cuisine": [
+    "chinese"
+   ],
+   "diet": [
+    "vegetarian"
+   ],
+   "address": "333 East Benton Place, Chicago",
+   "lat": 41.885175,
+   "lng": -87.619061,
+   "website": "https://www.minghincuisine.com/",
+   "hours": "Mo-Su 11:00-21:00"
+  },
+  {
+   "id": "osm:node/5460658753",
+   "name": "Mexican Radio",
+   "kind": "restaurant",
+   "cuisine": [
+    "mexican"
+   ],
+   "diet": [],
+   "address": "100 West Monroe Street, Chicago",
+   "lat": 41.880887,
+   "lng": -87.631015,
+   "website": "https://mexicanradiochicago.com"
+  },
+  {
+   "id": "osm:node/3918941297",
+   "name": "Bongiorno's Cucina Italiana & Pizzeria",
+   "kind": "restaurant",
+   "cuisine": [
+    "pizza",
+    "italian"
+   ],
+   "diet": [],
+   "address": "405 North Wabash Avenue, Chicago",
+   "lat": 41.889704,
+   "lng": -87.625905,
+   "website": "http://www.bongiornoschicago.com/",
+   "hours": "Mo-Sa 10:00-22:00; Su 12:00-21:00"
+  },
+  {
+   "id": "osm:node/14335984201",
+   "name": "Tree House",
+   "kind": "restaurant",
+   "cuisine": [],
+   "diet": [],
+   "address": "149 West Kinzie Street, Chicago",
+   "lat": 41.889035,
+   "lng": -87.63306
+  },
+  {
+   "id": "osm:node/13571317401",
+   "name": "Crushed by Giants Brewing Company",
+   "kind": "restaurant",
+   "cuisine": [],
+   "diet": [],
+   "address": "600 North Michigan Avenue, Chicago",
+   "lat": 41.892738,
+   "lng": -87.624957,
+   "website": "https://crushedbygiants.com/",
+   "hours": "Su-Th 12:00-21:00; Fr-Sa 12:00-22:00"
+  },
+  {
+   "id": "osm:node/6269517321",
+   "name": "Naia",
+   "kind": "restaurant",
+   "cuisine": [
+    "greek"
+   ],
+   "diet": [],
+   "address": "300 West Carroll Avenue, Chicago",
+   "lat": 41.888151,
+   "lng": -87.633134,
+   "website": "https://www.naiarestaurant.com/"
+  },
+  {
+   "id": "osm:node/13458684601",
+   "name": "Silk Road of Chicago",
+   "kind": "restaurant",
+   "cuisine": [
+    "chinese"
+   ],
+   "diet": [],
+   "address": "312 West Adams Street, Chicago",
+   "lat": 41.87947,
+   "lng": -87.635883,
+   "website": "https://silkroadchi.com/",
+   "hours": "Mo-Fr 10:00-17:00"
+  },
+  {
+   "id": "osm:node/3263537492",
+   "name": "Señoritas Cantina",
+   "kind": "restaurant",
+   "cuisine": [
+    "mexican"
+   ],
+   "diet": [],
+   "address": "610 South Dearborn Street, Chicago",
+   "lat": 41.873982,
+   "lng": -87.629374,
+   "website": "https://senoritascantina.com/"
+  },
+  {
+   "id": "osm:node/12347110113",
+   "name": "Flaco's Tacos",
+   "kind": "restaurant",
+   "cuisine": [
+    "mexican"
+   ],
+   "diet": [],
+   "address": "725 South Dearborn Street, Chicago",
+   "lat": 41.872726,
+   "lng": -87.628957
+  },
+  {
+   "id": "osm:node/2819355816",
+   "name": "Atwood",
+   "kind": "restaurant",
+   "cuisine": [],
+   "diet": [],
+   "address": "1 West Washington Street, Chicago",
+   "lat": 41.883055,
+   "lng": -87.62813,
+   "website": "https://atwoodrestaurant.com/"
+  },
+  {
+   "id": "osm:node/2292889299",
+   "name": "Eggy's",
+   "kind": "restaurant",
+   "cuisine": [
+    "diner"
+   ],
+   "diet": [
+    "vegetarian"
+   ],
+   "address": "333 East Benton Place, Chicago",
+   "lat": 41.885409,
+   "lng": -87.618839,
+   "website": "https://www.eggysdiner.com/locations/chicago/"
+  },
+  {
+   "id": "osm:node/11955919384",
+   "name": "No Vacancy",
+   "kind": "restaurant",
+   "cuisine": [
+    "american"
+   ],
+   "diet": [],
+   "address": "509 North Wells Street, Chicago",
+   "lat": 41.891162,
+   "lng": -87.633868,
+   "website": "https://www.dontnvus.com/",
+   "hours": "Mo 00:00-02:00; Tu 16:30-24:00; We-Fr 00:00-02:00, 16:30-24:00; Sa 00:00-02:00, 12:00-24:00; Su 00:00-03:00, 12:00-24:00"
+  },
+  {
+   "id": "osm:node/5458155820",
+   "name": "Travelle Kitchen + Bar",
+   "kind": "restaurant",
+   "cuisine": [
+    "american"
+   ],
+   "diet": [],
+   "address": "330 North Wabash Avenue, Chicago",
+   "lat": 41.888576,
+   "lng": -87.627598,
+   "website": "https://www.travellechicago.com/",
+   "hours": "Mo-Fr 06:30-00:00; Sa-Su 07:00-00:00"
+  },
+  {
+   "id": "osm:node/5457607519",
+   "name": "Mercadito",
+   "kind": "restaurant",
+   "cuisine": [
+    "mexican"
+   ],
+   "diet": [],
+   "address": "108 West Kinzie Street, Chicago",
+   "lat": 41.889382,
+   "lng": -87.631599,
+   "website": "https://www.mercaditorestaurants.com/",
+   "hours": "Mo-We 11:30-21:30; Th-Fr 11:30-22:30; Sa 10:30-22:30; Su 10:30-21:30"
+  },
+  {
+   "id": "osm:node/5457225505",
+   "name": "Ema",
+   "kind": "restaurant",
+   "cuisine": [
+    "mediterranean"
+   ],
+   "diet": [],
+   "address": "74 West Illinois Street, Chicago",
+   "lat": 41.891001,
+   "lng": -87.630855,
+   "website": "http://emachicago.com/",
+   "hours": "Mo-Th 11:30-22:00; Fr-Sa 11:30-23:00; Su 11:30-21:00"
+  },
+  {
+   "id": "osm:node/6300590087",
+   "name": "RAMEN-SAN",
+   "kind": "restaurant",
+   "cuisine": [],
+   "diet": [],
+   "address": "59 West Hubbard Street, Chicago",
+   "lat": 41.889856,
+   "lng": -87.630411,
+   "website": "https://www.ramensan.com/"
+  },
+  {
+   "id": "osm:node/6315212585",
+   "name": "The Fat Shallot",
+   "kind": "restaurant",
+   "cuisine": [],
+   "diet": [],
+   "address": "72 West Adams Street, Chicago",
+   "lat": 41.879832,
+   "lng": -87.630244,
+   "website": "https://thefatshallot.com/"
+  },
+  {
+   "id": "osm:node/4728600973",
+   "name": "The Gage",
+   "kind": "restaurant",
+   "cuisine": [
+    "american"
+   ],
+   "diet": [],
+   "address": "24 South Michigan Avenue, Chicago",
+   "lat": 41.881242,
+   "lng": -87.624669,
+   "website": "https://www.thegagechicago.com/",
+   "hours": "Mo 11:00-00:00; Tu-We 11:00-02:00; Th 11:00-00:00; Fr 11:00-02:00; Sa 10:00-02:00; Su 10:00-00:00"
+  },
+  {
+   "id": "osm:node/5458006342",
+   "name": "The Hampton Social - River North",
+   "kind": "restaurant",
+   "cuisine": [
+    "seafood",
+    "american"
+   ],
+   "diet": [],
+   "address": "353 West Hubbard Street, Chicago",
+   "lat": 41.889785,
+   "lng": -87.637693,
+   "website": "https://www.thehamptonsocial.com/",
+   "hours": "Mo-Tu 11:00-22:00; We-Th 11:00-23:00; Fr 11:00-00:00; Sa 10:00-00:00; Su 10:00-22:00"
+  },
+  {
+   "id": "osm:node/8728838660",
+   "name": "Hot Woks Cool Sushi",
+   "kind": "restaurant",
+   "cuisine": [
+    "sushi"
+   ],
+   "diet": [],
+   "address": "30 South Michigan Avenue, Chicago",
+   "lat": 41.881174,
+   "lng": -87.624667,
+   "website": "https://www.hotwokscoolsushi.com/"
+  },
+  {
+   "id": "osm:node/13332981527",
+   "name": "Canal Street Eatery & Market",
+   "kind": "restaurant",
+   "cuisine": [],
+   "diet": [],
+   "address": "320 South Canal Street, Chicago",
+   "lat": 41.877503,
+   "lng": -87.640131
+  },
+  {
+   "id": "osm:node/6323177663",
+   "name": "Niu B",
+   "kind": "restaurant",
+   "cuisine": [
+    "japanese"
+   ],
+   "diet": [],
+   "address": "888 South Michigan Avenue, Chicago",
+   "lat": 41.87078,
+   "lng": -87.624435,
+   "website": "https://www.niubchicago.com/",
+   "hours": "Su-Th 11:00-21:30; Fr,Sa 11:00-22:30"
+  },
+  {
+   "id": "osm:node/10951807594",
+   "name": "Feed Your Head",
+   "kind": "restaurant",
+   "cuisine": [
+    "international"
+   ],
+   "diet": [],
+   "address": "Chicago Riverwalk, Chicago",
+   "lat": 41.888315,
+   "lng": -87.62557
+  },
+  {
+   "id": "osm:node/5954587020",
+   "name": "Casa Margarita",
+   "kind": "restaurant",
+   "cuisine": [
+    "mexican"
+   ],
+   "diet": [],
+   "address": "580 East Illinois Street, Chicago",
+   "lat": 41.89131,
+   "lng": -87.612,
+   "hours": "Su-Th 11:00-11:00, Fr,Sa 11:00-24:00"
+  },
+  {
+   "id": "osm:node/3918944637",
+   "name": "Illy",
+   "kind": "cafe",
+   "cuisine": [],
+   "diet": [],
+   "address": "455 North Cityfront Plaza Drive, Chicago",
+   "lat": 41.889726,
+   "lng": -87.62127
+  },
+  {
+   "id": "osm:way/561883764",
+   "name": "Fountain Cafe",
+   "kind": "cafe",
+   "cuisine": [],
+   "diet": [],
+   "address": "South DuSable Lake Shore Drive, Chicago",
+   "lat": 41.876785,
+   "lng": -87.618693
+  },
+  {
+   "id": "osm:node/14130231640",
+   "name": "Con Azucar Cafe",
+   "kind": "cafe",
+   "cuisine": [
+    "coffee_shop"
+   ],
+   "diet": [],
+   "address": "801 South Financial Place, Chicago",
+   "lat": 41.871933,
+   "lng": -87.632766,
+   "hours": "07:00-19:00"
+  },
+  {
+   "id": "osm:node/13272299832",
+   "name": "Cafe Deko",
+   "kind": "cafe",
+   "cuisine": [
+    "coffee_shop"
+   ],
+   "diet": [],
+   "address": "715 South Dearborn Street, Chicago",
+   "lat": 41.873091,
+   "lng": -87.628963,
+   "hours": "Mo-Fr 07:00-18:00; Sa-Su 08:00-18:00"
+  },
+  {
+   "id": "osm:node/6077923585",
+   "name": "LaSalle Cafe Luna",
+   "kind": "cafe",
+   "cuisine": [],
+   "diet": [],
+   "address": "63 East Harrison Street, Chicago",
+   "lat": 41.874323,
+   "lng": -87.625441,
+   "hours": "Mo-Fr 06:00-15:00; Sa,Su 07:00-15:00"
+  },
+  {
+   "id": "osm:node/6282807044",
+   "name": "Cityfront Cafe",
+   "kind": "cafe",
+   "cuisine": [
+    "coffee_shop"
+   ],
+   "diet": [],
+   "address": "455 North Cityfront Plaza Drive, Chicago",
+   "lat": 41.890177,
+   "lng": -87.621088,
+   "website": "https://www.cityfrontcafe.com/"
+  },
+  {
+   "id": "osm:node/6324376885",
+   "name": "The Link@Sheraton Cafe",
+   "kind": "cafe",
+   "cuisine": [],
+   "diet": [],
+   "address": "301 East North Water Street, Chicago",
+   "lat": 41.889371,
+   "lng": -87.620146,
+   "website": "https://www.marriott.com/hotels/hotel-information/restaurant/chigs-sheraton-grand-chicago?program=spg"
+  },
+  {
+   "id": "osm:node/13014323501",
+   "name": "Sugary Chicago",
+   "kind": "cafe",
+   "cuisine": [
+    "breakfast",
+    "coffee_shop"
+   ],
+   "diet": [],
+   "address": "108 South Michigan Avenue, Chicago",
+   "lat": 41.880529,
+   "lng": -87.624658,
+   "website": "https://www.sugarychicago.com/"
+  },
+  {
+   "id": "osm:node/6326350643",
+   "name": "Market Chicago",
+   "kind": "cafe",
+   "cuisine": [],
+   "diet": [],
+   "address": "151 East South Water Street, Chicago",
+   "lat": 41.887339,
+   "lng": -87.621581
+  },
+  {
+   "id": "osm:node/11098556507",
+   "name": "Dollop Coffee Co.",
+   "kind": "cafe",
+   "cuisine": [],
+   "diet": [],
+   "address": "300 South Wacker Drive, Chicago",
+   "lat": 41.877646,
+   "lng": -87.637108
+  },
+  {
+   "id": "osm:node/5946317385",
+   "name": "Corner Bakery",
+   "kind": "cafe",
+   "cuisine": [
+    "coffee_shop"
+   ],
+   "diet": [],
+   "address": "224 South Michigan Avenue, Chicago",
+   "lat": 41.878399,
+   "lng": -87.624642,
+   "website": "https://www.cornerbakerycafe.com/"
+  },
+  {
+   "id": "osm:node/12118894952",
+   "name": "Capital One Café at State Street",
+   "kind": "cafe",
+   "cuisine": [
+    "coffee_shop",
+    "tea"
+   ],
+   "diet": [],
+   "address": "100 South State Street, Chicago",
+   "lat": 41.880555,
+   "lng": -87.628,
+   "website": "https://www.capitalone.com/local/chicago-statestreet/",
+   "hours": "Mo-Fr 07:00-19:00; Sa-Su 09:00-18:00"
+  },
+  {
+   "id": "osm:node/6284650807",
+   "name": "Dollop Coffee Co.",
+   "kind": "cafe",
+   "cuisine": [],
+   "diet": [],
+   "address": "55 West Marble Place, Chicago",
+   "lat": 41.88022,
+   "lng": -87.62961,
+   "website": "https://dollop.coffee/"
+  },
+  {
+   "id": "osm:node/11261582489",
+   "name": "Mojo Coffee",
+   "kind": "cafe",
+   "cuisine": [
+    "coffee_shop"
+   ],
+   "diet": [],
+   "address": "330 North Wabash Avenue, Chicago",
+   "lat": 41.888492,
+   "lng": -87.627433,
+   "website": "https://us.mojo.coffee/collections/locations/products/30-north-wabash-street-river-north-ama-plaza",
+   "hours": "Mo-Fr 08:30-14:00"
+  },
+  {
+   "id": "osm:node/2527216735",
+   "name": "Doughnut Vault",
+   "kind": "cafe",
+   "cuisine": [
+    "donut",
+    "american"
+   ],
+   "diet": [],
+   "address": "401 1/2 North Franklin Street, Chicago",
+   "lat": 41.889462,
+   "lng": -87.63539,
+   "website": "https://doughnutvault.com/",
+   "hours": "Mo-Su 07:30-13:00"
+  },
+  {
+   "id": "osm:node/3660899325",
+   "name": "Labriola",
+   "kind": "cafe",
+   "cuisine": [],
+   "diet": [],
+   "address": "535 North Michigan Avenue, Chicago",
+   "lat": 41.891894,
+   "lng": -87.623442,
+   "website": "https://www.labriolacafe.com/"
+  },
+  {
+   "id": "osm:node/13333010750",
+   "name": "Starbucks",
+   "kind": "cafe",
+   "cuisine": [
+    "coffee_shop"
+   ],
+   "diet": [],
+   "address": "230 West Jackson Boulevard, Chicago",
+   "lat": 41.878368,
+   "lng": -87.631017
+  },
+  {
+   "id": "osm:node/13429593808",
+   "name": "Broadway Café",
+   "kind": "cafe",
+   "cuisine": [],
+   "diet": [],
+   "address": "22 East Adams Street, Chicago",
+   "lat": 41.879649,
+   "lng": -87.626726,
+   "website": "https://broadwaycafechicago.com/"
+  },
+  {
+   "id": "osm:node/12646729166",
+   "name": "TE'AMO Boba Bar",
+   "kind": "cafe",
+   "cuisine": [
+    "bubble_tea"
+   ],
+   "diet": [],
+   "address": "East Grand Avenue, Chicago",
+   "lat": 41.891568,
+   "lng": -87.624592
+  },
+  {
+   "id": "osm:node/2481236983",
+   "name": "Starbucks",
+   "kind": "cafe",
+   "cuisine": [
+    "coffee_shop"
+   ],
+   "diet": [],
+   "address": "200 West Madison Street, Chicago",
+   "lat": 41.882252,
+   "lng": -87.634135,
+   "website": "https://www.starbucks.com/store-locator/store/18035/madison-wells-200-west-madison-chicago-il-606063414-us"
+  },
+  {
+   "id": "osm:node/6272159727",
+   "name": "Bake For Me",
+   "kind": "cafe",
+   "cuisine": [],
+   "diet": [],
+   "address": "303 East Wacker Drive, Chicago",
+   "lat": 41.887328,
+   "lng": -87.620108,
+   "website": "http://www.bakeforme.com/bfm-locations-303-east-wacker.html"
+  },
+  {
+   "id": "osm:node/11064343975",
+   "name": "Hero Coffee Bar",
+   "kind": "cafe",
+   "cuisine": [],
+   "diet": [],
+   "address": "221 North Wells Street, Chicago",
+   "lat": 41.886428,
+   "lng": -87.633698,
+   "website": "https://www.herocoffeebars.com",
+   "hours": "Mo-Th 08:00-13:00"
+  },
+  {
+   "id": "osm:node/13505445511",
+   "name": "The Good Eating Company",
+   "kind": "cafe",
+   "cuisine": [],
+   "diet": [],
+   "address": "77 West Upper Wacker Drive, Chicago",
+   "lat": 41.886398,
+   "lng": -87.630705,
+   "website": "https://www.goodeatingcafechicago.com/",
+   "hours": "Mo 07:00-16:00; Tu-Th 07:00-19:00; Fr 07:00-16:00"
+  },
+  {
+   "id": "osm:node/11303797664",
+   "name": "Starbucks",
+   "kind": "cafe",
+   "cuisine": [
+    "coffee_shop"
+   ],
+   "diet": [],
+   "address": "108 North State Street, Chicago",
+   "lat": 41.883894,
+   "lng": -87.628759,
+   "website": "https://www.starbucks.com/store-locator/store/1022945/block-37-level-p-108-n-state-st-chicago-il-60602-us"
+  },
+  {
+   "id": "osm:node/4729978589",
+   "name": "Goddess and the Baker",
+   "kind": "cafe",
+   "cuisine": [],
+   "diet": [],
+   "address": "33 South Wabash Avenue, Chicago",
+   "lat": 41.881408,
+   "lng": -87.625945,
+   "website": "https://www.goddessandthebaker.com/",
+   "hours": "Mo-Fr 08:00-20:00; Sa 08:00-20:00; Su 08:00-18:00"
+  },
+  {
+   "id": "osm:node/10942941217",
+   "name": "Starbucks",
+   "kind": "cafe",
+   "cuisine": [
+    "coffee_shop"
+   ],
+   "diet": [
+    "vegetarian"
+   ],
+   "address": "200 North Michigan Avenue, Chicago",
+   "lat": 41.885954,
+   "lng": -87.624793,
+   "website": "https://www.starbucks.com/store-locator/store/1008994/200-north-michigan-avenue-200-north-michigan-avenue-chicago-il-606015909-us"
+  },
+  {
+   "id": "osm:node/11163550290",
+   "name": "Starbucks",
+   "kind": "cafe",
+   "cuisine": [
+    "coffee_shop"
+   ],
+   "diet": [
+    "vegetarian"
+   ],
+   "address": "333 North Michigan Avenue, Chicago",
+   "lat": 41.887914,
+   "lng": -87.624264,
+   "website": "https://www.starbucks.com/store-locator/store/1015909/333-n-michigan-avenue-333-n-michigan-avenue-chicago-il-606013901-us"
+  },
+  {
+   "id": "osm:node/3549524275",
+   "name": "Starbucks",
+   "kind": "cafe",
+   "cuisine": [
+    "coffee_shop"
+   ],
+   "diet": [],
+   "address": "200 East Randolph Street, Chicago",
+   "lat": 41.886255,
+   "lng": -87.621587,
+   "website": "https://www.starbucks.com/store-locator/store/12016/200-e-randolph-aon-center-200-east-randolph-st-chicago-il-606016436-us"
+  },
+  {
+   "id": "osm:node/10922694297",
+   "name": "Corner Bakery",
+   "kind": "cafe",
+   "cuisine": [
+    "coffee_shop"
+   ],
+   "diet": [],
+   "address": "188 West Washington Street, Chicago",
+   "lat": 41.883347,
+   "lng": -87.633692
+  },
+  {
+   "id": "osm:node/10925578830",
+   "name": "Starbucks",
+   "kind": "cafe",
+   "cuisine": [
+    "coffee_shop"
+   ],
+   "diet": [],
+   "address": "39 South LaSalle Street, Chicago",
+   "lat": 41.880794,
+   "lng": -87.632152,
+   "website": "https://www.starbucks.com/store-locator/store/7081/la-salle-monroe-39-s-la-salle-street-chicago-il-606031603-us"
+  },
+  {
+   "id": "osm:node/6283504666",
+   "name": "Corner Bakery",
+   "kind": "cafe",
+   "cuisine": [
+    "coffee_shop"
+   ],
+   "diet": [],
+   "address": "56 West Randolph Street, Chicago",
+   "lat": 41.884609,
+   "lng": -87.63002,
+   "website": "https://www.cornerbakerycafe.com/"
+  },
+  {
+   "id": "osm:node/4448346511",
+   "name": "Starbucks",
+   "kind": "cafe",
+   "cuisine": [
+    "coffee_shop"
+   ],
+   "diet": [],
+   "address": "17 East Monroe Street, Chicago",
+   "lat": 41.880347,
+   "lng": -87.627174,
+   "website": "https://www.starbucks.com/store-locator/store/10625/palmer-house-lower-level-17-e-monroe-st-chicago-il-606035608-us"
+  },
+  {
+   "id": "osm:node/6300053565",
+   "name": "Intelligentsia Coffee",
+   "kind": "cafe",
+   "cuisine": [],
+   "diet": [],
+   "address": "53 West Jackson Boulevard, Chicago",
+   "lat": 41.878043,
+   "lng": -87.629635,
+   "website": "https://www.intelligentsiacoffee.com/monadnock-coffeebar"
+  },
+  {
+   "id": "osm:node/6318899936",
+   "name": "Joe & The Juice",
+   "kind": "cafe",
+   "cuisine": [
+    "coffee_shop"
+   ],
+   "diet": [],
+   "address": "215 West Hubbard Street, Chicago",
+   "lat": 41.889786,
+   "lng": -87.634539,
+   "website": "https://www.joejuice.com/stores/usa/chicago-215-west-hubbard-412-north-wells/"
+  },
+  {
+   "id": "osm:node/6298396229",
+   "name": "Infuse Coffee and Tea Bar",
+   "kind": "cafe",
+   "cuisine": [],
+   "diet": [],
+   "address": "350 North Orleans Street, Chicago",
+   "lat": 41.888618,
+   "lng": -87.637274
+  },
+  {
+   "id": "osm:node/2708231824",
+   "name": "Yolk",
+   "kind": "cafe",
+   "cuisine": [
+    "breakfast"
+   ],
+   "diet": [],
+   "address": "355 East Ohio Street, Chicago",
+   "lat": 41.892164,
+   "lng": -87.618098,
+   "website": "https://www.eatyolk.com/",
+   "hours": "Mo-Su 07:00-14:30"
+  },
+  {
+   "id": "osm:node/11163359001",
+   "name": "Starbucks",
+   "kind": "cafe",
+   "cuisine": [
+    "coffee_shop"
+   ],
+   "diet": [
+    "vegetarian"
+   ],
+   "address": "505 North Michigan Avenue, Chicago",
+   "lat": 41.891594,
+   "lng": -87.623825,
+   "website": "https://www.starbucks.com/store-locator/store/18347/inter-continental-chicago-505-n-michigan-ave-chicago-il-60611-us"
+  },
+  {
+   "id": "osm:node/6323201926",
+   "name": "Nordstrom Ebar Artisan Coffee",
+   "kind": "cafe",
+   "cuisine": [],
+   "diet": [],
+   "address": "55 East Grand Avenue, Chicago",
+   "lat": 41.891335,
+   "lng": -87.62594,
+   "website": "https://shop.nordstrom.com/store-details/nordstrom-michigan-avenue#restaurants"
+  },
+  {
+   "id": "osm:node/6319862562",
+   "name": "L.A. Burdick Handmade Chocolates",
+   "kind": "cafe",
+   "cuisine": [],
+   "diet": [],
+   "address": "609 North State Street, Chicago",
+   "lat": 41.892783,
+   "lng": -87.627899,
+   "website": "https://www.burdickchocolate.com/default.aspx"
+  },
+  {
+   "id": "osm:node/6300349926",
+   "name": "Stan's Donuts & Coffee",
+   "kind": "cafe",
+   "cuisine": [
+    "coffee_shop"
+   ],
+   "diet": [],
+   "address": "181 North Michigan Avenue, Chicago",
+   "lat": 41.885487,
+   "lng": -87.62423,
+   "website": "https://www.stansdonuts.com/"
+  },
+  {
+   "id": "osm:way/210680488",
+   "name": "Portillo's",
+   "kind": "fast_food",
+   "cuisine": [
+    "hot_dog",
+    "burger"
+   ],
+   "diet": [],
+   "address": "100 West Ontario Street, Chicago",
+   "lat": 41.893465,
+   "lng": -87.631524,
+   "website": "https://www.portillos.com/locations/chicago/",
+   "hours": "Mo-Su 10:00-24:00"
+  },
+  {
+   "id": "osm:node/13139860172",
+   "name": "Dog Haus",
+   "kind": "fast_food",
+   "cuisine": [
+    "hot_dog"
+   ],
+   "diet": [],
+   "address": "West Lake Street, Chicago",
+   "lat": 41.885885,
+   "lng": -87.634183
+  },
+  {
+   "id": "osm:node/5035879391",
+   "name": "Protein Bar",
+   "kind": "fast_food",
+   "cuisine": [],
+   "diet": [],
+   "address": "221 West Washington Street, Chicago",
+   "lat": 41.883032,
+   "lng": -87.634634
+  },
+  {
+   "id": "osm:node/5295997084",
+   "name": "Jimmy John's",
+   "kind": "fast_food",
+   "cuisine": [
+    "sandwich"
+   ],
+   "diet": [],
+   "address": "216 West Washington Street, Chicago",
+   "lat": 41.883339,
+   "lng": -87.634635,
+   "website": "https://locations.jimmyjohns.com/il/chicago/sandwiches-499.html"
+  },
+  {
+   "id": "osm:node/1699222276",
+   "name": "Subway",
+   "kind": "fast_food",
+   "cuisine": [
+    "sandwich"
+   ],
+   "diet": [],
+   "address": "211 West Adams Street, Chicago",
+   "lat": 41.879267,
+   "lng": -87.63409,
+   "website": "https://restaurants.subway.com/united-states/il/chicago/211-w-adams-st",
+   "hours": "Mo-Fr 08:00-21:00; Sa-Su 10:00-20:00"
+  },
+  {
+   "id": "osm:node/1951914729",
+   "name": "Dunkin'",
+   "kind": "fast_food",
+   "cuisine": [
+    "donut",
+    "coffee_shop"
+   ],
+   "diet": [],
+   "address": "229 West Jackson Boulevard, Chicago",
+   "lat": 41.878001,
+   "lng": -87.634839,
+   "website": "https://locations.dunkindonuts.com/en/il/chicago/229-w.-jackson-blvd/331957",
+   "hours": "Mo-Fr 04:00-19:00; Sa 06:00-18:00; Su 06:00-18:00"
+  },
+  {
+   "id": "osm:node/3575164514",
+   "name": "Burrito Beach",
+   "kind": "fast_food",
+   "cuisine": [
+    "mexican"
+   ],
+   "diet": [
+    "vegetarian"
+   ],
+   "address": "200 East Ohio Street, Chicago",
+   "lat": 41.892699,
+   "lng": -87.622489,
+   "hours": "Mo-Fr 08:00-20:00, Sa 10:30-20:00, Su 10:30-19:00"
+  },
+  {
+   "id": "osm:node/2361072398",
+   "name": "Potbelly",
+   "kind": "fast_food",
+   "cuisine": [
+    "sandwich"
+   ],
+   "diet": [],
+   "address": "200 South Michigan Avenue, Chicago",
+   "lat": 41.879262,
+   "lng": -87.624641,
+   "hours": "Mo-Su 10:00-22:00"
+  },
+  {
+   "id": "osm:node/11511535064",
+   "name": "Chicago Kernel",
+   "kind": "fast_food",
+   "cuisine": [
+    "popcorn"
+   ],
+   "diet": [],
+   "address": "151 North Michigan Avenue, Chicago",
+   "lat": 41.884343,
+   "lng": -87.6242
+  },
+  {
+   "id": "osm:node/12563653538",
+   "name": "Panda Express",
+   "kind": "fast_food",
+   "cuisine": [
+    "chinese"
+   ],
+   "diet": [],
+   "address": "520 North Michigan Avenue, Chicago",
+   "lat": 41.891455,
+   "lng": -87.624907,
+   "website": "https://www.pandaexpress.com/locations/il/chicago/1878"
+  },
+  {
+   "id": "osm:node/4217607951",
+   "name": "The KTM",
+   "kind": "fast_food",
+   "cuisine": [],
+   "diet": [],
+   "address": "120 West Madison Street, Chicago",
+   "lat": 41.88228,
+   "lng": -87.631702
+  },
+  {
+   "id": "osm:node/9396244906",
+   "name": "The Halal Guys",
+   "kind": "fast_food",
+   "cuisine": [
+    "chicken",
+    "falafel",
+    "gyros"
+   ],
+   "diet": [
+    "halal"
+   ],
+   "address": "172 North Wabash Avenue, Chicago",
+   "lat": 41.885223,
+   "lng": -87.626576,
+   "website": "https://thehalalguys.com/locations/172-n-wabash-ave-chicago/"
+  },
+  {
+   "id": "osm:node/5460833746",
+   "name": "The Jibarito Stop",
+   "kind": "fast_food",
+   "cuisine": [
+    "sandwich",
+    "puerto_rican"
+   ],
+   "diet": [],
+   "address": "174 North Wabash Avenue, Chicago",
+   "lat": 41.885283,
+   "lng": -87.626569
+  },
+  {
+   "id": "osm:node/13851097903",
+   "name": "Momento Taquería",
+   "kind": "fast_food",
+   "cuisine": [
+    "mexican"
+   ],
+   "diet": [],
+   "address": "44 South Wabash Avenue, Chicago",
+   "lat": 41.88098,
+   "lng": -87.626389,
+   "website": "https://www.momentotaqueria.com"
+  },
+  {
+   "id": "osm:node/14346306918",
+   "name": "Auntie Anne's",
+   "kind": "fast_food",
+   "cuisine": [
+    "pretzel"
+   ],
+   "diet": [],
+   "address": "163 North Michigan Avenue, Chicago",
+   "lat": 41.885151,
+   "lng": -87.624219
+  },
+  {
+   "id": "osm:node/13233815190",
+   "name": "Taco Maya",
+   "kind": "fast_food",
+   "cuisine": [
+    "mexican"
+   ],
+   "diet": [],
+   "address": "33 West Ontario Street, Chicago",
+   "lat": 41.892638,
+   "lng": -87.629212
+  },
+  {
+   "id": "osm:node/14332346260",
+   "name": "Domino's",
+   "kind": "fast_food",
+   "cuisine": [
+    "pizza"
+   ],
+   "diet": [],
+   "address": "500-512 North Franklin Street, Chicago",
+   "lat": 41.891087,
+   "lng": -87.636828
+  },
+  {
+   "id": "osm:node/10563323168",
+   "name": "Arby's",
+   "kind": "fast_food",
+   "cuisine": [
+    "sandwich"
+   ],
+   "diet": [],
+   "address": "5 North Wells Street, Chicago",
+   "lat": 41.882211,
+   "lng": -87.633668,
+   "website": "https://www.arbys.com/locations/us/il/chicago/5-n--wells-st/store-8243/",
+   "hours": "Mo-Fr 08:00-20:00; Sa-Su 10:00-19:00"
+  },
+  {
+   "id": "osm:node/2819355822",
+   "name": "Chick-fil-A",
+   "kind": "fast_food",
+   "cuisine": [
+    "chicken"
+   ],
+   "diet": [],
+   "address": "177 North State Street, Chicago",
+   "lat": 41.88562,
+   "lng": -87.627698,
+   "website": "https://www.chick-fil-a.com/locations/il/state-and-lake-in-line",
+   "hours": "Mo-Fr 06:30-22:00; Sa 08:00-22:00"
+  },
+  {
+   "id": "osm:node/3664793222",
+   "name": "Bombay Wraps",
+   "kind": "fast_food",
+   "cuisine": [
+    "indian"
+   ],
+   "diet": [],
+   "address": "East Ohio Street, Chicago",
+   "lat": 41.892799,
+   "lng": -87.61864
+  },
+  {
+   "id": "osm:node/3575167248",
+   "name": "Shake Shack",
+   "kind": "fast_food",
+   "cuisine": [
+    "burger"
+   ],
+   "diet": [],
+   "address": "66 East Ohio Street, Chicago",
+   "lat": 41.892678,
+   "lng": -87.625666,
+   "website": "https://www.shakeshack.com/",
+   "hours": "Su-Th 11:00-23:00; Fr-Sa 11:00-00:00"
+  },
+  {
+   "id": "osm:node/9971098352",
+   "name": "Dunkin'",
+   "kind": "fast_food",
+   "cuisine": [
+    "donut",
+    "coffee_shop"
+   ],
+   "diet": [],
+   "address": "201 West Madison Street, Chicago",
+   "lat": 41.881803,
+   "lng": -87.634366,
+   "website": "https://locations.dunkindonuts.com/en/il/chicago/201-w-madison-st/338015",
+   "hours": "Mo-Su 05:00-17:00"
+  },
+  {
+   "id": "osm:node/5289912852",
+   "name": "Jimmy John's",
+   "kind": "fast_food",
+   "cuisine": [
+    "sandwich"
+   ],
+   "diet": [],
+   "address": "201 West Madison Street, Chicago",
+   "lat": 41.881803,
+   "lng": -87.634537,
+   "website": "https://locations.jimmyjohns.com/il/chicago/sandwiches-1236.html",
+   "hours": "Mo-Fr 10:00-16:00"
+  },
+  {
+   "id": "osm:node/9294100629",
+   "name": "Shake Shack",
+   "kind": "fast_food",
+   "cuisine": [
+    "burger"
+   ],
+   "diet": [],
+   "address": "233 South Wacker Drive, Chicago",
+   "lat": 41.878218,
+   "lng": -87.635659
+  },
+  {
+   "id": "osm:node/13461322441",
+   "name": "Aloha Pokē Co",
+   "kind": "fast_food",
+   "cuisine": [
+    "poke"
+   ],
+   "diet": [],
+   "address": "125 South Clark Street, Chicago",
+   "lat": 41.879734,
+   "lng": -87.630087
+  },
+  {
+   "id": "osm:node/8455167035",
+   "name": "Dunkin'",
+   "kind": "fast_food",
+   "cuisine": [
+    "donut",
+    "coffee_shop"
+   ],
+   "diet": [],
+   "address": "39 West Jackson Boulevard, Chicago",
+   "lat": 41.878075,
+   "lng": -87.629143,
+   "website": "https://locations.dunkindonuts.com/en/il/chicago/39-w-jackson-blvd/304663",
+   "hours": "24/7"
+  },
+  {
+   "id": "osm:node/2819285777",
+   "name": "Panda Express",
+   "kind": "fast_food",
+   "cuisine": [
+    "chinese"
+   ],
+   "diet": [],
+   "address": "29 East Madison Street, Chicago",
+   "lat": 41.881937,
+   "lng": -87.62699,
+   "website": "https://www.pandaexpress.com/locations/il/chicago/1102",
+   "hours": "Mo-Th 09:30-21:00; Fr 09:30-21:30; Sa 10:00-21:30; Su 10:30-21:00"
+  },
+  {
+   "id": "osm:node/7874385743",
+   "name": "Dunkin'",
+   "kind": "fast_food",
+   "cuisine": [
+    "donut",
+    "coffee_shop"
+   ],
+   "diet": [],
+   "address": "406 South Michigan Avenue, Chicago",
+   "lat": 41.876644,
+   "lng": -87.624607,
+   "website": "https://locations.dunkindonuts.com/en/il/chicago/406-s-michigan-ave/343845",
+   "hours": "Mo-Sa 06:00-17:00; Su 07:00-16:00"
+  },
+  {
+   "id": "osm:node/11098525252",
+   "name": "Potbelly",
+   "kind": "fast_food",
+   "cuisine": [
+    "sandwich"
+   ],
+   "diet": [],
+   "address": "175 West Jackson Boulevard, Chicago",
+   "lat": 41.877397,
+   "lng": -87.632878
+  },
+  {
+   "id": "osm:node/9917673191",
+   "name": "Benj Yehuda",
+   "kind": "fast_food",
+   "cuisine": [
+    "mediterranean",
+    "middle_eastern"
+   ],
+   "diet": [],
+   "address": "500 West Madison Street, Chicago",
+   "lat": 41.882614,
+   "lng": -87.640018
+  },
+  {
+   "id": "osm:node/1233948900",
+   "name": "Jimmy John's",
+   "kind": "fast_food",
+   "cuisine": [
+    "sandwich"
+   ],
+   "diet": [],
+   "address": "725 South State Street, Chicago",
+   "lat": 41.872301,
+   "lng": -87.627346,
+   "website": "https://locations.jimmyjohns.com/il/chicago/sandwiches-570.html"
+  },
+  {
+   "id": "osm:node/2819236838",
+   "name": "Subway",
+   "kind": "fast_food",
+   "cuisine": [
+    "sandwich"
+   ],
+   "diet": [],
+   "address": "50 East Washington Street, Chicago",
+   "lat": 41.883391,
+   "lng": -87.625534,
+   "website": "https://restaurants.subway.com/united-states/il/chicago/50-e-washington",
+   "hours": "Mo-Th 08:00-23:00; Fr 08:00-24:00; Sa 09:00-24:00; Su 09:00-23:00"
+  },
+  {
+   "id": "osm:node/10958109340",
+   "name": "Chick-fil-A",
+   "kind": "fast_food",
+   "cuisine": [
+    "chicken"
+   ],
+   "diet": [],
+   "address": "122 South Michigan Avenue, Chicago",
+   "lat": 41.879976,
+   "lng": -87.624668,
+   "website": "https://www.chick-fil-a.com/locations/il/millennium-park-il-in-line",
+   "hours": "Mo-Sa 08:30-20:30; Su off"
+  },
+  {
+   "id": "osm:node/10788359081",
+   "name": "Dunkin'",
+   "kind": "fast_food",
+   "cuisine": [
+    "donut",
+    "coffee_shop"
+   ],
+   "diet": [],
+   "address": "205 West Upper Wacker Drive, Chicago",
+   "lat": 41.886697,
+   "lng": -87.634389,
+   "website": "https://locations.dunkindonuts.com/en/il/chicago/205-w-wacker-dr/353478",
+   "hours": "Mo-Fr 06:00-16:00; Sa 07:00-12:00; Su 00:00-24:00"
+  },
+  {
+   "id": "osm:node/13660032802",
+   "name": "Lizzano",
+   "kind": "fast_food",
+   "cuisine": [
+    "italian",
+    "sandwich"
+   ],
+   "diet": [],
+   "address": "200 North Michigan Avenue, Chicago",
+   "lat": 41.886278,
+   "lng": -87.624799
+  },
+  {
+   "id": "osm:node/10945307450",
+   "name": "Sweetgreen",
+   "kind": "fast_food",
+   "cuisine": [
+    "salad"
+   ],
+   "diet": [],
+   "address": "233 South Wacker Drive, Chicago",
+   "lat": 41.878459,
+   "lng": -87.635815
+  },
+  {
+   "id": "osm:node/2882733946",
+   "name": "Jimmy John's",
+   "kind": "fast_food",
+   "cuisine": [
+    "sandwich"
+   ],
+   "diet": [],
+   "address": "2 Pedway, Chicago",
+   "lat": 41.882126,
+   "lng": -87.639268,
+   "website": "https://locations.jimmyjohns.com/il/chicago/sandwiches-1105.html"
+  },
+  {
+   "id": "osm:node/13333000054",
+   "name": "Dunkin'",
+   "kind": "fast_food",
+   "cuisine": [
+    "donut",
+    "coffee_shop"
+   ],
+   "diet": [],
+   "address": "200 West Randolph Street, Chicago",
+   "lat": 41.884645,
+   "lng": -87.634242
+  },
+  {
+   "id": "osm:node/2953447608",
+   "name": "Potbelly",
+   "kind": "fast_food",
+   "cuisine": [
+    "sandwich"
+   ],
+   "diet": [
+    "vegetarian"
+   ],
+   "address": "West Calhoun Place, Chicago",
+   "lat": 41.88246,
+   "lng": -87.632178,
+   "hours": "Mo-Th 06:30-19:00; Fr 06:30-18:00"
+  },
+  {
+   "id": "osm:node/2275845985",
+   "name": "Jimmy John's",
+   "kind": "fast_food",
+   "cuisine": [
+    "sandwich"
+   ],
+   "diet": [],
+   "address": "501 North LaSalle Drive, Chicago",
+   "lat": 41.890938,
+   "lng": -87.632327,
+   "website": "https://locations.jimmyjohns.com/il/chicago/sandwiches-1276.html",
+   "hours": "10:30-21:00"
+  },
+  {
+   "id": "osm:node/347158474",
+   "name": "Midtown Kitchen & Bar",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "West Lake Street, Chicago",
+   "lat": 41.885877,
+   "lng": -87.631708
+  },
+  {
+   "id": "osm:node/6316649553",
+   "name": "W XYZ Bar",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "515 North Clark Street, Chicago",
+   "lat": 41.891293,
+   "lng": -87.630813,
+   "website": "https://www.marriott.com/hotels/travel/chicc-aloft-chicago-downtown-river-north/"
+  },
+  {
+   "id": "osm:node/5460610494",
+   "name": "Bar Allegro",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "171 West Randolph Street, Chicago",
+   "lat": 41.884278,
+   "lng": -87.633542,
+   "website": "https://www.allegrochicago.com/",
+   "hours": "Su-Th 16:00-23:00; Fr-Sa 16:00-00:00"
+  },
+  {
+   "id": "osm:node/6282833425",
+   "name": "Cityscape Bar",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "350 West Wolf Point Plaza, Chicago",
+   "lat": 41.888182,
+   "lng": -87.637595,
+   "website": "https://www.martplaza.com/food-drink/cityscape-bar.aspx"
+  },
+  {
+   "id": "osm:node/6300739597",
+   "name": "The Red Star Bar",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "255 East Grand Avenue, Chicago",
+   "lat": 41.891597,
+   "lng": -87.620825,
+   "website": "http://www.redstarbar.us/"
+  },
+  {
+   "id": "osm:node/3660900079",
+   "name": "Second Story Bar",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "157 East Ohio Street, Chicago",
+   "lat": 41.892345,
+   "lng": -87.623227
+  },
+  {
+   "id": "osm:node/6397116085",
+   "name": "Jojo's Shake Bar",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "23 West Hubbard Street, Chicago",
+   "lat": 41.889909,
+   "lng": -87.628956,
+   "website": "https://www.jojosmilkbar.com",
+   "hours": "Mo-Th 11:00-00:00; Fr 11:00-02:00; Sa 10:00-03:00; Su 10:00-22:00"
+  },
+  {
+   "id": "osm:node/14258404806",
+   "name": "Bar Pendry",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "81 East Wacker Place, Chicago",
+   "lat": 41.886708,
+   "lng": -87.62505,
+   "website": "https://www.pendry.com/chicago/dining/bar-pendry/",
+   "hours": "Mo-Su 11:00-01:00"
+  },
+  {
+   "id": "osm:node/6282415461",
+   "name": "Chi Bar",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "301 East North Water Street, Chicago",
+   "lat": 41.888859,
+   "lng": -87.618779,
+   "website": "https://www.achiga.io/site-down/"
+  },
+  {
+   "id": "osm:node/5458048963",
+   "name": "The Boss Bar",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "420 North Clark Street, Chicago",
+   "lat": 41.8899,
+   "lng": -87.63136,
+   "website": "https://www.thebossbar.com/",
+   "hours": "Su-Mo 14:00-04:00; Tu-Fr 11:00-04:00; Sa 11:00-05:00"
+  },
+  {
+   "id": "osm:node/6294506983",
+   "name": "Holloway’s Bar",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "410 North Dearborn Street, Chicago",
+   "lat": 41.889643,
+   "lng": -87.629838,
+   "website": "https://www.marriott.com/hotels/hotel-information/restaurant/chinr-springhill-suites-chicago-downtown-river-north"
+  },
+  {
+   "id": "osm:node/5457750245",
+   "name": "Gilt Bar",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "230 West Kinzie Street, Chicago",
+   "lat": 41.889274,
+   "lng": -87.635337,
+   "website": "https://www.giltbarchicago.com/",
+   "hours": "Mo-Th 17:00-23:00; Fr-Sa 17:00-00:00; Su 17:00-22:00"
+  },
+  {
+   "id": "osm:node/13427892701",
+   "name": "Y Bar",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "224 West Ontario Street, Chicago",
+   "lat": 41.893403,
+   "lng": -87.635244
+  },
+  {
+   "id": "osm:node/4458262089",
+   "name": "Lobby Bar at Palmer House",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "17 East Monroe Street, Chicago",
+   "lat": 41.880565,
+   "lng": -87.626756,
+   "website": "https://www.palmerhousehiltonhotel.com/hotel-amenities/restaurants-bars/#TheLobbyBar"
+  },
+  {
+   "id": "osm:way/159470958",
+   "name": "Point & Feather",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "113 West Hubbard Street, Chicago",
+   "lat": 41.889778,
+   "lng": -87.631808,
+   "website": "https://www.pointandfeatherchicago.com/"
+  },
+  {
+   "id": "osm:way/210679155",
+   "name": "Blue Chicago",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "536 North Clark Street, Chicago",
+   "lat": 41.89196,
+   "lng": -87.631411,
+   "website": "https://www.bluechicago.com/",
+   "hours": "Su-Fr 20:00-01:30; Sa 20:00-02:30"
+  },
+  {
+   "id": "osm:way/1176473913",
+   "name": "Goodman Lounge",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "Dearborn Street Bikeway, Chicago",
+   "lat": 41.885471,
+   "lng": -87.629687
+  },
+  {
+   "id": "osm:node/6305269184",
+   "name": "The Berkshire Room",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "15 East Ohio Street, Chicago",
+   "lat": 41.892209,
+   "lng": -87.627497,
+   "website": "https://www.theberkshireroom.com/"
+  },
+  {
+   "id": "osm:node/14016764340",
+   "name": "Château Carbide",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "230 North Michigan Avenue, Chicago",
+   "lat": 41.886568,
+   "lng": -87.624801,
+   "hours": "Tu-Th 17:00-23:00, Fr-Sa 14:00 - 23:00"
+  },
+  {
+   "id": "osm:node/6300809815",
+   "name": "Roanoke Restaurant",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "11 South LaSalle Street, Chicago",
+   "lat": 41.881728,
+   "lng": -87.632085,
+   "website": "https://www.marriott.com/hotels/hotel-information/restaurant/chirl-residence-inn-chicago-downtown-loop/"
+  },
+  {
+   "id": "osm:node/2160876858",
+   "name": "O'Leary's Public House",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "541 North Wells Street, Chicago",
+   "lat": 41.892027,
+   "lng": -87.63391,
+   "website": "http://www.olearyschicago.com/"
+  },
+  {
+   "id": "osm:node/5458149906",
+   "name": "The Bassment",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "353 West Hubbard Street, Chicago",
+   "lat": 41.889796,
+   "lng": -87.637848,
+   "website": "https://www.thebassmentchicago.com/",
+   "hours": "We-Fr 20:00-02:00; Sa 20:00-03:00"
+  },
+  {
+   "id": "osm:node/6283292191",
+   "name": "Commons Club",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "203 North Wabash Avenue, Chicago",
+   "lat": 41.885965,
+   "lng": -87.625989,
+   "website": "https://virginhotels.com/chicago/dine-and-drink/the-commons-club/?chebs=local-andrewpinckneyinn"
+  },
+  {
+   "id": "osm:node/6300994446",
+   "name": "ROOF on theWit",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "201 North State Street, Chicago",
+   "lat": 41.886084,
+   "lng": -87.627636
+  },
+  {
+   "id": "osm:node/3599587526",
+   "name": "City Winery at the Chicago Riverwalk",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "11 Chicago Riverwalk, Chicago",
+   "lat": 41.887049,
+   "lng": -87.628748,
+   "website": "https://www.citywinery.com/chicago/riverwalk",
+   "hours": "Mo-Su 11:00-21:00"
+  },
+  {
+   "id": "osm:node/6269085723",
+   "name": "Bridges Lobby Grill at London House",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "85 East Upper Wacker Drive, Chicago",
+   "lat": 41.888033,
+   "lng": -87.625067
+  },
+  {
+   "id": "osm:node/6303823312",
+   "name": "Tavern at the Park",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "130 East Randolph Street, Chicago",
+   "lat": 41.885045,
+   "lng": -87.623151,
+   "website": "https://tavernatthepark.com/"
+  },
+  {
+   "id": "osm:node/3468511745",
+   "name": "Margaritaville",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "700 East Grand Avenue, Chicago",
+   "lat": 41.891327,
+   "lng": -87.608596,
+   "website": "https://www.margaritavillechicago.com"
+  },
+  {
+   "id": "osm:node/5455708305",
+   "name": "Bodega",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "15 East Ohio Street, Chicago",
+   "lat": 41.892294,
+   "lng": -87.627494,
+   "hours": "Su-Th 16:00-02:00; Sa 16:00-03:00"
+  },
+  {
+   "id": "osm:node/4497342600",
+   "name": "Cardozo's Pub",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "170 West Washington Street, Chicago",
+   "lat": 41.883348,
+   "lng": -87.633205
+  },
+  {
+   "id": "osm:node/6321371838",
+   "name": "Madison Tavern",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "500 West Madison Street, Chicago",
+   "lat": 41.88231,
+   "lng": -87.640418,
+   "website": "https://www.madisontavern.com/",
+   "hours": "Mo-Fr 11:00-19:00"
+  },
+  {
+   "id": "osm:node/4060199301",
+   "name": "Jimmy",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "55 East Ontario Street, Chicago",
+   "lat": 41.892983,
+   "lng": -87.625588
+  },
+  {
+   "id": "osm:node/3641173764",
+   "name": "Upstairs at Gwen",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "521 North Rush Street, Chicago",
+   "lat": 41.891175,
+   "lng": -87.625187,
+   "website": "https://www.thegwenchicago.com/"
+  },
+  {
+   "id": "osm:node/13377183777",
+   "name": "Flight Club",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "111 West Upper Wacker Drive, Chicago",
+   "lat": 41.886619,
+   "lng": -87.631255
+  },
+  {
+   "id": "osm:node/6250120346",
+   "name": "2Twenty2 Tavern",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "222 South Wabash Avenue, Chicago",
+   "lat": 41.878914,
+   "lng": -87.626323,
+   "website": "https://www.2twenty2tavern.com/",
+   "hours": "Su-Fr 15:00-02:00, Sa 15:00-03:00"
+  },
+  {
+   "id": "osm:node/5443138701",
+   "name": "Theory",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "9 West Hubbard Street, Chicago",
+   "lat": 41.889914,
+   "lng": -87.628519,
+   "website": "https://www.theorychicago.com/",
+   "hours": "Mo-We 11:30-00:00; Th-Fr 11:30-02:00; Sa 11:00-03:00; Su 11:00-02:00"
+  },
+  {
+   "id": "osm:node/5443100457",
+   "name": "Rossi’s Liquors",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "412 North State Street, Chicago",
+   "lat": 41.889778,
+   "lng": -87.628183,
+   "website": "https://rossischicago.com",
+   "hours": "Mo-Fr 09:00-02:00; Sa 09:00-03:00; Su 11:00-02:00"
+  },
+  {
+   "id": "osm:node/6321463234",
+   "name": "Matilda",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "535 North Wells Street, Chicago",
+   "lat": 41.891871,
+   "lng": -87.633862
+  },
+  {
+   "id": "osm:node/6282530019",
+   "name": "Chicago Union Station Metropolitan Lounge",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "225 South Canal Street, Chicago",
+   "lat": 41.878631,
+   "lng": -87.638995,
+   "website": "https://chicagounionstation.com/"
+  },
+  {
+   "id": "osm:node/13944021327",
+   "name": "F1 Arcade Chicago",
+   "kind": "bar",
+   "cuisine": [],
+   "diet": [],
+   "address": "1 West Grand Avenue, Chicago",
+   "lat": 41.891498,
+   "lng": -87.628272
+  },
+  {
+   "id": "osm:relation/1870546",
+   "name": "The Art Institute of Chicago",
+   "kind": "museum",
+   "cuisine": [],
+   "diet": [],
+   "address": "111 South Michigan Avenue, Chicago",
+   "lat": 41.879605,
+   "lng": -87.623072,
+   "website": "https://www.artic.edu/",
+   "hours": "Mo 11:00-17:00; Tu-We off; Th 11:00-20:00; Fr-Su 11:00-17:00"
+  },
+  {
+   "id": "osm:node/2979738790",
+   "name": "Money Museum",
+   "kind": "museum",
+   "cuisine": [],
+   "diet": [],
+   "address": "230 South LaSalle Street, Chicago",
+   "lat": 41.87833,
+   "lng": -87.632568,
+   "website": "https://www.chicagofed.org/education/money-museum/",
+   "hours": "Mo-Fr 08:30-17:00"
+  },
+  {
+   "id": "osm:node/10958109386",
+   "name": "Pritzker Military Museum & Library",
+   "kind": "museum",
+   "cuisine": [],
+   "diet": [],
+   "address": "104 South Michigan Avenue, Chicago",
+   "lat": 41.88062,
+   "lng": -87.624663,
+   "website": "https://www.pritzkermilitary.org/",
+   "hours": "Mo-Sa 10:00-16:00; Tu-Th 10:00-18:00; Su 12:00-16:00"
+  },
+  {
+   "id": "osm:node/13656590196",
+   "name": "Museum of Broadcast Communications",
+   "kind": "museum",
+   "cuisine": [],
+   "diet": [],
+   "address": "440 West Randolph Street, Chicago",
+   "lat": 41.884604,
+   "lng": -87.639321,
+   "website": "https://www.museum.tv/"
+  },
+  {
+   "id": "osm:node/3744841481",
+   "name": "The Museum of Contemporary Photography",
+   "kind": "museum",
+   "cuisine": [],
+   "diet": [],
+   "address": "South Michigan Avenue, Chicago",
+   "lat": 41.874207,
+   "lng": -87.624514,
+   "website": "https://www.mocp.org/"
+  },
+  {
+   "id": "osm:way/153291623",
+   "name": "Illinois Holocaust Museum Presents Experience360",
+   "kind": "museum",
+   "cuisine": [],
+   "diet": [],
+   "address": "360 North State Street, Chicago",
+   "lat": 41.889029,
+   "lng": -87.628588,
+   "website": "https://www.ilholocaustmuseum.org/"
+  },
+  {
+   "id": "osm:node/3572913469",
+   "name": "McCormick Bridgehouse & Chicago River Museum",
+   "kind": "museum",
+   "cuisine": [],
+   "diet": [],
+   "address": "376 North Michigan Avenue, Chicago",
+   "lat": 41.888495,
+   "lng": -87.624686,
+   "website": "https://www.bridgehousemuseum.org/"
+  },
+  {
+   "id": "osm:node/7874287865",
+   "name": "Chicago Children's Museum",
+   "kind": "museum",
+   "cuisine": [],
+   "diet": [],
+   "address": "700 East Grand Avenue, Chicago",
+   "lat": 41.891472,
+   "lng": -87.609203,
+   "website": "https://www.chicagochildrensmuseum.org/"
+  },
+  {
+   "id": "osm:node/5169949885",
+   "name": "American Writers Museum",
+   "kind": "museum",
+   "cuisine": [],
+   "diet": [],
+   "address": "180 North Michigan Avenue, Chicago",
+   "lat": 41.885561,
+   "lng": -87.624991,
+   "website": "https://americanwritersmuseum.org/"
+  },
+  {
+   "id": "osm:node/6423952898",
+   "name": "Chicago Architecture Center",
+   "kind": "museum",
+   "cuisine": [],
+   "diet": [],
+   "address": "111 East Upper Wacker Drive, Chicago",
+   "lat": 41.888013,
+   "lng": -87.623623,
+   "website": "https://www.architecture.org/",
+   "hours": "Su-Tu 10:00-17:00; We-Sa 10:00-19:00"
+  },
+  {
+   "id": "osm:node/5401536922",
+   "name": "Begin Route 66",
+   "kind": "attraction",
+   "cuisine": [],
+   "diet": [],
+   "address": "East Adams Street, Chicago",
+   "lat": 41.879615,
+   "lng": -87.62463
+  },
+  {
+   "id": "osm:relation/19511979",
+   "name": "Grant Park",
+   "kind": "park",
+   "cuisine": [],
+   "diet": [],
+   "address": "331, Chicago",
+   "lat": 41.882727,
+   "lng": -87.61873,
+   "website": "https://www.chicagoparkdistrict.com/parks/grant-park/",
+   "hours": "06:00-23:00"
+  },
+  {
+   "id": "osm:way/224231352",
+   "name": "Maggie Daley Park",
+   "kind": "park",
+   "cuisine": [],
+   "diet": [],
+   "address": "337, Chicago",
+   "lat": 41.882727,
+   "lng": -87.61873,
+   "website": "https://maggiedaleypark.com/",
+   "hours": "Mo-Su 06:00-22:00"
+  },
+  {
+   "id": "osm:way/136341654",
+   "name": "Dearborn Park",
+   "kind": "park",
+   "cuisine": [],
+   "diet": [],
+   "address": "865, Chicago",
+   "lat": 41.870975,
+   "lng": -87.629099,
+   "website": "https://www.chicagoparkdistrict.com/parks-facilities/dearborn-henry-park"
+  },
+  {
+   "id": "osm:way/273203457",
+   "name": "Polk Bros Park",
+   "kind": "park",
+   "cuisine": [],
+   "diet": [],
+   "address": "Chicago",
+   "lat": 41.891377,
+   "lng": -87.61078
+  },
+  {
+   "id": "osm:way/356323936",
+   "name": "Peanut Park",
+   "kind": "park",
+   "cuisine": [],
+   "diet": [],
+   "address": "Chicago",
+   "lat": 41.883438,
+   "lng": -87.616541
+  },
+  {
+   "id": "osm:relation/10316160",
+   "name": "D'Angelo Park",
+   "kind": "park",
+   "cuisine": [],
+   "diet": [],
+   "address": "438, Chicago",
+   "lat": 41.876061,
+   "lng": -87.634417
+  },
+  {
+   "id": "osm:way/891392236",
+   "name": "Southbank Park",
+   "kind": "park",
+   "cuisine": [],
+   "diet": [],
+   "address": "Chicago",
+   "lat": 41.873259,
+   "lng": -87.634676,
+   "hours": "Mo-Su 06:00-23:00"
+  },
+  {
+   "id": "osm:way/509654675",
+   "name": "Jane Addams Memorial Park",
+   "kind": "park",
+   "cuisine": [],
+   "diet": [],
+   "address": "Chicago",
+   "lat": 41.892542,
+   "lng": -87.612678
+  },
+  {
+   "id": "osm:way/892121472",
+   "name": "Park at 150 N Riverside",
+   "kind": "park",
+   "cuisine": [],
+   "diet": [],
+   "address": "Chicago",
+   "lat": 41.88526,
+   "lng": -87.638873
+  },
+  {
+   "id": "osm:way/711529478",
+   "name": "Bennett Park",
+   "kind": "park",
+   "cuisine": [],
+   "diet": [],
+   "address": "Chicago",
+   "lat": 41.891394,
+   "lng": -87.616329
+  },
+  {
+   "id": "osm:way/970686361",
+   "name": "Cascade Park",
+   "kind": "park",
+   "cuisine": [],
+   "diet": [],
+   "address": "Chicago",
+   "lat": 41.886089,
+   "lng": -87.615039
+  },
+  {
+   "id": "osm:way/1576810868",
+   "name": "River Road Park",
+   "kind": "park",
+   "cuisine": [],
+   "diet": [],
+   "address": "Chicago",
+   "lat": 41.871464,
+   "lng": -87.633859
+  },
+  {
+   "id": "osm:way/73687739",
+   "name": "Pritzker Park",
+   "kind": "park",
+   "cuisine": [],
+   "diet": [],
+   "address": "310, Chicago",
+   "lat": 41.877409,
+   "lng": -87.628029,
+   "website": "https://www.chicagoparkdistrict.com/parks-facilities/pritzker-park"
+  },
+  {
+   "id": "osm:way/1275386365",
+   "name": "theMart River Park",
+   "kind": "park",
+   "cuisine": [],
+   "diet": [],
+   "address": "Chicago",
+   "lat": 41.887907,
+   "lng": -87.63516
+  },
+  {
+   "id": "osm:way/118075731",
+   "name": "Printers Row Park",
+   "kind": "park",
+   "cuisine": [],
+   "diet": [],
+   "address": "Chicago",
+   "lat": 41.873421,
+   "lng": -87.629428
+  },
+  {
+   "id": "osm:way/504093803",
+   "name": "Chicago Riverwalk",
+   "kind": "park",
+   "cuisine": [],
+   "diet": [],
+   "address": "Chicago",
+   "lat": 41.887234,
+   "lng": -87.627226
+  },
+  {
+   "id": "osm:relation/10599930",
+   "name": "Blue Cross Blue Shield of Illinois \"Great Lawn\"",
+   "kind": "park",
+   "cuisine": [],
+   "diet": [],
+   "address": "Chicago",
+   "lat": 41.882646,
+   "lng": -87.618838
+  },
+  {
+   "id": "osm:relation/17457548",
+   "name": "River Esplanade",
+   "kind": "park",
+   "cuisine": [],
+   "diet": [],
+   "address": "401, Chicago",
+   "lat": 41.889058,
+   "lng": -87.621551,
+   "website": "https://www.chicagoparkdistrict.com/parks-facilities/river-esplanade-park"
+  },
+  {
+   "id": "osm:way/494496773",
+   "name": "Wolf Point Riverwalk",
+   "kind": "park",
+   "cuisine": [],
+   "diet": [],
+   "address": "Chicago",
+   "lat": 41.887546,
+   "lng": -87.637032
+  },
+  {
+   "id": "osm:way/747168477",
+   "name": "The Boardwalk - Confluence",
+   "kind": "park",
+   "cuisine": [],
+   "diet": [],
+   "address": "Chicago",
+   "lat": 41.886481,
+   "lng": -87.636583
+  },
+  {
+   "id": "osm:way/167141297",
+   "name": "Riverpoint",
+   "kind": "park",
+   "cuisine": [],
+   "diet": [],
+   "address": "Chicago",
+   "lat": 41.88648,
+   "lng": -87.639089
+  },
+  {
+   "id": "osm:relation/15936703",
+   "name": "Aqua Lifestyle Garden",
+   "kind": "park",
+   "cuisine": [],
+   "diet": [],
+   "address": "Chicago",
+   "lat": 41.886325,
+   "lng": -87.620175
+  },
+  {
+   "id": "osm:way/1271633426",
+   "name": "Ogden Plaza",
+   "kind": "park",
+   "cuisine": [],
+   "diet": [],
+   "address": "429, Chicago",
+   "lat": 41.890307,
+   "lng": -87.619908,
+   "website": "https://www.chicagoparkdistrict.com/parks-facilities/ogden-william-plaza-park"
+  },
+  {
+   "id": "osm:way/1026003466",
+   "name": "The Green at 320",
+   "kind": "park",
+   "cuisine": [],
+   "diet": [],
+   "address": "320, Chicago",
+   "lat": 41.877263,
+   "lng": -87.640563,
+   "website": "https://thegreenat320southcanal.com/"
+  },
+  {
+   "id": "osm:way/235216579",
+   "name": "South Garden",
+   "kind": "park",
+   "cuisine": [],
+   "diet": [],
+   "address": "Chicago",
+   "lat": 41.878665,
+   "lng": -87.623711
+  },
+  {
+   "id": "osm:way/747184081",
+   "name": "The Marina",
+   "kind": "park",
+   "cuisine": [],
+   "diet": [],
+   "address": "Chicago",
+   "lat": 41.887198,
+   "lng": -87.629267
+  },
+  {
+   "id": "osm:way/747171913",
+   "name": "The Water Plaza",
+   "kind": "park",
+   "cuisine": [],
+   "diet": [],
+   "address": "Chicago",
+   "lat": 41.887144,
+   "lng": -87.633254
+  },
+  {
+   "id": "osm:way/1283032441",
+   "name": "Polk Street Pier",
+   "kind": "park",
+   "cuisine": [],
+   "diet": [],
+   "address": "Chicago",
+   "lat": 41.872084,
+   "lng": -87.634737
+  },
+  {
+   "id": "osm:way/1175801225",
+   "name": "Northern Trust open space",
+   "kind": "park",
+   "cuisine": [],
+   "diet": [],
+   "address": "Chicago",
+   "lat": 41.881029,
+   "lng": -87.633576
+  },
+  {
+   "id": "osm:way/891393205",
+   "name": "Ferd Kramer Memorial Garden",
+   "kind": "park",
+   "cuisine": [],
+   "diet": [],
+   "address": "Chicago",
+   "lat": 41.872014,
+   "lng": -87.629611
+  },
+  {
+   "id": "osm:way/351225017",
+   "name": "The Sea",
+   "kind": "playground",
+   "cuisine": [],
+   "diet": [],
+   "address": "Skating Ribbon, Chicago",
+   "lat": 41.882219,
+   "lng": -87.618816
+  },
+  {
+   "id": "osm:way/318276049",
+   "name": "Slide Crater",
+   "kind": "playground",
+   "cuisine": [],
+   "diet": [],
+   "address": "South Jean Baptiste Point DuSable Lake Shore Drive, Chicago",
+   "lat": 41.881743,
+   "lng": -87.618078
+  },
+  {
+   "id": "osm:way/351225019",
+   "name": "Enchanted Forest",
+   "kind": "playground",
+   "cuisine": [],
+   "diet": [],
+   "address": "South Jean Baptiste Point DuSable Lake Shore Drive, Chicago",
+   "lat": 41.882305,
+   "lng": -87.618098
+  },
+  {
+   "id": "osm:way/351225015",
+   "name": "Cradle Nest",
+   "kind": "playground",
+   "cuisine": [],
+   "diet": [],
+   "address": "Pedway, Chicago",
+   "lat": 41.881855,
+   "lng": -87.619142
+  },
+  {
+   "id": "osm:way/351225016",
+   "name": "Harbor",
+   "kind": "playground",
+   "cuisine": [],
+   "diet": [],
+   "address": "Pedway, Chicago",
+   "lat": 41.881825,
+   "lng": -87.618868
+  },
+  {
+   "id": "osm:way/351225018",
+   "name": "Lagoon",
+   "kind": "playground",
+   "cuisine": [],
+   "diet": [],
+   "address": "Skating Ribbon, Chicago",
+   "lat": 41.882211,
+   "lng": -87.61865
+  },
+  {
+   "id": "osm:way/351225021",
+   "name": "Swings",
+   "kind": "playground",
+   "cuisine": [],
+   "diet": [],
+   "address": "Pedway, Chicago",
+   "lat": 41.881935,
+   "lng": -87.618605
+  },
+  {
+   "id": "osm:way/764239342",
+   "name": "The Watering Hole",
+   "kind": "playground",
+   "cuisine": [],
+   "diet": [],
+   "address": "Skating Ribbon, Chicago",
+   "lat": 41.882337,
+   "lng": -87.61867
+  },
+  {
+   "id": "osm:node/4426305521",
+   "name": "Penelope's Vegan Taqueria",
+   "kind": "restaurant",
+   "cuisine": [
+    "mexican"
+   ],
+   "diet": [
+    "vegan",
+    "vegetarian"
+   ],
+   "address": "1165 West 18th Street, Chicago",
+   "lat": 41.857863,
+   "lng": -87.655725,
+   "website": "https://penelopesvegantaqueria.com/pilsen-18th-st",
+   "hours": "Mo-Th 12:00-21:00; Fr-Sa 12:00-22:00; Su 12:00-20:00"
+  },
+  {
+   "id": "osm:node/5457984148",
+   "name": "Penelope’s Vegan Taqueria",
+   "kind": "restaurant",
+   "cuisine": [
+    "mexican"
+   ],
+   "diet": [
+    "vegan",
+    "vegetarian"
+   ],
+   "address": "230 West Chicago Avenue, Chicago",
+   "lat": 41.896737,
+   "lng": -87.635464,
+   "website": "https://penelopesvegantaqueria.com/river-north-chicago-ave",
+   "hours": "Mo-Sa 12:00-21:00; Su 12:00-20:00"
+  },
+  {
+   "id": "osm:node/13021792778",
+   "name": "Sweet Vegan Bakes",
+   "kind": "restaurant",
+   "cuisine": [],
+   "diet": [
+    "vegan",
+    "vegetarian"
+   ],
+   "address": "50 East Chicago Avenue, Chicago",
+   "lat": 41.896911,
+   "lng": -87.626227,
+   "website": "https://www.sweetveganbakes.com",
+   "hours": "Su-Th 10:30-20:00; Fr-Sa 10:30-21:00"
+  }
+ ]
+}

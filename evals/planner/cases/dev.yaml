@@ -1,0 +1,278 @@
+# Cases the planner is tuned against. One request each, with the rules a good answer must meet
+# (see score.mjs for what each rule means). Ids of our own places are their slugs.
+
+# ---------- asking first, when one more fact makes a better answer ----------
+- description: 'clarify: a plain dinner question asks about diet and the kind of meal first'
+  vars:
+    category: clarify
+    request: Where should we get dinner?
+    expect: { clarifies: true, asksAbout: [diet, meal], ours: { max: 0 }, outside: { max: 0 } }
+- description: 'clarify: "somewhere to eat on Friday" asks first'
+  vars:
+    category: clarify
+    request: Somewhere to eat on Friday night
+    expect: { clarifies: true, asksAbout: [diet, meal] }
+- description: 'clarify: brunch asks first'
+  vars:
+    category: clarify
+    request: Where can we get brunch on Sunday?
+    expect: { clarifies: true, asksAbout: [diet] }
+- description: 'clarify: a diet already in the request is not asked for again'
+  vars:
+    category: clarify
+    request: Where can a vegetarian get dinner on Friday?
+    expect: { clarifies: false, ours: { min: 1 } }
+- description: 'clarify: a kind of meal already in the request is not asked for again'
+  vars:
+    category: clarify
+    request: Somewhere cheap and quick for lunch
+    expect: { clarifies: false }
+- description: 'clarify: once answered this visit, the next food question is answered at once'
+  vars:
+    category: clarify
+    request: Where should we get dinner on Sunday?
+    prefs: { diet: [], meal: null, asked: true }
+    expect: { clarifies: false, ours: { min: 1 } }
+- description: 'clarify: coffee needs no question'
+  vars:
+    category: clarify
+    request: Somewhere for coffee
+    expect: { clarifies: false, ours: { min: 2 } }
+- description: 'clarify: a drink needs no question'
+  vars:
+    category: clarify
+    request: Where can we get a cocktail on Friday night?
+    expect: { clarifies: false, ours: { min: 1 } }
+- description: 'clarify: things to do need no question about food'
+  vars:
+    category: clarify
+    request: Something to do with kids
+    expect: { clarifies: false, ours: { min: 2 } }
+- description: 'clarify: a fact about the wedding is never met with a question'
+  vars:
+    category: clarify
+    request: What time is the ceremony?
+    expect: { clarifies: false, shape: schedule }
+- description: 'clarify: answered with "no restrictions", dinner is then answered with our places'
+  vars:
+    category: clarify
+    request: Where should we get dinner?
+    answers: { diet: [], meal: sit-down }
+    expect: { clarifies: true, ours: { min: 2, categories: [food-drink, stay-inside-caa] }, text: { excludes: ['vegetarian', 'vegan'] } }
+
+# ---------- dietary needs ----------
+- description: 'diet: vegetarian dinner shows outside places tagged vegetarian, and says our own menus are unchecked'
+  vars:
+    category: diet
+    request: Where should we get dinner?
+    answers: { diet: [vegetarian], meal: null }
+    expect: { outside: { min: 2, diet: vegetarian, distinct: true }, ours: { min: 1 }, text: { includes: ['vegetarian', 'check|ask|call'] } }
+- description: 'diet: vegan said in the request is honoured without asking'
+  vars:
+    category: diet
+    request: Any vegan places for dinner on Friday?
+    expect: { clarifies: false, outside: { min: 1, diet: vegan, distinct: true }, text: { includes: ['vegan'] } }
+- description: 'diet: halal lunch finds the halal-tagged place'
+  vars:
+    category: diet
+    request: Is there anywhere halal for lunch near the hotel?
+    expect: { clarifies: false, outside: { min: 1, diet: halal } }
+- description: 'diet: kosher has nothing tagged nearby, and the answer says so rather than listing untagged places'
+  vars:
+    category: diet
+    request: We keep kosher, where can we have dinner?
+    expect: { clarifies: false, outside: { max: 0 }, text: { includes: ['kosher', 'none|no place|nothing|not find|could not'] } }
+- description: 'diet: a diet told once is remembered for the next food question'
+  vars:
+    category: diet
+    request: And somewhere for lunch on Sunday?
+    prefs: { diet: [vegetarian], meal: null, asked: true }
+    expect: { clarifies: false, outside: { min: 1, diet: vegetarian }, text: { includes: ['vegetarian'] } }
+- description: 'diet: a diet does not change an answer that is not about food'
+  vars:
+    category: diet
+    request: A museum for Sunday morning
+    prefs: { diet: [vegan], meal: null, asked: true }
+    expect: { ours: { includes: [art-institute] }, text: { excludes: ['vegan'] } }
+
+# ---------- places beyond our own list ----------
+- description: 'outside: dinner also lists restaurants nearby that are not ours'
+  vars:
+    category: outside
+    request: Where should we get dinner?
+    answers: { diet: [], meal: sit-down }
+    expect: { ours: { min: 2 }, outside: { min: 3, max: 6, kinds: [restaurant], distinct: true, near: 1600 } }
+- description: 'outside: "quick and casual" lists quick places, never only sit-down restaurants'
+  vars:
+    category: outside
+    request: Where should we get dinner?
+    answers: { diet: [], meal: quick }
+    expect: { outside: { min: 3, kinds: [fast_food, cafe, restaurant], distinct: true }, ours: { anyOf: [shake-shack, chicago-classics] } }
+- description: 'outside: a special dinner leads with our own, and does not vouch for strangers'
+  vars:
+    category: outside
+    request: A special dinner for our anniversary on Friday
+    expect: { clarifies: false, ours: { min: 2, anyOf: [alinea, esme, michael-jordans-steakhouse] }, outside: { max: 0 }, slot: { day: fri, part: evening } }
+- description: 'outside: a cuisine asked for by name is what the outside places are'
+  vars:
+    category: outside
+    request: Where can we get pizza?
+    expect: { clarifies: false, outside: { min: 1, allCuisine: pizza } }
+- description: 'outside: tacos means Mexican'
+  vars:
+    category: outside
+    request: I want tacos on Friday night
+    expect: { clarifies: false, outside: { min: 1, allCuisine: mexican } }
+- description: 'outside: coffee lists our coffee bars first and other cafes after, none of them ours twice'
+  vars:
+    category: outside
+    request: Somewhere for coffee near the hotel
+    expect: { ours: { min: 3, categories: [food-drink, stay-inside-caa] }, outside: { min: 2, kinds: [cafe], distinct: true, notNamed: ['intelligentsia', 'blue bottle', 'dollop', 'sawada', 'hexe', 'metric'] } }
+- description: 'outside: a chain is listed once, the nearest one'
+  vars:
+    category: outside
+    request: Where can I grab a coffee?
+    expect: { outside: { min: 2, distinct: true } }
+- description: 'outside: a bar for a drink'
+  vars:
+    category: outside
+    request: A bar for a drink on Friday night
+    expect: { ours: { min: 1 }, outside: { min: 2, kinds: [bar], distinct: true } }
+- description: 'outside: with kids, playgrounds and museums nearby are added to ours'
+  vars:
+    category: outside
+    request: Something to do with kids on Sunday morning
+    expect: { ours: { min: 2, kidFriendly: true }, outside: { min: 1, kinds: [playground, museum, park] } }
+- description: 'outside: a museum request adds other museums nearby'
+  vars:
+    category: outside
+    request: Which museums are worth it?
+    expect: { ours: { includes: [art-institute] }, outside: { min: 1, kinds: [museum, attraction], notNamed: ['art institute'] } }
+- description: 'outside: staying in the hotel means no outside places'
+  vars:
+    category: outside
+    request: Somewhere to eat without leaving the hotel
+    expect: { clarifies: false, ours: { min: 1, inHotel: true }, outside: { max: 0 } }
+- description: 'outside: the wedding itself is never answered with a search'
+  vars:
+    category: outside
+    request: What should I wear?
+    expect: { shape: schedule, outside: { max: 0 }, ours: { max: 0 } }
+- description: 'outside: the room block is never answered with a search'
+  vars:
+    category: outside
+    request: Where should I stay?
+    expect: { shape: stay, outside: { max: 0 } }
+- description: 'outside: when it rains, no parks or playgrounds'
+  vars:
+    category: outside
+    request: What can we do if it rains on Sunday?
+    expect: { ours: { min: 2 }, outside: { kinds: [museum, attraction, cafe, restaurant, bar] } }
+
+# ---------- our own places, for the request ----------
+- description: 'ours: Saturday morning is offered for Saturday morning'
+  vars:
+    category: ours
+    request: A free Saturday morning before the wedding
+    expect: { ours: { min: 2 }, slot: { day: sat, part: morning } }
+- description: 'ours: Saturday evening belongs to the wedding, and is planned around'
+  vars:
+    category: ours
+    request: Somewhere for a drink on Saturday evening
+    expect: { text: { includes: ['wedding'] }, next: { includes: ['The wedding day'] } }
+- description: 'ours: with kids, every place of ours is one for kids'
+  vars:
+    category: ours
+    request: What can we do with a five year old?
+    expect: { ours: { min: 2, kidFriendly: true }, next: { excludes: ['Make it kid-friendly'] } }
+- description: 'ours: architecture'
+  vars:
+    category: ours
+    request: For the architecture people
+    expect: { ours: { min: 2, categories: [architecture] } }
+- description: 'ours: two hours is answered with what fits it, with no clock times of ours'
+  vars:
+    category: ours
+    request: I have two hours
+    expect: { shape: budget, ours: { min: 2 }, text: { excludes: ['\d:\d\d'] } }
+- description: 'ours: the whole weekend never plans the wedding hours'
+  vars:
+    category: ours
+    request: Plan my whole weekend
+    expect: { shape: weekend, ours: { min: 4 }, clarifies: false }
+
+# ---------- the guest's own plans ----------
+- description: 'own: busy on Friday night is theirs to mark'
+  vars:
+    category: own
+    request: "I'm busy Friday night"
+    expect: { shape: own, own: { title: Busy, slots: [[fri, evening]] }, ours: { max: 0 }, outside: { max: 0 }, clarifies: false }
+- description: 'own: dinner with my parents is their plan, not a request for restaurants'
+  vars:
+    category: own
+    request: add dinner with my parents on Friday
+    expect: { shape: own, own: { title: Dinner with my parents, slots: [[fri, evening]] }, ours: { max: 0 }, outside: { max: 0 }, clarifies: false }
+- description: 'own: their capitals are kept, and the day comes off the name'
+  vars:
+    category: own
+    request: "We're having lunch with Aunt Ruth on Sunday"
+    expect: { own: { title: Lunch with Aunt Ruth, slots: [[sun, afternoon]] } }
+- description: 'own: the wedding hours cannot be marked'
+  vars:
+    category: own
+    request: "We're busy Saturday evening"
+    expect: { ownNone: true, text: { includes: ['wedding'] }, ours: { max: 0 } }
+- description: 'own: a question about a time is not a plan of their own'
+  vars:
+    category: own
+    request: What should I do Friday night?
+    expect: { ownNone: true, ours: { min: 1 } }
+
+# ---------- facts, said briefly ----------
+- description: 'facts: one fact about the wedding is answered without the room block'
+  vars:
+    category: facts
+    request: What time is the reception?
+    events: set
+    expect: { shape: schedule, text: { includes: ['Reception'], excludes: ['Group code', 'room block'] } }
+- description: 'facts: my plans are my plans'
+  vars:
+    category: facts
+    request: What is my weekend looking like?
+    saved: [{ id: art-institute, day: sun, part: morning }]
+    expect: { shape: calendar, next: { excludes: ['Make it kid-friendly', 'Show my plans'] } }
+- description: 'facts: getting here'
+  vars:
+    category: facts
+    request: How do I get downtown from O'Hare?
+    expect: { shape: arrive, outside: { max: 0 }, clarifies: false }
+
+# ---------- saying so, when we do not know ----------
+- description: 'honesty: nonsense gets no places'
+  vars:
+    category: honesty
+    request: asdf qwer zxcv
+    expect: { ours: { max: 2 }, outside: { max: 0 }, clarifies: false }
+- description: 'honesty: something we have nothing for is said plainly, with what is nearby if anything is'
+  vars:
+    category: honesty
+    request: Is there a bowling alley?
+    expect: { text: { excludes: ['bowling alley is'] }, ours: { excludes: [alinea, esme] } }
+- description: 'honesty: no price is ever invented'
+  vars:
+    category: honesty
+    request: Somewhere cheap for dinner
+    expect: { text: { excludes: ['\$\d', 'under \d'] }, clarifies: false }
+
+# ---------- what is offered next ----------
+- description: 'next: after a meal, a drink or a coffee and the way to say again what they eat; not a time budget'
+  vars:
+    category: ours
+    request: Where should we get dinner?
+    answers: { diet: [vegetarian], meal: null }
+    expect: { next: { includes: ['Change what I eat', 'A drink afterwards'], excludes: ['I only have two hours', 'Make it kid-friendly'] } }
+- description: 'next: "a drink afterwards" is a request for a drink, answered at once'
+  vars:
+    category: ours
+    request: A drink afterwards
+    expect: { clarifies: false, ours: { min: 1, anyOf: [drawing-room, game-room, the-aviary] } }

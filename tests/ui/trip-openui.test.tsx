@@ -15,7 +15,8 @@ function show(program: string, saved: SavedItem[] = []) {
   return { ...utils, onAction };
 }
 
-const programFor = (request: string, saved: SavedItem[] = []) => compose(draftPlan({ request, places: PLACES, saved }), { places: BY_ID, saved });
+// Asked already what they eat, so a meal is answered at once.
+const programFor = (request: string, saved: SavedItem[] = []) => compose(draftPlan({ request, places: PLACES, saved, prefs: { diet: [], meal: null, asked: true } }), { places: BY_ID, saved });
 
 describe('trip OpenUI library', () => {
   it('renders the composed place rows with their own copy, the name linking to the place page', async () => {

@@ -1,0 +1,115 @@
+# Held out: scored on every run, never read while the planner is being tuned.
+- description: 'holdout clarify: "where can we eat" asks first'
+  vars:
+    category: holdout
+    request: Where can we eat tonight?
+    expect: { clarifies: true, asksAbout: [diet, meal] }
+- description: 'holdout clarify: gluten-free in the request is not asked again'
+  vars:
+    category: holdout
+    request: I need somewhere gluten-free for dinner
+    expect: { clarifies: false, text: { includes: ['gluten'] } }
+- description: 'holdout clarify: a splurge is a kind of meal'
+  vars:
+    category: holdout
+    request: We want to splurge on one great dinner
+    expect: { clarifies: false, ours: { anyOf: [alinea, esme] }, outside: { max: 0 } }
+- description: 'holdout clarify: the airport needs no question'
+  vars:
+    category: holdout
+    request: Where do I park?
+    expect: { clarifies: false, shape: arrive }
+- description: 'holdout diet: plant-based means vegan'
+  vars:
+    category: holdout
+    request: Plant-based lunch options?
+    expect: { clarifies: false, outside: { min: 1, diet: vegan } }
+- description: 'holdout diet: a veggie guest, told once, at breakfast'
+  vars:
+    category: holdout
+    request: Breakfast on Saturday?
+    prefs: { diet: [vegetarian], meal: null, asked: true }
+    expect: { clarifies: false, outside: { min: 1, diet: vegetarian } }
+- description: 'holdout diet: answered vegan and quick'
+  vars:
+    category: holdout
+    request: Where should we eat on Friday?
+    answers: { diet: [vegan], meal: quick }
+    expect: { clarifies: true, outside: { min: 1, diet: vegan, distinct: true } }
+- description: 'holdout outside: lunch near the hotel, no restrictions'
+  vars:
+    category: holdout
+    request: A good lunch near the hotel
+    answers: { diet: [], meal: null }
+    expect: { ours: { min: 1 }, outside: { min: 3, distinct: true, near: 1600 } }
+- description: 'holdout outside: burgers'
+  vars:
+    category: holdout
+    request: Where is a good burger?
+    expect: { clarifies: false, outside: { min: 1, allCuisine: burger } }
+- description: 'holdout outside: sushi'
+  vars:
+    category: holdout
+    request: Any sushi nearby?
+    expect: { clarifies: false, outside: { min: 1, allCuisine: 'sushi|japanese' } }
+- description: 'holdout outside: a park for a walk'
+  vars:
+    category: holdout
+    request: A park to walk in on Sunday morning
+    expect: { ours: { min: 1, categories: [outdoors, with-kids] }, outside: { kinds: [park, attraction] } }
+- description: 'holdout outside: a playground'
+  vars:
+    category: holdout
+    request: Is there a playground nearby for my toddler?
+    expect: { outside: { min: 1, kinds: [playground, park] }, ours: { min: 1, kidFriendly: true } }
+- description: 'holdout outside: the dress code is not a search'
+  vars:
+    category: holdout
+    request: Is there a dress code?
+    expect: { shape: schedule, outside: { max: 0 } }
+- description: 'holdout outside: our story is ours'
+  vars:
+    category: holdout
+    request: Where did you two first say I love you?
+    expect: { outside: { max: 0 } }
+- description: 'holdout ours: Friday afternoon on foot'
+  vars:
+    category: holdout
+    request: A walk on Friday afternoon
+    expect: { ours: { min: 2 }, slot: { day: fri, part: afternoon } }
+- description: 'holdout ours: forty-five minutes'
+  vars:
+    category: holdout
+    request: I only have 45 minutes
+    expect: { ours: { min: 1 }, text: { excludes: ['\d:\d\d'] }, clarifies: false }
+- description: 'holdout own: block off a morning'
+  vars:
+    category: holdout
+    request: Block off Sunday morning
+    expect: { own: { title: Busy, slots: [[sun, morning]] }, ours: { max: 0 }, outside: { max: 0 } }
+- description: 'holdout own: meeting friends'
+  vars:
+    category: holdout
+    request: I am meeting my college friends Friday afternoon
+    expect: { shape: own, own: { slots: [[fri, afternoon]] }, ours: { max: 0 } }
+- description: 'holdout own: ideas for a time are not a plan'
+  vars:
+    category: holdout
+    request: Ideas for Friday evening
+    expect: { ownNone: true, ours: { min: 1 }, slot: { day: fri, part: evening } }
+- description: 'holdout facts: show my plans'
+  vars:
+    category: holdout
+    request: Show my plans
+    expect: { shape: calendar, outside: { max: 0 }, clarifies: false }
+- description: 'holdout facts: the ceremony, with its time'
+  vars:
+    category: holdout
+    request: When does the ceremony start?
+    events: set
+    expect: { shape: schedule, text: { includes: ['Ceremony'], excludes: ['Group code'] }, outside: { max: 0 } }
+- description: 'holdout honesty: a made-up need'
+  vars:
+    category: holdout
+    request: Where can I rent a helicopter?
+    expect: { ours: { excludes: [alinea, esme, shake-shack] }, clarifies: false }

@@ -135,7 +135,7 @@ test('a question goes to the top of the screen and stays there; nothing on the p
     await page.goto('/guests/travel#plan');
     await openTab(page, 'Things to do');
     const tabs = plan(page).getByRole('tablist');
-    for (const q of ['Where should we get dinner?', 'Plan my whole weekend', 'I have two hours', 'What time is the ceremony?']) {
+    for (const q of ['Where can we get pizza?', 'Plan my whole weekend', 'I have two hours', 'What time is the ceremony?', 'Where should we get dinner?']) {
       await plan(page).getByLabel('Ask us about the weekend').fill(q);
       await plan(page).getByRole('button', { name: 'Ask', exact: true }).click();
       const asked = plan(page).locator('.trip-turn__asked').last();
@@ -237,6 +237,58 @@ test('told the guest is busy, the planner offers to mark the time and adds it in
   await ctx.close();
 });
 
+test('a meal is asked about first; answered, our places come first and places from the neighbourhood after, one of which goes into the plans', async ({ browser }) => {
+  const ctx = await contextAs(browser, 'C1', { viewport: { width: 390, height: 844 } });
+  const page = await ctx.newPage();
+  await page.goto('/guests/travel#plan');
+  await clearWeekend(page);
+  await plan(page).getByLabel('Ask us about the weekend').fill('Where should we get dinner?');
+  await plan(page).getByRole('button', { name: 'Ask', exact: true }).click();
+  const question = plan(page).locator('.trip-turn').last();
+  await expect(question.getByRole('heading', { level: 3, name: 'Two things first, so the places fit' })).toBeVisible();
+  await expect(question.locator('article.trip-place')).toHaveCount(0);
+  await question.getByRole('button', { name: 'Vegetarian' }).click();
+  await question.getByRole('button', { name: 'Quick and casual' }).click();
+  await question.getByRole('button', { name: 'Show me places' }).click();
+
+  // Their answer is their turn; the meal is answered with it, whole, and nothing moves afterwards.
+  const turn = plan(page).locator('.trip-turn').last();
+  await expect(turn.locator('.trip-turn__asked')).toContainText('Vegetarian, Quick and casual');
+  const nearby = turn.getByRole('region', { name: 'Tagged vegetarian, near the hotel' });
+  await expect(nearby).toBeVisible();
+  await expect(turn.getByText(/We have not checked our own picks for vegetarian menus/)).toBeVisible();
+  // The recorded sample has these tagged vegetarian; each name once, however many branches there are.
+  const names = (await nearby.locator('.trip-nearby__name').allInnerTexts()).map((n) => n.split('\n')[0]!.trim());
+  expect(names.length).toBeGreaterThanOrEqual(2);
+  expect(new Set(names).size).toBe(names.length);
+  await expect(nearby.getByText(/Not our own picks/)).toBeVisible();
+  await expect(nearby.getByRole('link', { name: /OpenStreetMap contributors/ })).toHaveAttribute('href', 'https://www.openstreetmap.org/copyright');
+  await expect(async () => {
+    const a = await page.evaluate(() => scrollY);
+    await page.waitForTimeout(250);
+    baseExpect(await page.evaluate(() => scrollY)).toBe(a);
+  }).toPass({ timeout: 5_000 });
+  const before = await page.evaluate(() => ({ y: Math.round(scrollY), h: document.documentElement.scrollHeight }));
+  await page.waitForTimeout(2_000);
+  expect(await page.evaluate(() => ({ y: Math.round(scrollY), h: document.documentElement.scrollHeight }))).toEqual(before);
+
+  // One of them goes into the plans as a plan of the guest's own.
+  const add = nearby.getByRole('button', { name: new RegExp(`^Add ${names[0]!.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} to Friday evening$`) });
+  await add.click();
+  await expect(nearby.getByText('In your plans: Friday evening').first()).toBeVisible();
+  await openTab(page, /My plans/);
+  await expect(plan(page).getByRole('region', { name: /^Friday/ }).getByRole('heading', { level: 4, name: names[0]! })).toBeVisible();
+
+  // Asked once: the next meal is answered at once.
+  await openTab(page, 'Things to do');
+  await plan(page).getByLabel('Ask us about the weekend').fill('And lunch on Sunday?');
+  await plan(page).getByRole('button', { name: 'Ask', exact: true }).click();
+  await expect(plan(page).locator('.trip-turn').last().locator('article.trip-place').first()).toBeVisible();
+  await expect(plan(page).getByRole('heading', { level: 3, name: 'Two things first, so the places fit' })).toHaveCount(1);
+  await clearWeekend(page);
+  await ctx.close();
+});
+
 test('the old Things to Do address lands on the planner', async ({ browser }) => {
   const ctx = await contextAs(browser, 'C1');
   const page = await ctx.newPage();
@@ -259,7 +311,14 @@ test('at a phone width the page does not scroll sideways, and axe finds nothing 
   await openTab(page, 'Things to do');
   await plan(page).getByLabel('Ask us about the weekend').fill('Where should we get dinner?');
   await plan(page).getByRole('button', { name: 'Ask', exact: true }).click();
+  // A meal is asked about first; the question is measured too, then answered.
+  await expect(plan(page).getByRole('button', { name: 'Show me places' })).toBeVisible();
+  const asked = await new AxeBuilder({ page }).include('#plan').withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
+  expect(asked.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id)).toEqual([]);
+  await plan(page).getByRole('button', { name: 'Vegetarian' }).click();
+  await plan(page).getByRole('button', { name: 'Show me places' }).click();
   await expect(plan(page).locator('article.trip-place').first()).toBeVisible();
+  await expect(plan(page).getByRole('region', { name: 'Tagged vegetarian, near the hotel' })).toBeVisible();
   const overflow = () => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(await overflow()).toBeLessThanOrEqual(0);
   // Every control in the planner is a comfortable target.

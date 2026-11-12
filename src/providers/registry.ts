@@ -34,6 +34,8 @@ import { createVectorIndexProvider } from './vector-index';
 import type { VideoProvider } from './video/types';
 import { createVideoProvider } from './video';
 import type { TwilioVerifyProvider } from './twilio-verify/types';
+import type { PlaceSearchProvider } from './place-search/types';
+import { createPlaceSearchProvider } from './place-search';
 import { createTwilioVerifyProvider } from './twilio-verify';
 
 /** Typed map from provider kind to its interface. */
@@ -55,6 +57,7 @@ export interface ProviderMap {
   'rate-limit': RateLimitProvider;
   jobs: JobsProvider;
   'twilio-verify': TwilioVerifyProvider;
+  'place-search': PlaceSearchProvider;
 }
 
 type Factories = { [K in ProviderKind]: (deps: RegistryDeps) => ProviderMap[K] };
@@ -85,6 +88,7 @@ const factories: Factories = {
     return createJobsProvider({ db: d.db });
   },
   'twilio-verify': () => createTwilioVerifyProvider(env),
+  'place-search': () => createPlaceSearchProvider(env),
 };
 
 type Cache = Partial<{ [K in ProviderKind]: ProviderMap[K] }>;

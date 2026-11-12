@@ -4,6 +4,7 @@
  */
 export * from './types';
 export { understand } from './intent';
+export { outsideQueryFor, pickOutside, dietPhrase } from './outside';
 export { draftPlan, scorePlaces, safeSlot, fitIn, clearHit, MAX_PICKS, MAX_CANDIDATES, CLEAR_HIT_MARGIN } from './draft';
 export { matchItinerary, itineraryScore, itineraryStarter, usableItinerary } from './itineraries';
 export { writerPrompt, mergeWritten } from './writer';

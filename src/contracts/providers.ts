@@ -6,7 +6,7 @@
 export const PROVIDER_KINDS = [
   'auth-email', 'storage', 'video', 'media-ai', 'embeddings', 'vector-index', 'ai-model',
   'flights', 'hotels', 'transport-benefit', 'registry', 'cash-fund', 'reservations', 'maps', 'rate-limit', 'jobs',
-  'twilio-verify',
+  'twilio-verify', 'place-search',
 ] as const;
 export type ProviderKind = (typeof PROVIDER_KINDS)[number];
 

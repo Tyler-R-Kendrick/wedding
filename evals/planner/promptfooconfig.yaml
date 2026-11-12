@@ -1,0 +1,27 @@
+# Response-quality evals for the Your Trip planner.
+#
+#   npm run eval            (in this folder; builds the planner, then scores every case)
+#
+# The thing under test is the site's own planner (provider.mjs), answering real guest requests over
+# the couple's real recommendations and a recorded sample of outside places.
+#
+#   cases/dev.yaml        written with the planner, tuned against
+#   cases/challenge*.yaml written by independent testers who never saw the planner's code; tuned against
+#   cases/holdout*.yaml   scored on every run, never read while tuning (holdout2 is the independent tester's)
+description: Your Trip planner, response quality
+prompts:
+  - '{{request}}'
+providers:
+  - id: file://provider.mjs
+    label: planner
+defaultTest:
+  assert:
+    - type: javascript
+      value: file://score.mjs
+tests:
+  - file://cases/dev.yaml
+  - file://cases/challenge.yaml
+  - file://cases/challenge2.yaml
+  - file://cases/holdout.yaml
+  - file://cases/holdout2.yaml
+outputPath: .results/latest.json
