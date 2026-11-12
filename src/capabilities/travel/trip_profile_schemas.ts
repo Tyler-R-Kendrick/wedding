@@ -29,5 +29,6 @@ export const tripProfileSchema = z.object({
   interests: z.array(z.enum(INTERESTS)),
   asked: z.boolean(),
   from: z.object({ diet: source, stepFree: source, shortWalks: source, kids: source }),
+  own: z.object({ diet: z.boolean(), stepFree: z.boolean(), shortWalks: z.boolean() }),
   saved: z.boolean(),
 });

@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
 import { DIETS, PRICE_LEVELS, type Diet, type PriceLevel } from '@/domain/trip-planner';
-import { BUDGET_LABEL, dietLabel, INTEREST_LABEL, INTERESTS, prefsOf, profileSummary, type Interest, type TripPrefs, type TripProfile } from '@/domain/trip-planner/profile';
+import { answersOf, BUDGET_LABEL, dietLabel, INTEREST_LABEL, INTERESTS, ownAnswers, profileSummary, type Interest, type TripPrefs, type TripProfile } from '@/domain/trip-planner/profile';
 import { Icon } from '@/themes/shared/icons';
 
 /**
@@ -82,8 +82,8 @@ export function TripProfileBar({
 const BUDGETS: PriceLevel[] = PRICE_LEVELS.filter((l) => l < 4);
 
 function ProfileForm({ id, profile, busy, problem, onClose, onSave, onClear }: { id: string; profile: TripProfile; busy: boolean; problem: string | null; onClose: () => void; onSave: (prefs: TripPrefs) => void; onClear?: () => void }) {
-  // Every answer as it stands, as a definite one: saving the form says all of them.
-  const [draft, setDraft] = useState(() => ({ ...prefsOf(profile), diet: profile.diet, stepFree: profile.stepFree, shortWalks: profile.shortWalks, kids: profile.kids }));
+  // Every answer as it stands, whoever gave it.
+  const [draft, setDraft] = useState(() => answersOf(profile));
   const first = useRef<HTMLFieldSetElement>(null);
   const name = useId();
   useEffect(() => {
@@ -95,8 +95,8 @@ function ProfileForm({ id, profile, busy, problem, onClose, onSave, onClear }: {
   const submit = (e: FormEvent) => {
     e.preventDefault();
     if (busy) return;
-    // "Children come along" is saved only when it differs from what the invitation says.
-    onSave({ ...draft, kids: draft.kids === profile.party.children > 0 ? null : draft.kids, asked: true });
+    // Saved as the guest's own: what they changed here, and what was theirs already.
+    onSave(ownAnswers(profile, draft));
   };
   const chip = (on: boolean, label: string, press: () => void, key: string) => (
     <button key={key} type="button" className={`trip-chip trip-clarify__option${on ? ' is-picked' : ''}`} aria-pressed={on} aria-disabled={busy ? true : undefined} onClick={press}>

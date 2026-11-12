@@ -85,7 +85,7 @@ export function DraftBadge({ draft, placeholder }: { draft?: boolean; placeholde
   if (!draft && !placeholder) return null;
   return (
     <ul className="wp-badges" aria-label="Status">
-      {draft ? <li className="wp-badge wp-badge--draft">Draft — not yet curated</li> : null}
+      {draft ? <li className="wp-badge wp-badge--draft">Draft, not yet curated</li> : null}
       {placeholder ? <li className="wp-badge">Details to come</li> : null}
     </ul>
   );

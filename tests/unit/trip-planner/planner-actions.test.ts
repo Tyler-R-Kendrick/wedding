@@ -50,9 +50,10 @@ vi.mock('@/app/(guest)/guests/travel/_shared/server', () => ({
       case 'save_my_trip_preferences': {
         const { profileOf, readPrefs, hasPrefs } = await import('@/domain/trip-planner/profile');
         const sent = input as { prefs: Record<string, unknown>; basedOn?: string | null };
-        // Saved somewhere else since the page read it: what is saved comes back, untouched.
-        if (sent.basedOn !== undefined && store.prefsAt && store.prefsAt !== sent.basedOn) {
-          return ok({ profile: profileOf(store.records, readPrefs(store.prefs)), prefs: readPrefs(store.prefs), updatedAt: store.prefsAt, conflict: true });
+        // Saved (or cleared) somewhere else since the page read it: what is saved comes back, untouched.
+        if (sent.basedOn !== undefined && (store.prefsAt ?? null) !== sent.basedOn) {
+          const kept = store.prefs ? readPrefs(store.prefs) : null;
+          return ok({ profile: profileOf(store.records, kept), prefs: kept, updatedAt: store.prefsAt ?? null, conflict: true });
         }
         const prefs = readPrefs(sent.prefs);
         store.prefs = hasPrefs(prefs) ? prefs : null;

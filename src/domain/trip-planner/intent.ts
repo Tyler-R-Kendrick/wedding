@@ -217,15 +217,30 @@ const MUST_SEE = /\b(not (to )?miss|can'?t miss|must[- ]sees?|must[- ]dos?|highl
 /** Nothing is booked and they want to walk in. */
 const WALK_IN = /\b(no reservations?|without (a )?(booking|reservation)|walk[- ]?ins?|just (turn|show|rock) up|turn up and|(have|did)n'?t (booked|book|reserved?)|not booked|nothing booked|last[- ]minute|spur of the moment)\b/;
 /** A sum of money named as a limit ("under $20", "30 dollars each"), and the words that mean "not much". */
-const DOLLARS = /\$\s?(\d{1,3})\b|\b(\d{1,3})\s?(?:dollars|bucks)\b/;
+const DOLLARS = /\$\s?(\d{1,3}(?:,\d{3})+|\d+)(?!\d)|\b(\d{1,3}(?:,\d{3})+|\d+)\s?(?:dollars|bucks)\b/;
+/** A sum for the whole table ("dinner for two under $60"), unless it is said to be each. */
+const SHARED = /\b(?:for|between) (?:the )?(two|2|three|3|four|4|five|5|six|6)\b(?! (?:hours?|minutes?|nights?|days?|[ap]\.?m\b|o'?clock))|\b(?:for both of us|between us)\b/;
+const EACH = /\b(each|per (person|head)|a head|apiece|pp)\b/;
+const HOW_MANY: Record<string, number> = { two: 2, three: 3, four: 4, five: 5, six: 6 };
 const CHEAP = /\b(cheap\w*|inexpensive|affordable|on a budget|budget|low[- ]cost|won'?t break the bank|not (too |very |so )?(pricey|expensive))\b/;
 /** No limit at all, said in so many words: it undoes "budget" wherever that word appears beside it. */
 const NO_LIMIT = /\b(forget (the|our|my|about the) budget|money (is )?no object|no (budget|limit)|sky'?s the limit|spare no expense|blow[- ]?out|whatever it costs|price (is )?no (object|issue))\b/;
 /** This one is for the grown-ups, whoever else is on the trip. */
 const GROWN_UPS = /\b((grandma|grandpa|granny|nana|gran|grandparents|mum|mom|sitter|babysitter|nanny|auntie?|uncle|sister|brother|\w+ parents) (has|have|is taking|are taking|is watching|are watching|is minding|will have|'?s got) the (kids|children|little ones?|baby|babies)|(kids|children|little ones?) (are |will be |'?re )?(with|at|staying with|asleep|in bed|tucked up|back at)\b|date night|without (the |our )?(kids|children|little ones?)|just (the two of us|us two|us adults|adults|the adults|the grown[- ]?ups)|adults?[- ]only|grown[- ]?ups?|kid[- ]free|child[- ]free|romantic|no kids|(baby)?sitter)\b/;
-/** What a sum per person is, as the price levels places carry. */
+/**
+ * A question about opening that names no place of ours ("where is open for coffee at 6am on
+ * Saturday?") is a search for what is open then, not a question about one place's hours.
+ */
+export function asSearch(i: Intent): Intent {
+  return { ...i, asksHours: false, hoursDay: null, at: i.when ?? null, parts: i.whenPart ? [i.whenPart] : i.parts };
+}
+/**
+ * What a limit per person is, as the price levels places carry ($: under $15, $$: $15 to $40,
+ * $$$: $40 to $100, $$$$: more). A level is within a limit only when most of its range is: "under
+ * $16" is not a $15 to $40 place, and "under $50" is not a $40 to $100 one.
+ */
 export function priceLevelFor(dollars: number): PriceLevel {
-  return dollars <= 15 ? 1 : dollars <= 40 ? 2 : dollars <= 100 ? 3 : 4;
+  return dollars < 25 ? 1 : dollars < 60 ? 2 : dollars < 150 ? 3 : 4;
 }
 const NOT_THAT_FREE = /\b(gluten|dairy|nut|step|sugar|meat)[- ]free\b|\bfree (morning|afternoon|evening|night|time|day|hours?|friday|saturday|sunday)\b|\b(am|are|is) (i|we|he|she) free\b|\bfree to\b/g;
 /** Chains a guest asks for by name, as a search of the neighbourhood spells them. */
@@ -303,7 +318,9 @@ export function understand(request: string): Intent {
   // A sum named is the limit; "cheap" with no sum is anything up to a moderate bill.
   const sum = DOLLARS.exec(text);
   const noLimit = NO_LIMIT.test(text);
-  const budget: PriceLevel | null = noLimit ? null : sum ? priceLevelFor(Number(sum[1] ?? sum[2])) : CHEAP.test(wanted) ? 2 : null;
+  const shared = EACH.test(text) ? null : SHARED.exec(text);
+  const heads = shared ? (HOW_MANY[shared[1] ?? ''] ?? (Number(shared[1]) || 2)) : 1;
+  const budget: PriceLevel | null = noLimit ? null : sum ? priceLevelFor(Number((sum[1] ?? sum[2])!.replace(/,/g, '')) / heads) : CHEAP.test(wanted) ? 2 : null;
   const within = VERY_CLOSE.test(text) ? 400 : CLOSE.test(text) ? 900 : null;
   const pairs = [...text.matchAll(PAIR)].map((m) => [m[1]!.slice(0, 3) as Day, (m[2] === 'night' ? 'evening' : m[2]) as Part] as [Day, Part]);
   const weekday = weekdayIn(text);
@@ -347,16 +364,21 @@ export function understand(request: string): Intent {
   // Saturday afternoon or evening named at all, even beside another day ("Saturday or Sunday evening").
   const weddingTime = days.includes('sat') && parts.some((p) => p !== 'morning');
   const asks = kind === 'schedule' ? { time: ASKS_TIME.test(text), dress: ASKS_DRESS.test(text) } : { time: false, dress: false };
+  // "Is the Aviary open on Monday?" names no kind of thing and no day of the weekend, and is a question about a place all the same.
+  if (kind === 'open' && ASKS_HOURS.test(text)) kind = 'places';
   const asksHours = kind === 'places' && ASKS_HOURS.test(text);
   // The time asked about, for a search to leave out what is known to be shut then. A question about one place's hours is not that.
-  const at = asksHours ? null : askedTime(text, parts[0]);
-  // A time by the clock says which part of the day, whatever else the words suggest ("after an early dinner, about 7pm").
-  const byClock = at && at.to - at.from === 30 && !/\bmidnight\b/.test(text) && days.length > 0;
-  const clockPart: Part | null = byClock ? (at.from < 12 * 60 ? 'morning' : at.from < 17 * 60 ? 'afternoon' : 'evening') : null;
+  const when = askedTime(text, parts[0]);
+  const at = asksHours ? null : when;
+  // A time by the clock says which part of the day, whatever else the words suggest ("after an early
+  // dinner, about 7pm"). "1am on Friday night" is the end of Friday's evening, not a morning.
+  const partAt = (t: typeof when): Part | null =>
+    t && t.to - t.from === 30 && !/\bmidnight\b/.test(text) && days.length > 0 ? (t.from < 5 * 60 && t.weekday !== weekday ? 'evening' : t.from < 12 * 60 ? 'morning' : t.from < 17 * 60 ? 'afternoon' : 'evening') : null;
+  const clockPart = partAt(at);
   return {
     // "Grandma has the kids" names them only to say they are not coming: the word is not a wish.
     kind, days, parts: clockPart ? [clockPart] : parts, minutes, kids, indoors, onFoot, themes, words: grownUps ? words(text).filter((w) => !/^(kids?|child|children|baby|babies)$/.test(w)) : words(text), weddingTime, asks, diet, meal, cuisine, avoid, noDiet,
-    named, allergy, avoidCuisine, free, within, access: ACCESS.test(text), asksHours, at, otherDay,
+    named, allergy, avoidCuisine, free, within, access: ACCESS.test(text), asksHours, at, when, whenPart: partAt(when), otherDay,
     budget, grownUps, hoursDay: asksHours ? weekday : null, walkIn: WALK_IN.test(text), mustSee: MUST_SEE.test(text),
     ...(pairs.length >= 2 ? { ownSlots: pairs } : {}),
     ...(kind === 'own' && own ? { own } : {}),

@@ -53,7 +53,7 @@ import {
   type TripItemInput,
   type WeddingEventInput,
 } from '@/domain/trip-planner';
-import { prefsOf, profileOf, profileStarters, withPrefs, type TripPrefs, type TripProfile } from '@/domain/trip-planner/profile';
+import { answersOf, ownAnswers, profileOf, profileStarters, withPrefs, type TripPrefs, type TripProfile } from '@/domain/trip-planner/profile';
 import { embed, ensureLocal, getLocalModels, holdLocal } from '@/lib/ai/local';
 import { speechSupport, startDictation, type Dictation, type DictationError } from '@/lib/speech';
 import { Icon, type IconName } from '@/themes/shared/icons';
@@ -240,6 +240,9 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
   const [who, setWho] = useState(initialProfile);
   const whoRef = useRef(who);
   const prefsAt = useRef<string | null>(initialPrefs?.updatedAt ?? null);
+  // One save of the guest's answers at a time, each starting from where the last one ended: two in
+  // quick succession from this page must not read as a change made somewhere else.
+  const prefsQueue = useRef<Promise<unknown>>(Promise.resolve());
   const [editing, setEditing] = useState(false);
   const editingRef = useRef(false);
   const [whoBusy, setWhoBusy] = useState(false);
@@ -394,7 +397,14 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
         return;
       }
       if (!quiet) setWhoBusy(true);
-      const r = await actions.savePrefs({ prefs: next, basedOn: prefsAt.current }).catch(() => ({ ok: false as const, message: PREFS_FAILED }));
+      const save = actions.savePrefs;
+      const sent = prefsQueue.current.then(async () => {
+        const answer = await save({ prefs: next, basedOn: prefsAt.current }).catch(() => ({ ok: false as const, message: PREFS_FAILED }));
+        if (answer.ok) prefsAt.current = answer.updatedAt;
+        return answer;
+      });
+      prefsQueue.current = sent;
+      const r = await sent;
       if (!quiet) setWhoBusy(false);
       if (!r.ok) {
         // The answers stay as they are on this page; only the save is owed.
@@ -402,7 +412,6 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
         else setWhoProblem(r.message || PREFS_FAILED);
         return;
       }
-      prefsAt.current = r.updatedAt;
       setProfile(r.profile);
       channel.current?.postMessage('saved');
       if (r.conflict || !quiet) {
@@ -420,10 +429,16 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
       return;
     }
     setWhoBusy(true);
-    const r = await actions.savePrefs({ prefs: { diet: null, meal: null, budget: null, stepFree: null, shortWalks: null, interests: [], kids: null, asked: false } }).catch(() => ({ ok: false as const, message: PREFS_FAILED }));
+    const save = actions.savePrefs;
+    const sent = prefsQueue.current.then(async () => {
+      const answer = await save({ prefs: { diet: null, meal: null, budget: null, stepFree: null, shortWalks: null, interests: [], kids: null, asked: false } }).catch(() => ({ ok: false as const, message: PREFS_FAILED }));
+      if (answer.ok) prefsAt.current = answer.updatedAt;
+      return answer;
+    });
+    prefsQueue.current = sent;
+    const r = await sent;
     setWhoBusy(false);
     if (!r.ok) return setWhoProblem(PREFS_NOT_CLEARED);
-    prefsAt.current = r.updatedAt;
     setProfile(r.profile);
     channel.current?.postMessage('saved');
     openEditor(false);
@@ -455,8 +470,15 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
   useEffect(() => {
     if (!actions?.refresh || typeof document === 'undefined') return;
     let last = Date.now();
+    // Another tab saved while this one was out of view: owed on the way back, however soon that is.
+    let owed = false;
     const again = (force = false) => {
-      if (document.visibilityState !== 'visible' || (!force && Date.now() - last < FRESH_MS)) return;
+      if (document.visibilityState !== 'visible') {
+        owed ||= force;
+        return;
+      }
+      if (!force && !owed && Date.now() - last < FRESH_MS) return;
+      owed = false;
       last = Date.now();
       void refresh();
     };
@@ -523,7 +545,7 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
   const answerClarify = useCallback(
     (request: string, diet: Diet[], meal: Meal | null) => {
       // Kept with the guest's other answers, so they are not asked again on another visit or device.
-      void savePrefs({ ...prefsOf(whoRef.current), diet, meal, asked: true }, true);
+      void savePrefs(ownAnswers(whoRef.current, { ...answersOf(whoRef.current), diet, meal }), true);
       lastMeal.current = request;
       const said = [...diet.map((d) => DIET_LABEL[d]), ...(meal ? [MEAL_LABEL[meal]] : [])];
       send(request, { as: said.length ? said.join(', ') : 'No preference' });

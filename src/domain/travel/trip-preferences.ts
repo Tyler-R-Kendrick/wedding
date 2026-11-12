@@ -23,7 +23,8 @@ export async function saveTripPreferences(db: Db, args: { guestId: GuestId; hous
   const [row] = await db
     .insert(guestTripPreferences)
     .values({ guestId: args.guestId, householdId: args.householdId, prefs: args.prefs, createdAt: args.now, updatedAt: args.now })
-    .onConflictDoUpdate({ target: guestTripPreferences.guestId, set: { prefs: args.prefs, updatedAt: args.now } })
+    // The household too: a guest moved to another one keeps their answers when the old one is removed.
+    .onConflictDoUpdate({ target: guestTripPreferences.guestId, set: { householdId: args.householdId, prefs: args.prefs, updatedAt: args.now } })
     .returning();
   return { prefs: readPrefs(row!.prefs), updatedAt: row!.updatedAt.toISOString() };
 }

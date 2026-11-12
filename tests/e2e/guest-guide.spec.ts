@@ -59,7 +59,7 @@ test('linked recommendations open under the guest portal with a directions hando
   await expect(page).toHaveURL(/\/guests\/things-to-do\/starved-rock-state-park$/);
   const directions = page.getByRole('link', { name: 'Open directions in Google Maps' });
   await expect(directions).toHaveAttribute('href', /^https:\/\/www\.google\.com\/maps\/dir\//);
-  await expect(page.getByText('Draft — not yet curated')).toBeVisible();
+  await expect(page.getByText('Draft, not yet curated')).toBeVisible();
 });
 
 test('guest travel page keeps airports visible and axe-clean', async ({ page }) => {

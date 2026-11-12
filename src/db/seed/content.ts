@@ -1,4 +1,4 @@
-import { and, eq, gt, like, notInArray, or, sql, type SQL } from 'drizzle-orm';
+import { and, eq, gt, isNull, like, lt, notInArray, or, sql, type SQL } from 'drizzle-orm';
 import type { AnyPgColumn, PgTable } from 'drizzle-orm/pg-core';
 import type { Db } from '../client';
 import { loadContentSeed, SOURCE_KEYS, type ContentSeed, type ProvenanceSeed, type RecommendationSeed } from '@/content';
@@ -110,10 +110,17 @@ function recommendationFacts(r: RecommendationSeed) {
  * A recommendation the couple edited in /admin/content (contentVersion > 1) is skipped by the
  * upsert, so facts researched after their edit would never reach it. This fills them in, and only
  * fills: a fact goes into the row where the row holds none (null, or an empty list for `diets` and
- * `factSources`), and a value the couple set is never replaced. Nothing else in the row is touched:
- * not its words, its version, its editor or its timestamps, so a second run changes nothing.
+ * `factSources`), and a value the couple set is never replaced.
+ *
+ * It does so once for each round of research. The day the facts were checked is written to the row
+ * with them, and a row that already carries that day (or a later one the couple entered) is left
+ * alone: a fact the couple has since taken out stays out on every later deploy, instead of coming
+ * back because its column is empty again. Only research dated after the row's own day fills again.
+ * Nothing else in the row is touched: not its words, its version, its editor or its timestamps.
  */
 export async function fillRecommendationFacts(db: Db, id: string, r: RecommendationSeed): Promise<void> {
+  // Undated facts cannot be told from ones already delivered (the seed's schema turns them back).
+  if (!r.factsCheckedAt) return;
   const t = recommendations;
   const ifNull = (col: AnyPgColumn, value: unknown): SQL => sql`coalesce(${col}, ${value})`;
   const ifEmpty = (col: AnyPgColumn, value: readonly string[]): SQL => sql`case when ${col} = '[]'::jsonb then ${JSON.stringify(value)}::jsonb else ${col} end`;
@@ -128,10 +135,10 @@ export async function fillRecommendationFacts(db: Db, id: string, r: Recommendat
     ...(r.setting !== undefined ? { setting: ifNull(t.setting, r.setting) } : {}),
     ...(r.minAge !== undefined ? { minAge: ifNull(t.minAge, r.minAge) } : {}),
     ...(r.factSources.length ? { factSources: ifEmpty(t.factSources, r.factSources) } : {}),
-    ...(r.factsCheckedAt !== undefined ? { factsCheckedAt: ifNull(t.factsCheckedAt, r.factsCheckedAt) } : {}),
+    factsCheckedAt: sql`${r.factsCheckedAt}`,
   };
-  if (!Object.keys(set).length) return;
-  await db.update(t).set(set as never).where(and(eq(t.id, id), gt(t.contentVersion, 1)));
+  // ISO days compare as text. A row with no day has never been given facts by a deploy.
+  await db.update(t).set(set as never).where(and(eq(t.id, id), gt(t.contentVersion, 1), or(isNull(t.factsCheckedAt), lt(t.factsCheckedAt, r.factsCheckedAt))));
 }
 
 /**

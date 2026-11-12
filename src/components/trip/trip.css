@@ -1477,6 +1477,10 @@
   --trip-tabs: 3.25rem;
 
   display: grid;
+
+  /* One column as wide as the page gives it, never as wide as its widest row would like: with the
+     text size doubled on a narrow phone the tabs would otherwise push the ask box off the screen. */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--spacing-lg);
   min-inline-size: 0;
 }
@@ -1522,7 +1526,10 @@
   z-index: 6;
   inset-block-start: var(--trip-top);
   display: flex;
-  gap: var(--spacing-sm);
+
+  /* Side by side wherever both names fit; one above the other before either would be cut short. */
+  flex-wrap: wrap;
+  gap: 0 var(--spacing-sm);
   border-block-end: 1px solid var(--color-outline);
 }
 
@@ -1530,6 +1537,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-sm);
+  min-inline-size: 0;
   min-block-size: 3.25rem;
   padding: var(--spacing-xs) var(--spacing-md);
   margin-block-end: -1px;
@@ -1545,6 +1553,13 @@
   /* A pinned tab sits inside the room the page keeps clear above anything it scrolls to (base.css);
      focusing it must not nudge the page to "bring it into view". */
   scroll-margin-block-start: calc(var(--trip-clear) * -1);
+}
+
+/* The narrowest phones: a little less room beside each name keeps the two on one line. */
+@media (width < 360px) {
+  .trip-tab {
+    padding-inline: var(--spacing-sm);
+  }
 }
 
 .trip-tab:hover {

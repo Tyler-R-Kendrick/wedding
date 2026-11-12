@@ -73,6 +73,8 @@ export type TripProfile = {
   /** The meal questions are answered (here, or because the RSVP already says what they eat). */
   asked: boolean;
   from: { diet: ProfileSource | null; stepFree: ProfileSource | null; shortWalks: ProfileSource | null; kids: ProfileSource | null };
+  /** Which of these the guest answered themselves, "nothing" and "no" included. The rest follow the RSVP, today's and any later one. */
+  own: { diet: boolean; stepFree: boolean; shortWalks: boolean };
   /** Whether the guest has set anything of their own. */
   saved: boolean;
 };
@@ -106,16 +108,29 @@ export function hasPrefs(p: TripPrefs): boolean {
   return p.diet !== null || p.meal !== null || p.budget !== null || p.stepFree !== null || p.shortWalks !== null || p.interests.length > 0 || p.kids !== null || p.asked;
 }
 
-// A note that says something is NOT so ("not vegetarian", "no allergies", "no need for a ramp",
-// "no mobility issues") must never be read as its opposite. These are taken out before a note is read.
-const NOT_A_DIET = /\b(no|not|non|never|isn'?t|aren'?t|\w+n'?t)\b[^.,;]{0,14}\b(vegetarians?|vegans?|veggies?|halal|kosher|gluten[- ]free|celiac|coeliac)\b/gi;
-const NOT_AN_ALLERGY = /\b(no|not|none|without|\w+n'?t (have|got)( any)?)\b[^.,;]{0,24}\ballerg\w*/gi;
-const NOT_A_NEED = /\b(no|not|none|never|without|\w+n'?t)\b[^.,;]{0,28}\b(mobility|wheelchairs?|ramps?|elevators?|lifts?|scooters?|walkers?|rollators?|step[- ]free|access\w*|canes?|strollers?|bugg(y|ies)|prams?|pushchairs?|assistance|help)\b/gi;
+// A note that says something is NOT so ("not vegetarian", "no allergies", "wheelchair not needed",
+// "Allergies: none") must never be read as its opposite. These are taken out before a note is read.
+// The "no" may come before the word or after it; it never reaches past an "and" or a "but", so the
+// rest of the note is still read ("not vegan but vegetarian", "no gluten and allergic to shellfish").
+const GAP = String.raw`(?:(?!\b(?:and|but|though|however|just|only)\b)[^.,;:()\n])`;
+const NO_WORD = String.raw`\b(?:no|not|non|none|never|without|zero|\w+n't)\b`;
+// At the end of what it is said about: "Vegetarian: no", "wheelchair - none".
+const TRAILING_NO = String.raw`\s*[:=–-]?\s*(?:(?:no|none|nope|nil|n\/?a|nothing)\b\s*(?=$|[.,;)\n])|(?:is |are )?(?:not|never) (?:needed|required|necessary|applicable|relevant|an issue|a problem)\b|unnecessary\b)`;
+const DIET_TERM = String.raw`(?:veg\w*|halal|kosher|gluten[- ]free|gf|c[eo]?eliac)`;
+const NEED_TERM = String.raw`(?:mobility|wheelchairs?|ramps?|elevators?|lifts?|scooters?|walkers?|rollators?|step[- ]free|access\w*|canes?|strollers?|bugg(?:y|ies)|prams?|pushchairs?|assistance|help)`;
+const NOT_A_DIET = new RegExp(String.raw`${NO_WORD}${GAP}{0,14}?\b${DIET_TERM}\b|\bnon[- ]?veg\w*|\b${DIET_TERM}\b${TRAILING_NO}`, 'gi');
+const NOT_AN_ALLERGY = new RegExp(String.raw`${NO_WORD}${GAP}{0,24}?\ballerg\w*|\ballerg\w*${TRAILING_NO}|\ballergic to (?:nothing|none)\b`, 'gi');
+const NOT_A_NEED = new RegExp(String.raw`${NO_WORD}${GAP}{0,28}?\b${NEED_TERM}\b|\b${NEED_TERM}\b(?: access| use)?${TRAILING_NO}`, 'gi');
 // Said with a "no" or a "cannot", and a need all the same.
-const NO_STAIRS = /\b(no (stairs|steps)|(can(no|'?)t|unable to|not able to) (do|manage|climb|use|take) (the )?(stairs|steps)|stairs are (hard|difficult|a problem|not possible))\b/i;
-const CANNOT_WALK_FAR = /\b((can(no|'?)t|unable to|not able to) walk (very )?(far|long)|walking is (hard|difficult|painful))\b/i;
+const NO_STAIRS = /\b(no (stairs|steps)|(can(no|'?)t|unable to|not able to|do(es)? not|don'?t|doesn'?t) (do|manage|climb|use|take) (the |any )?(stairs|steps)|(stairs|steps) are (hard|difficult|a problem|not possible))\b/i;
+const CANNOT_WALK_FAR = /\b((can(no|'?)t|unable to|not able to|do(es)? not|don'?t|doesn'?t) walk (very |too )?(far|long|well|much)|walking is (hard|difficult|painful))\b/i;
+// What they do not eat, said as a "no": the diet it amounts to.
+const NO_GLUTEN = /\b(no|can(no|'?)t (eat|have)|do(es)? not eat|don'?t eat|doesn'?t eat|avoids?|avoiding) (gluten|wheat)\b/i;
+const NO_MEAT = /\b(no|do(es)? not eat|don'?t eat|doesn'?t eat) meat\b/i;
 const STEP_FREE = /\b(wheelchairs?|step[- ]free|ramps?|elevators?|lifts?|scooters?|walkers?|rollators?|mobility (aid|issues?|problems?|needs?)|limited mobility|bugg(y|ies)|strollers?|prams?|pushchairs?)\b/i;
 const SHORT_WALKS = /\b(short (walks?|distances?)|limited mobility|mobility (issues?|problems?)|tires? easily|canes?|walkers?|rollators?|bad (knee|hip|back)s?)\b/i;
+/** A phone's curly apostrophe is the same apostrophe. */
+const plain = (text: string | null | undefined) => (text ?? '').replace(/[‘’ʼ]/g, "'").trim();
 
 /**
  * What an RSVP's free-text needs say, in the planner's own terms. The words themselves go no
@@ -123,16 +138,19 @@ const SHORT_WALKS = /\b(short (walks?|distances?)|limited mobility|mobility (iss
  * "no mobility issues" asks for nothing and "not vegetarian" is not a diet.
  */
 export function readNeeds(dietary: string | null | undefined, accessibility: string | null | undefined): { diet: Diet[]; allergy: string | null; stepFree: boolean; shortWalks: boolean; nothing: boolean } {
-  const said = dietary?.trim() ?? '';
+  const said = plain(dietary);
   const food = said ? understand(said.replace(NOT_A_DIET, ' ').replace(NOT_AN_ALLERGY, ' ')) : null;
-  const access = accessibility?.trim() ?? '';
+  const diet = new Set<Diet>(food?.diet ?? []);
+  if (NO_GLUTEN.test(said)) diet.add('gluten-free');
+  if (NO_MEAT.test(said)) diet.add('vegetarian');
+  const access = plain(accessibility);
   const needs = access.replace(NOT_A_NEED, ' ');
   return {
-    diet: food?.diet ?? [],
+    diet: [...diet],
     allergy: food?.allergy ?? null,
     stepFree: NO_STAIRS.test(access) || STEP_FREE.test(needs),
     // "None", "no restrictions": an answer, so the question is not put to them again.
-    nothing: !!said && !food?.diet.length && !food?.allergy && (understand(said).noDiet || /^\W*(none|no|nope|nothing|n\/?a|not applicable|no thanks?|none for us)\W*$/i.test(said)),
+    nothing: !!said && !diet.size && !food?.allergy && (understand(said).noDiet || /^\W*(none|no|nope|nothing|n\/?a|not applicable|no thanks?|none for us)\W*$/i.test(said)),
     shortWalks: CANNOT_WALK_FAR.test(access) || SHORT_WALKS.test(needs),
   };
 }
@@ -168,16 +186,41 @@ export function profileOf(records: TripRecords | null, prefs: TripPrefs | null):
       shortWalks: !shortWalks ? null : mine.shortWalks !== null ? 'you' : 'rsvp',
       kids: mine.kids !== null ? 'you' : children > 0 ? 'rsvp' : null,
     },
+    own: { diet: mine.diet !== null, stepFree: mine.stepFree !== null, shortWalks: mine.shortWalks !== null },
     saved: prefs !== null && hasPrefs(prefs),
   };
 }
 
+/** What the page shows for each answer, whoever gave it: where a change to the profile starts from. */
+export type TripAnswers = { diet: Diet[]; meal: Meal | null; budget: PriceLevel | null; stepFree: boolean; shortWalks: boolean; interests: Interest[]; kids: boolean };
+export const answersOf = (p: TripProfile): TripAnswers => ({ diet: p.diet, meal: p.meal, budget: p.budget, stepFree: p.stepFree, shortWalks: p.shortWalks, interests: p.interests, kids: p.kids });
+
+const sameList = <T,>(a: readonly T[], b: readonly T[]) => a.length === b.length && a.every((x) => b.includes(x));
+
 /**
- * The profile as preferences to save: every answer as it stands now, whoever gave it, marked as the
- * guest's own. A change starts from this, so saving one answer never drops another.
+ * The answers as preferences to save. What the guest eats, and the two access answers, are kept as
+ * their own only where they already were or where the guest changed them: an answer that merely
+ * repeats what the RSVP says (or says nothing, as the RSVP does) is left to the RSVP, so a need
+ * told to us there later is not shut out by an earlier save that never mentioned it, and what a
+ * household member told us at RSVP is not copied into this guest's own record.
  */
+export function ownAnswers(p: TripProfile, said: TripAnswers): TripPrefs {
+  return {
+    diet: !p.own.diet && sameList(said.diet, p.diet) ? null : said.diet,
+    meal: said.meal,
+    budget: said.budget,
+    stepFree: !p.own.stepFree && said.stepFree === p.stepFree ? null : said.stepFree,
+    shortWalks: !p.own.shortWalks && said.shortWalks === p.shortWalks ? null : said.shortWalks,
+    interests: said.interests,
+    // "Children come along" is saved only when it differs from what the invitation says.
+    kids: said.kids === p.party.children > 0 ? null : said.kids,
+    asked: true,
+  };
+}
+
+/** The profile as the preferences that would give it again: the guest's own answers, and nothing the RSVP supplied. */
 export function prefsOf(p: TripProfile): TripPrefs {
-  return { diet: p.diet, meal: p.meal, budget: p.budget, stepFree: p.stepFree, shortWalks: p.shortWalks, interests: p.interests, kids: p.from.kids === 'you' ? p.kids : null, asked: true };
+  return { diet: p.own.diet ? p.diet : null, meal: p.meal, budget: p.budget, stepFree: p.own.stepFree ? p.stepFree : null, shortWalks: p.own.shortWalks ? p.shortWalks : null, interests: p.interests, kids: p.from.kids === 'you' ? p.kids : null, asked: true };
 }
 
 /** The profile after the guest saves `prefs`, before the server answers: the same party, their answers. */
@@ -193,6 +236,7 @@ export function withPrefs(p: TripProfile, prefs: TripPrefs): TripProfile {
     interests: prefs.interests,
     asked: true,
     from: { diet: prefs.diet?.length ? 'you' : prefs.diet ? null : p.from.diet, stepFree: prefs.stepFree ? 'you' : prefs.stepFree === false ? null : p.from.stepFree, shortWalks: prefs.shortWalks ? 'you' : prefs.shortWalks === false ? null : p.from.shortWalks, kids: prefs.kids !== null ? 'you' : p.party.children > 0 ? 'rsvp' : null },
+    own: { diet: prefs.diet !== null, stepFree: prefs.stepFree !== null, shortWalks: prefs.shortWalks !== null },
     saved: true,
   };
 }

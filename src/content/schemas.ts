@@ -153,7 +153,13 @@ export const recommendationSeedSchema = provenanceSeedSchema
     factsCheckedAt: isoDate.optional(),
     draft: z.boolean().default(true),
   })
-  .superRefine(placeholderInvariant);
+  .superRefine(placeholderInvariant)
+  // A fact carries the day it was read: that day is how a deploy knows a place it has already
+  // given these facts to, and so never brings back one the couple has since taken out.
+  .superRefine((r, ctx) => {
+    const facts = [r.priceLevel, r.hours, r.hoursNote, r.reservations, r.stepFree, r.setting, r.minAge].some((v) => v !== undefined) || r.diets.length > 0 || r.factSources.length > 0;
+    if (facts && !r.factsCheckedAt) ctx.addIssue({ code: 'custom', message: 'facts need the day they were checked', path: ['factsCheckedAt'] });
+  });
 
 export const itineraryStopSeedSchema = z.object({
   recommendationSlug: slug,

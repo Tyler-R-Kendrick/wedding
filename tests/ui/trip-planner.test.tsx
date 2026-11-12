@@ -865,8 +865,9 @@ describe('who the planner plans for', () => {
     await act(async () => fireEvent.click(within(form).getByRole('button', { name: 'Step-free places only' })));
     await act(async () => fireEvent.click(within(form).getByRole('button', { name: 'Museums' })));
     await act(async () => fireEvent.click(within(form).getByRole('button', { name: 'Save' })));
-    // Unticking what the RSVP said is an answer too: nothing is put back. Children are as the invitation says, so not saved.
-    expect(savePrefs).toHaveBeenCalledWith({ prefs: { diet: [], meal: null, budget: 2, stepFree: true, shortWalks: false, interests: ['museum'], kids: null, asked: true }, basedOn: null });
+    // Unticking what the RSVP said is an answer too: nothing is put back. Children are as the invitation says, and
+    // staying close to the hotel was never touched, so neither is saved as theirs.
+    expect(savePrefs).toHaveBeenCalledWith({ prefs: { diet: [], meal: null, budget: 2, stepFree: true, shortWalks: null, interests: ['museum'], kids: null, asked: true }, basedOn: null });
     await waitFor(() => expect(bar().querySelector('form')).toBeNull());
     expect(bar().querySelector('p')!.textContent).toBe('Planning for 2 adults and 1 child, meals up to $40 each, step-free places, museums.');
     expect(screen.getByText('Saved. New ideas will fit this.')).toBeTruthy();
@@ -923,6 +924,30 @@ describe('who the planner plans for', () => {
     await act(async () => fireEvent.click(within(turn).getByRole('button', { name: 'Show me places' })));
     expect(savePrefs).toHaveBeenCalledWith({ prefs: expect.objectContaining({ diet: ['gluten-free'], asked: true }), basedOn: null });
     await waitFor(() => expect(bar().textContent).toContain('gluten-free'));
+  });
+
+  it('two saves from this page in quick succession are sent one after the other, the second starting from the first', async () => {
+    // The first save is still on its way when the second is made.
+    let finishFirst: (() => void) | undefined;
+    const sent: (string | null | undefined)[] = [];
+    const savePrefs = vi.fn(async (input: { prefs: TripPrefs; basedOn?: string | null }) => {
+      sent.push(input.basedOn);
+      if (sent.length === 1) await new Promise<void>((done) => (finishFirst = done));
+      return { ...answered(withPrefs(profileOf(null, null), input.prefs)), updatedAt: `2027-07-01T00:00:0${sent.length}.000Z` };
+    });
+    setup({ actions: { ...baseActions(), savePrefs } });
+    await ask('Where should we get dinner?');
+    const turn = screen.getByRole('heading', { level: 3, name: 'Two things first, so the places fit' }).closest('li')!;
+    await act(async () => fireEvent.click(within(turn).getByRole('button', { name: 'Gluten-free' })));
+    await act(async () => fireEvent.click(within(turn).getByRole('button', { name: 'Show me places' })));
+    await act(async () => fireEvent.click(within(bar()).getByRole('button', { name: 'Change' })));
+    await act(async () => fireEvent.click(within(bar()).getByRole('button', { name: 'Museums' })));
+    await act(async () => fireEvent.click(within(bar()).getByRole('button', { name: 'Save' })));
+    // Held back until the first has answered: sent now, it would read as a change made somewhere else.
+    expect(sent).toEqual([null]);
+    await act(async () => finishFirst!());
+    await waitFor(() => expect(sent).toEqual([null, '2027-07-01T00:00:01.000Z']));
+    await waitFor(() => expect(screen.getByText('Saved. New ideas will fit this.')).toBeTruthy());
   });
 
   it('a place says what to know before going, for the guest it is shown to', async () => {

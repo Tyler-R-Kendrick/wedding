@@ -121,6 +121,32 @@ describe('who the trip planner plans for', () => {
     expect(fresh.ok && fresh.value.data).toMatchObject({ conflict: false, prefs: { diet: ['halal'] } });
   });
 
+  it('does not bring back answers that were cleared on another device', async () => {
+    const db = await getDb();
+    const first = await run(saveMyTripPreferences, soloC, { prefs: PREFS, basedOn: null }, { key: newId() });
+    const at = first.ok ? first.value.data.updatedAt : null;
+    expect(at).toBeTruthy();
+    // The laptop clears them.
+    await run(saveMyTripPreferences, soloC, { prefs: { diet: null, meal: null, budget: null, stepFree: null, shortWalks: null, interests: [], kids: null, asked: false } }, { key: newId() });
+    // The phone, still holding the old copy, saves a change to it: nothing is written, and it is told.
+    const stale = await run(saveMyTripPreferences, soloC, { prefs: { ...PREFS, diet: ['halal'] }, basedOn: at }, { key: newId() });
+    expect(stale.ok && stale.value.data).toMatchObject({ conflict: true, prefs: null, updatedAt: null, profile: { saved: false } });
+    expect(await db.select().from(guestTripPreferences).where(eq(guestTripPreferences.guestId, FX.guestC1))).toEqual([]);
+    // From what is saved now (nothing), the phone can save.
+    const again = await run(saveMyTripPreferences, soloC, { prefs: { ...PREFS, diet: ['halal'] }, basedOn: null }, { key: newId() });
+    expect(again.ok && again.value.data).toMatchObject({ conflict: false, prefs: { diet: ['halal'] } });
+  });
+
+  it('keeps the answers with the household the guest is in now', async () => {
+    const db = await getDb();
+    await run(saveMyTripPreferences, soloC, { prefs: PREFS }, { key: newId() });
+    // The row is from before a move: it still names another household.
+    await db.update(guestTripPreferences).set({ householdId: FX.householdB }).where(eq(guestTripPreferences.guestId, FX.guestC1));
+    await run(saveMyTripPreferences, soloC, { prefs: { ...PREFS, budget: 3 } }, { key: newId() });
+    const [row] = await db.select().from(guestTripPreferences).where(eq(guestTripPreferences.guestId, FX.guestC1));
+    expect(row).toMatchObject({ householdId: FX.householdC, prefs: { budget: 3 } });
+  });
+
   it('saving nothing clears the row, and the RSVP fills in again', async () => {
     const db = await getDb();
     await db.insert(guestNeeds).values({ guestId: FX.guestC1, dietary: 'gluten free', accessibility: null, updatedBy: by } as never);

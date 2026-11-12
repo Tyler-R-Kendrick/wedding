@@ -248,6 +248,9 @@ export type Intent = {
   hoursDay?: number | null;
   /** The day and time asked about, so places known to be shut then are left out. */
   at: { weekday: number; from: number; to: number } | null;
+  /** The day and time the request names, whether or not it reads as a question about one place's hours; and the part of the day a clock time in it falls in. */
+  when?: { weekday: number; from: number; to: number } | null;
+  whenPart?: Part | null;
   /** A day outside the wedding weekend that the request is about ("Thursday"). */
   otherDay: string | null;
   /** A plan of their own at several times, each day with its own part ("Friday afternoon and Sunday morning"). */

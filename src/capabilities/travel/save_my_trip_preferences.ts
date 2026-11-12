@@ -47,9 +47,10 @@ export const saveMyTripPreferences = defineCapability<z.infer<typeof input>, z.i
     const { db } = travelServices(ctx);
     const { guestId, householdId, principal } = who.value;
     const [records, before] = await Promise.all([tripRecordsFor(db, { guestId, householdId, actsFor: principal.actsFor }), getTripPreferences(db, guestId)]);
-    // Changed somewhere else since this page read it: hand back what is saved, so the page shows it.
-    if (i.basedOn !== undefined && before && before.updatedAt !== i.basedOn && new Date(before.updatedAt) > new Date(i.basedOn ?? 0)) {
-      return ok({ data: { profile: profileOf(records, before.prefs), prefs: before.prefs, updatedAt: before.updatedAt, conflict: true }, sources: [] });
+    // Changed somewhere else since this page read it (saved again, or cleared): hand back what is
+    // saved now, so the page shows it. Nothing is written, so a cleared set is not brought back.
+    if (i.basedOn !== undefined && (before?.updatedAt ?? null) !== i.basedOn) {
+      return ok({ data: { profile: profileOf(records, before?.prefs ?? null), prefs: before?.prefs ?? null, updatedAt: before?.updatedAt ?? null, conflict: true }, sources: [] });
     }
     const saved = await saveTripPreferences(db, { guestId, householdId, prefs: i.prefs, now: ctx.now });
     return ok({ data: { profile: profileOf(records, saved?.prefs ?? null), prefs: saved?.prefs ?? null, updatedAt: saved?.updatedAt ?? null, conflict: false }, sources: [] });

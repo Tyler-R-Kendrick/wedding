@@ -113,23 +113,45 @@ describe('seeding a recommendation’s facts', () => {
     await seedContent(db, deployedAt, seed);
     expect(await Promise.all(picks.map((p) => rowOf(db, p.id)))).toEqual(before);
 
-    // The research is redone: an untouched row follows the seed, an edited row keeps what it holds,
-    // whether the couple typed it or an earlier deploy filled it in.
+    // The couple takes two facts out again in /admin/content: the booking advice and the age.
+    const clearedAt = new Date('2026-11-20T09:00:00Z');
+    const cleared = { reservations: null, minAge: null };
+    await db.update(recommendations).set({ ...cleared, contentVersion: 4, updatedAt: clearedAt }).where(eq(recommendations.id, edited.id));
+    // The next deploys carry the same research, and neither fact comes back.
+    await seedContent(db, new Date('2026-11-21T00:00:00Z'), seed);
+    await seedContent(db, new Date('2026-11-22T00:00:00Z'), seed);
+    expect(factsOf(await rowOf(db, edited.id))).toEqual({ ...RESEARCHED, ...theirs, ...cleared });
+
+    // The research is redone: an untouched row follows the seed. An edited row keeps what it holds,
+    // whether the couple typed it or an earlier deploy filled it in; the newer research fills what
+    // is empty (once), and the row carries its day.
     const redone: Facts = { ...RESEARCHED, priceLevel: 3, hours: '24/7', diets: ['halal'], stepFree: false, minAge: 18, factSources: ['https://www.example.com/new'], factsCheckedAt: '2026-12-01' };
     Object.assign(untouched.r, redone);
     Object.assign(edited.r, redone);
-    Object.assign(unresearched.r, { reservations: 'tickets', diets: ['vegan'] });
+    Object.assign(unresearched.r, { reservations: 'tickets', diets: ['vegan'], factsCheckedAt: '2026-12-01' });
     await seedContent(db, new Date('2026-12-02T00:00:00Z'), seed);
     expect(factsOf(await rowOf(db, untouched.id))).toEqual(redone);
-    expect(factsOf(await rowOf(db, edited.id))).toEqual({ ...RESEARCHED, ...theirs });
-    expect(factsOf(await rowOf(db, unresearched.id))).toEqual({ ...UNKNOWN, priceLevel: 4, reservations: 'tickets', diets: ['vegan'] });
-    expect((await rowOf(db, edited.id)).updatedAt).toEqual(editedAt);
+    const refilled = { ...RESEARCHED, ...theirs, minAge: 18, factsCheckedAt: '2026-12-01' };
+    expect(factsOf(await rowOf(db, edited.id))).toEqual(refilled);
+    expect(factsOf(await rowOf(db, unresearched.id))).toEqual({ ...UNKNOWN, priceLevel: 4, reservations: 'tickets', diets: ['vegan'], factsCheckedAt: '2026-12-01' });
+    expect((await rowOf(db, edited.id)).updatedAt).toEqual(clearedAt);
+
+    // Taken out after that research too, a fact stays out.
+    await db.update(recommendations).set({ diets: [], contentVersion: 5 }).where(eq(recommendations.id, edited.id));
+    await seedContent(db, new Date('2026-12-02T12:00:00Z'), seed);
+    expect(factsOf(await rowOf(db, edited.id))).toEqual({ ...refilled, diets: [] });
+
+    // Facts with no day on them are not handed to a row the couple has edited.
+    Object.assign(unresearched.r, { setting: 'outdoors' });
+    delete (unresearched.r as Record<string, unknown>).factsCheckedAt;
+    await seedContent(db, new Date('2026-12-02T18:00:00Z'), seed);
+    expect((await rowOf(db, unresearched.id)).setting).toBeNull();
 
     // And a fact the seed drops is not taken away from a row that holds it.
     for (const c of FACT_COLUMNS) delete (edited.r as Record<string, unknown>)[c];
     Object.assign(edited.r, { diets: [], factSources: [] });
     await seedContent(db, new Date('2026-12-03T00:00:00Z'), seed);
-    expect(factsOf(await rowOf(db, edited.id))).toEqual({ ...RESEARCHED, ...theirs });
+    expect(factsOf(await rowOf(db, edited.id))).toEqual({ ...refilled, diets: [] });
   });
 });
 

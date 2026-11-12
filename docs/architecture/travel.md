@@ -188,7 +188,10 @@ profile is put together on each page load from two things and nothing else:
 - **What the guest set for themselves** (`guest_trip_preferences`, one row per guest, deleted when
   they clear it): what they eat, the most they would spend on a meal, step-free places only, staying
   near the hotel, whether children come along, what they enjoy. `null` means "not said" (the RSVP
-  fills in); an empty list or `false` is an answer and stands.
+  fills in, today's and any later one); an empty list or `false` is an answer and stands. A save
+  keeps as the guest's own only what was theirs already or what they changed (`ownAnswers`): an
+  answer that only repeats the RSVP stays `null`, so a need told to us at RSVP after an earlier
+  save is still read, and a household member's RSVP note is never copied into this guest's row.
 
 Nothing is looked up about a guest anywhere else, and nothing is guessed from a name, an address or
 a device. Everything in the profile is shown to the guest ("Planning for…") and is theirs to change;
@@ -198,5 +201,6 @@ changing it never changes their RSVP. Because it is shaped by RSVP notes, the tw
 idempotency key.
 
 A save carries the time the page last read the preferences (`basedOn`): if another device has saved
-since, nothing is overwritten and what is saved comes back. A page brought back into view asks again
+or cleared them since, nothing is written and what is saved now comes back. A page sends its own
+saves one after the other, each from where the last ended. A page brought back into view asks again
 for the saved plans and profile (`refreshPlanner`), and tabs in one browser tell each other at once.
