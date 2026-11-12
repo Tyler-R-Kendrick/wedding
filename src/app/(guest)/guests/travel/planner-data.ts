@@ -10,7 +10,7 @@ import { placePhoto } from '@/domain/media/place-photos';
 import { VENUE_SPACES } from '@/domain/seating/plans';
 import { VENUE } from '@/domain/travel/facts';
 import type { TripItem } from '@/domain/travel/types';
-import type { Day, Part, PlaceFacts, PlannerItinerary, PlannerPlace, TripItemInput, WeddingEventInput } from '@/domain/trip-planner';
+import { withPriceGuesses, type Day, type Part, type PlaceFacts, type PlannerItinerary, type PlannerPlace, type TripItemInput, type WeddingEventInput } from '@/domain/trip-planner';
 import { profileOf, type TripPrefs, type TripProfile } from '@/domain/trip-planner/profile';
 import type { MyEvents } from '@/capabilities/rsvp/list_my_events';
 import type { TripHotel } from '@/components/trip/openui';
@@ -192,7 +192,8 @@ export async function loadPlanner(principal: Principal): Promise<PlannerData> {
   ]);
   const plans = await itinerariesRead;
   const cards = all.ok ? all.value.data.items : [];
-  const places = cards.map(toPlannerPlace).filter((p): p is PlannerPlace => !!p);
+  // A place to eat with no checked price gets our guess at one, where it says enough to guess from.
+  const places = withPriceGuesses(cards.map(toPlannerPlace).filter((p): p is PlannerPlace => !!p));
   // The hotel on the map is the place our own records put the wedding venue at.
   // (The seed marks the hotel itself as the `venue` place; places inside it carry `insideVenue`.)
   const venue = cards.find((c) => (c.place?.insideVenue || c.place?.kind === 'venue') && c.place.coordinates)?.place?.coordinates;

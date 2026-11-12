@@ -700,6 +700,23 @@
   }
 }
 
+/* A price we do not hold. Our guess reads as a guess: quieter than a checked price, and it says
+   "Likely". No guess at all: the mark stands where the dollar signs would, in outline. */
+.trip-place__fact--guess,
+.trip-place__fact--unknown {
+  color: var(--color-on-surface-muted);
+}
+
+.trip-place__price-mark {
+  display: inline-block;
+  margin-inline-end: var(--spacing-xs);
+  padding-inline: var(--spacing-xs);
+  border: 1px dashed var(--color-outline);
+  border-radius: var(--rounded-sm);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
 /* Not open at the time it would go in the plans: the one warning on a card. First, in ink and set
    strong, with its own mark, so it is not taken for a time or a link. */
 .trip-place__shut,

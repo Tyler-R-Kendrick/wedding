@@ -176,8 +176,9 @@
         excludes: ['under (2|3|two|three)[^.\n]*free']
       cards: { excludes: ['Shedd Aquarium:[^\n]*[:|] Free\b'] }
 # Starbucks Reserve has no price level. Unknown is not expensive: the guest named it, so it is
-# offered, and its card carries no dollar signs. It opens at 08:00 on Friday.
-- description: 'price: a place with no recorded price is not dropped for a guest on the tightest budget, and is not given a price'
+# offered. Its card carries the planner's guess, said as one (rule of 2026-11-12), and never a
+# plain price. It opens at 08:00 on Friday.
+- description: 'price: a place with no recorded price is not dropped for a guest on the tightest budget, and its price is shown only as a guess'
   vars:
     category: price
     reads: all
@@ -186,7 +187,7 @@
     expect:
       ours: { includes: [starbucks-reserve-roastery] }
       slot: { day: fri, part: morning }
-      cards: { excludes: ['Starbucks Reserve Roastery:[^\n]*\$'] }
+      cards: { includes: ['Starbucks Reserve Roastery:[^\n]*(Likely \$|Price not known)'], excludes: ['Starbucks Reserve Roastery:(?![^\n]*Likely \$)[^\n]*\$'] }
 
 # ---------- step-free access and staying near the hotel ----------
 # No place in the catalogue says it has no step-free way in, so that claim on any card is made up.
@@ -265,7 +266,7 @@
         excludes: [intelligentsia-monadnock, hexe-coffee, chicago-botanic-garden]
         open: true
       slot: { day: sun, part: morning }
-      cards: { excludes: ['Dollop Coffee:[^\n]*(Open \d|Closed|\$)'] }
+      cards: { excludes: ['Dollop Coffee:[^\n]*(Open \d|Closed)', 'Dollop Coffee:(?![^\n]*Likely \$)[^\n]*\$'] }
 
 # ---------- children on the invitation, and nights without them ----------
 - description: 'kids: two children on the invitation, but the request says they are with grandma, so Friday night is a bar and nothing from the family list'
@@ -568,7 +569,8 @@
       cards: { excludes: ['Maggie Daley Park:[^\n]*[:|] Free\b', 'Maggie Daley Park:[^\n]*\$\s?\d', 'Maggie Daley Park:[^\n]*tickets'] }
       text: { excludes: ['maggie daley( park)?( is|.s) (completely |totally )?free\b'] }
 # Dollop records neither hours nor a price level: two questions, and the honest answer to both is
-# that the planner does not know.
+# that the planner does not know. Its card may carry a guess at the price level, said as a guess
+# (rule of 2026-11-12); a latte's price is still nobody's to state.
 - description: 'honesty: asked a named cafe''s latte price and Sunday opening time, neither of which the catalogue holds, invents neither'
   vars:
     category: honesty
@@ -576,7 +578,7 @@
     request: whats a latte cost at dollop and what time do they open sunday
     expect:
       ours: { includes: [dollop-dearborn] }
-      cards: { excludes: ['Dollop Coffee:[^\n]*(\$|Open \d|Closed)'] }
+      cards: { excludes: ['Dollop Coffee:[^\n]*(Open \d|Closed)', 'Dollop Coffee:(?![^\n]*Likely \$)[^\n]*\$'] }
       text: { excludes: ['dollop[^.\n]*open(s|ing)? (at|from) \d', 'latte[^.\n]*\$\s?\d', '\$\s?\d[^.\n]*latte'] }
 # The Game Room records no age rule and is not marked for children either way. Any age limit, or
 # any promise that children are welcome, is made up.

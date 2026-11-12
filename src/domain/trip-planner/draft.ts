@@ -6,6 +6,7 @@ import { fitToPart, orderByNearest } from './route';
 import { dietPhrase, outsideQueryFor } from './outside';
 import type { ClarifyGroup, Day, Diet, Intent, Meal, Part, Plan, PlanPick, PlannerItinerary, PlannerPlace, Prefs, SavedItem, Theme, WeddingEventInput } from './types';
 import { mayBeOpen, openIn, parseHours, partTime } from './hours';
+import { priceOf } from './price';
 import { openOn } from '@/domain/content/place-facts';
 import { BUDGET_LABEL, type TripProfile } from './profile';
 import { DAYS, PARTS } from './types';
@@ -99,7 +100,8 @@ function themeScore(theme: Theme, p: PlannerPlace): number {
   }
 }
 
-export type Scored = { place: PlannerPlace; score: number; keyword: number };
+/** `last`: it fits, but under a limit on price it is listed after the places known or guessed to meet it, because its price is not known. */
+export type Scored = { place: PlannerPlace; score: number; keyword: number; last?: boolean };
 /** Half past five: a time asked about that ends by then is in the small hours. */
 const SMALL_HOURS = 5 * 60 + 30;
 
@@ -167,13 +169,28 @@ export function scorePlaces(intent: Intent, places: readonly PlannerPlace[], sco
     // A modest bill, or a quick bite, makes a meal of the places a plain "dinner" would pass over.
     const modest = intent.meal === 'quick' || (intent.budget ?? 4) <= 2 || intent.walkIn === true;
     if (modest && !out && kw === 0 && isFood(place) && !isCoffee(place) && intent.themes.some((x) => x === 'dinner' || x === 'food') && !ADULT.test(t)) kw = 1.5;
-    if (intent.budget && isFood(place) && f?.priceLevel) kw = f.priceLevel > intent.budget ? 0 : kw * 1.15;
+    // A limit on what a meal costs. A checked price over it rules the place out. With no checked
+    // price we go by our guess (`price.ts`), and a guess over the limit rules it out too, unless
+    // the place is the very dish they asked for and the guess is only a little over: then it is
+    // still the answer, shown with its likely price and said to be a little over. A place we
+    // cannot guess at is not ruled out either: it gives way a little to a place known to fit, and
+    // is listed after the others (`choose`).
+    let last = false;
+    if (intent.budget && isFood(place)) {
+      const guess = f?.priceGuess;
+      const askedFor = intent.cuisine.length > 0 && saysCuisine(`${place.name} ${place.what}`, intent.cuisine);
+      if (f?.priceLevel) kw = f.priceLevel > intent.budget ? 0 : kw * 1.15;
+      else if (!guess) {
+        last = true;
+        kw *= 0.85;
+      } else if (guess > intent.budget && !(guess === intent.budget + 1 && askedFor)) kw = 0;
+    }
     // A menu we have read: one that marks what they eat comes first, and one that does not is passed over while another does.
     if (eats.length && someMark && isFood(place) && f?.diets?.length) kw = eats.every((d) => f.diets!.includes(d)) ? kw * 1.3 : 0;
     // Nothing booked: not the places that only take bookings.
     if (intent.walkIn) kw *= f?.reservations === 'required' || f?.reservations === 'tickets' ? 0 : f?.reservations === 'walk-in' ? 1.2 : 1;
     // A tasting menu at over $100 each is an evening, not a lunch.
-    if (f?.priceLevel === 4 && intent.meal !== 'special' && intent.parts.length > 0 && !intent.parts.includes('evening')) kw = 0;
+    if (priceOf(place) === 4 && intent.meal !== 'special' && intent.parts.length > 0 && !intent.parts.includes('evening')) kw = 0;
     if (who?.interests.length && who.interests.some((i) => themeScore(i, place) >= 2)) kw *= 1.15;
     if (intent.indoors && f?.setting === 'outdoors') kw *= 0.2;
     // Known to be shut for the whole of the time asked about.
@@ -183,13 +200,8 @@ export function scorePlaces(intent: Intent, places: readonly PlannerPlace[], sco
     // Last, so no bonus above can undo it: on foot means walking distance from the hotel, measured
     // from the place's own coordinates, not guessed from a "walk" tag.
     if (hotel && typeof place.lat === 'number' && typeof place.lng === 'number' && kmBetween(hotel, { lat: place.lat, lng: place.lng }) > WALK_KM) kw = 0;
-    return { place, keyword: Math.max(0, kw) };
+    return { place, keyword: Math.max(0, kw), last };
   });
-  // A limit on what a meal costs, and somewhere we know the price of that fits it: a place whose
-  // price we do not hold is passed over, so nothing is offered under a limit it may not meet.
-  if (intent.budget && isMeal(intent) && raw.some((r) => r.keyword > 0 && isFood(r.place) && !isCoffee(r.place) && r.place.facts?.priceLevel)) {
-    for (const r of raw) if (isFood(r.place) && !r.place.facts?.priceLevel) r.keyword = 0;
-  }
 
   const maxKw = Math.max(0, ...raw.map((r) => r.keyword));
   const sims = scores ? places.map((p) => scores.get(p.id)).filter((v): v is number => typeof v === 'number' && Number.isFinite(v)) : [];
@@ -205,7 +217,7 @@ export function scorePlaces(intent: Intent, places: readonly PlannerPlace[], sco
   };
 
   return raw
-    .map(({ place, keyword }) => {
+    .map(({ place, keyword, last }) => {
       const kwNorm = maxKw > 0 ? keyword / maxKw : 0;
       let score: number;
       if (!sims.length) score = kwNorm;
@@ -218,7 +230,7 @@ export function scorePlaces(intent: Intent, places: readonly PlannerPlace[], sco
         score = close && keyword > 0 ? sim(place.id) * kwNorm : 0;
       } else if (maxKw > 0) score = keyword > 0 ? 0.6 * kwNorm + 0.4 * sim(place.id) : 0;
       else score = 0;
-      return { place, score, keyword };
+      return { place, score, keyword, ...(last ? { last } : {}) };
     })
     .sort((a, b) => b.score - a.score || a.place.name.localeCompare(b.place.name));
 }
@@ -245,7 +257,9 @@ function choose(ranked: Scored[], intent: Intent, count: number): PlannerPlace[]
     if (out.length >= Math.min(count, MIN_PICKS)) break;
     if (!out.includes(r.place)) out.push(r.place);
   }
-  return out;
+  // Under a limit on price, a place not known to meet it stays in the answer and goes to the end of it.
+  const last = new Set(fitting.filter((r) => r.last).map((r) => r.place));
+  return [...out.filter((p) => !last.has(p)), ...out.filter((p) => last.has(p))];
 }
 
 /** The part of the day a place suits when the guest did not say. */
@@ -621,7 +635,7 @@ export function draftPlan(args: {
   // A question about one place's hours is answered with its hours, and nothing about who is asking.
   // A place they named that is shut at the time they asked for is not dropped without a word.
   const shutOut = intent.at && !asked.asksHours ? namedIn(args.request, args.places).filter((p) => !found.picks.some((x) => x.id === p.id) && !mayBeOpen(p.facts?.hours, intent.at)).map((p) => shutSentence(p, intent.at!)) : [];
-  const plan = inMind(notes(found, intent, new Map(args.places.map((p) => [p.id, p])), shutOut), asked.asksHours ? [] : mind);
+  const plan = inMind(notes(found, intent, new Map(args.places.map((p) => [p.id, p])), shutOut, !mind.includes(OVER_BUDGET) && !mind.includes(LEAST)), asked.asksHours ? [] : mind);
   // Asked about access in so many words by a guest whose profile does not carry it: each place says
   // what it says about the way in, on its own card.
   const byId = new Map(args.places.map((p) => [p.id, p]));
@@ -646,7 +660,7 @@ function forGuest(asked: Intent, who: TripProfile | undefined, places: readonly 
   const because: string[] = [];
   const finding = asked.kind === 'places' || asked.kind === 'weekend' || asked.kind === 'open';
   // A limit none of our prices meets is said plainly. The limit still stands: what is known to cost more is not offered.
-  if (said.budget && isMeal(said) && !places.some((p) => isFood(p) && !isCoffee(p) && p.facts?.priceLevel && p.facts.priceLevel <= said.budget!)) because.push(OVER_BUDGET);
+  if (said.budget && isMeal(said) && !places.some((p) => isFood(p) && !isCoffee(p) && (priceOf(p) ?? 9) <= said.budget!)) because.push(OVER_BUDGET);
   if (!who || !finding) return { said, because };
   const kidsAlong = who.kids && !asked.kids && !asked.grownUps && !asked.themes.includes('drinks') && asked.meal !== 'special';
   // Said where it shapes the choice; a cup of coffee is the same cup with children along.
@@ -654,7 +668,7 @@ function forGuest(asked: Intent, who: TripProfile | undefined, places: readonly 
   // A sum they named, or a splurge they asked for, is the answer to what a meal should cost.
   if (who.budget && who.budget < 4 && asked.budget == null && asked.meal !== 'special' && (isMeal(asked) || asked.kind === 'weekend')) {
     said = { ...said, budget: who.budget };
-    if (places.some((p) => isFood(p) && !isCoffee(p) && p.facts?.priceLevel && p.facts.priceLevel <= who.budget!)) because.push(`meals ${BUDGET_LABEL[who.budget].toLowerCase()}`);
+    if (places.some((p) => isFood(p) && !isCoffee(p) && (priceOf(p) ?? 9) <= who.budget!)) because.push(`meals ${BUDGET_LABEL[who.budget].toLowerCase()}`);
     else if (isMeal(asked)) because.push(OVER_BUDGET);
   }
   if (who.shortWalks && asked.within === null && !asked.themes.includes('day-trip') && !asked.themes.includes('hotel')) {
@@ -711,7 +725,7 @@ function inMind(plan: Plan, because: readonly string[]): Plan {
  * that turns on one says which, instead of leaving the guest to assume. No kitchen is vouched for
  * on an allergy.
  */
-function notes(plan: Plan, intent: Intent, places: ReadonlyMap<string, PlannerPlace>, shutOut?: readonly string[]): Plan {
+function notes(plan: Plan, intent: Intent, places: ReadonlyMap<string, PlannerPlace>, shutOut?: readonly string[], priceLines = true): Plan {
   const allergy = intent.allergy ?? (plan.picks.some((x) => places.get(x.id) && isFood(places.get(x.id)!)) || isMeal(intent) ? (intent.who?.allergy ?? null) : null);
   const warning = allergy ? `We cannot vouch for any kitchen on ${allergy === 'food' ? 'an allergy' : `a ${allergy} allergy`}: tell the restaurant when you book, and check again before you order.` : null;
   // Nothing found is still an answer to someone with an allergy: what to do is said either way.
@@ -722,6 +736,17 @@ function notes(plan: Plan, intent: Intent, places: ReadonlyMap<string, PlannerPl
   }
   const picked = plan.picks.flatMap((x) => places.get(x.id) ?? []);
   const lines: string[] = [...(shutOut ?? [])];
+  // Under a limit on price, the places that come after the ones known to meet it are said to be that.
+  if (intent.budget && priceLines) {
+    const eats = picked.filter(isFood);
+    const unknown = eats.filter((p) => !priceOf(p));
+    const over = eats.filter((p) => !p.facts?.priceLevel && p.facts?.priceGuess === intent.budget! + 1);
+    if (eats.length > unknown.length + over.length) {
+      if (over.length) lines.push(over.length > 2 ? 'Some of these are likely a little over that.' : `${listOf(over.map((p) => p.name))} ${over.length === 1 ? 'is' : 'are'} likely a little over that.`);
+      // Said once: the cards say which they are.
+      if (unknown.length) lines.push('Places whose price we do not know come last.');
+    }
+  }
   if (intent.asksHours) {
     // Asked about one day, the first place (the one they named) is answered for that day, in words.
     const first = picked[0];
@@ -813,10 +838,10 @@ function clarifyPlan(request: string): Plan {
 /** What a place of ours is, as a meal: read from the couple's own words about it. */
 function mealOf(p: PlannerPlace): Meal {
   // What it costs settles it where we know: over $100 each is an occasion, under $15 is a quick bite.
-  if (p.facts?.priceLevel === 4) return 'special';
+  if (priceOf(p) === 4) return 'special';
   // A cocktail bar that is not cheap is where a special night out goes.
   if ((p.facts?.priceLevel ?? 0) >= 3 && has(p, 'drink') && /\bcocktails?\b/i.test(p.what)) return 'special';
-  if (p.facts?.priceLevel === 1) return 'quick';
+  if (priceOf(p) === 1) return 'quick';
   const t = `${p.name} ${p.what}`.toLowerCase();
   if (/fine[- ]dining|tasting[- ]menu|steakhouse/.test(t)) return 'special';
   if (p.interests.includes('quick') || /\b(quick|deep-dish|hot dog|counter|burgers?|classics)\b/.test(t)) return 'quick';
@@ -1143,8 +1168,11 @@ function placesPlan(intent: Intent, places: readonly PlannerPlace[], saved: read
   const eating = intent.themes.some((t) => t === 'dinner' || t === 'food' || t === 'drinks' || t === 'breakfast');
   if (eating && !intent.themes.includes('coffee')) {
     const pool = ranked.filter((r) => r.score > 0).map((r) => r.place);
-    const inside = pool.filter(inHotel).slice(0, 3);
-    const out = pool.filter((p) => !inHotel(p)).slice(0, 3);
+    // In each list, as in any other: under a limit on price, a place not known to meet it goes to the end.
+    const lastOnes = new Set(ranked.filter((r) => r.last).map((r) => r.place));
+    const lastAfter = (list: PlannerPlace[]) => [...list.filter((p) => !lastOnes.has(p)), ...list.filter((p) => lastOnes.has(p))];
+    const inside = lastAfter(pool.filter(inHotel).slice(0, 3));
+    const out = lastAfter(pool.filter((p) => !inHotel(p)).slice(0, 3));
     if (inside.length && out.length) {
       const ids = [...inside, ...out];
       return {

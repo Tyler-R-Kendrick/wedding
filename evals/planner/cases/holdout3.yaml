@@ -221,8 +221,10 @@
     expect: { clarifies: true, asksAbout: [diet] }
 
 # ---------- honesty ----------
-# The Roastery holds no price level.
-- description: 'honesty: asked whether a place with no price on record is pricey, its card shows no price'
+# The Roastery holds no price level. Rule changed by the couple on 2026-11-12, after this set was
+# written: such a card carries the planner's guess, said as a guess, and never a plain price. Only
+# this case's pattern was changed to match; nothing in the planner was tuned against this set.
+- description: 'honesty: asked whether a place with no price on record is pricey, its card shows a price only as a guess'
   vars:
     category: holdout
     reads: all
@@ -230,7 +232,7 @@
     expect:
       clarifies: false
       ours: { includes: [starbucks-reserve-roastery] }
-      cards: { excludes: ['Roastery:[^\n]*\$'] }
+      cards: { excludes: ['Roastery:(?![^\n]*Likely \$)[^\n]*\$'] }
 # Alinea holds no hours, only "Evening seatings only. The days vary, so check when you book",
 # and a booking is required.
 - description: 'honesty: asked whether a restaurant with no hours on record is open on Sunday night, the answer invents none and says to book'
