@@ -1,7 +1,7 @@
-import { and, eq, like, notInArray, or, sql } from 'drizzle-orm';
+import { and, eq, gt, like, notInArray, or, sql, type SQL } from 'drizzle-orm';
 import type { AnyPgColumn, PgTable } from 'drizzle-orm/pg-core';
 import type { Db } from '../client';
-import { loadContentSeed, SOURCE_KEYS, type ContentSeed, type ProvenanceSeed } from '@/content';
+import { loadContentSeed, SOURCE_KEYS, type ContentSeed, type ProvenanceSeed, type RecommendationSeed } from '@/content';
 import { projectKnowledge } from '@/domain/knowledge/projection';
 import {
   faqEntries, itineraryTemplates, operationalFields, places, recommendations, storySections, timelineMoments, venueFacts, venueSpaces,
@@ -90,12 +90,57 @@ export async function seedTimeline(db: Db, seed: ContentSeed, now: Date): Promis
     );
 }
 
+/** The guest-facing facts of a recommendation as its row holds them: null (or an empty list) is "not known". */
+function recommendationFacts(r: RecommendationSeed) {
+  return {
+    priceLevel: (r.priceLevel ?? null) as (typeof recommendations.$inferInsert)['priceLevel'],
+    hours: r.hours ?? null,
+    hoursNote: r.hoursNote ?? null,
+    reservations: r.reservations ?? null,
+    diets: r.diets,
+    stepFree: r.stepFree ?? null,
+    setting: r.setting ?? null,
+    minAge: r.minAge ?? null,
+    factSources: r.factSources,
+    factsCheckedAt: r.factsCheckedAt ?? null,
+  };
+}
+
+/**
+ * A recommendation the couple edited in /admin/content (contentVersion > 1) is skipped by the
+ * upsert, so facts researched after their edit would never reach it. This fills them in, and only
+ * fills: a fact goes into the row where the row holds none (null, or an empty list for `diets` and
+ * `factSources`), and a value the couple set is never replaced. Nothing else in the row is touched:
+ * not its words, its version, its editor or its timestamps, so a second run changes nothing.
+ */
+export async function fillRecommendationFacts(db: Db, id: string, r: RecommendationSeed): Promise<void> {
+  const t = recommendations;
+  const ifNull = (col: AnyPgColumn, value: unknown): SQL => sql`coalesce(${col}, ${value})`;
+  const ifEmpty = (col: AnyPgColumn, value: readonly string[]): SQL => sql`case when ${col} = '[]'::jsonb then ${JSON.stringify(value)}::jsonb else ${col} end`;
+  // Only the facts the seed has: one it lacks is left out of the statement, never written as null.
+  const set: Record<string, SQL> = {
+    ...(r.priceLevel !== undefined ? { priceLevel: ifNull(t.priceLevel, r.priceLevel) } : {}),
+    ...(r.hours !== undefined ? { hours: ifNull(t.hours, r.hours) } : {}),
+    ...(r.hoursNote !== undefined ? { hoursNote: ifNull(t.hoursNote, r.hoursNote) } : {}),
+    ...(r.reservations !== undefined ? { reservations: ifNull(t.reservations, r.reservations) } : {}),
+    ...(r.diets.length ? { diets: ifEmpty(t.diets, r.diets) } : {}),
+    ...(r.stepFree !== undefined ? { stepFree: ifNull(t.stepFree, r.stepFree) } : {}),
+    ...(r.setting !== undefined ? { setting: ifNull(t.setting, r.setting) } : {}),
+    ...(r.minAge !== undefined ? { minAge: ifNull(t.minAge, r.minAge) } : {}),
+    ...(r.factSources.length ? { factSources: ifEmpty(t.factSources, r.factSources) } : {}),
+    ...(r.factsCheckedAt !== undefined ? { factsCheckedAt: ifNull(t.factsCheckedAt, r.factsCheckedAt) } : {}),
+  };
+  if (!Object.keys(set).length) return;
+  await db.update(t).set(set as never).where(and(eq(t.id, id), gt(t.contentVersion, 1)));
+}
+
 /**
  * Upserts the brief-derived content (src/content/seed/*.json) and re-projects the AI corpus.
- * Idempotent. Seeded rows never overwrite an admin edit: a row whose contentVersion > 1 is left alone.
+ * Idempotent. Seeded rows never overwrite an admin edit: a row whose contentVersion > 1 is left
+ * alone, but for a recommendation's facts, which are filled in where the edited row holds none
+ * (`fillRecommendationFacts`). `seed` is the validated seed to write; tests pass their own.
  */
-export async function seedContent(db: Db, now: Date = new Date()): Promise<void> {
-  const seed = loadContentSeed();
+export async function seedContent(db: Db, now: Date = new Date(), seed: ContentSeed = loadContentSeed()): Promise<void> {
 
   const placeIds = new Map(seed.places.map((p, i) => [p.slug, seedId(ID_BASE.places + i)]));
   const adventureIds = new Map(seed.adventures.map((a, i) => [a.slug, seedId(ID_BASE.adventures + i)]));
@@ -128,8 +173,9 @@ export async function seedContent(db: Db, now: Date = new Date()): Promise<void>
       id: seedId(ID_BASE.recommendations + i), slug: r.slug, title: r.title, category: r.category, interests: r.interests, placeId: r.placeSlug ? placeIds.get(r.placeSlug)! : null, what: r.what,
       durationMinutes: r.durationMinutes ?? null, distanceFromCaa: r.distanceFromCaa ?? null, cost: r.cost ?? null, accessibility: r.accessibility ?? null, bookingUrl: r.bookingUrl ?? null,
       operationalKey: r.operationalKey ?? null, experienceId: r.experienceSlug ? adventureIds.get(r.experienceSlug)! : null, whyWeShareThis: r.whyWeShareThis ?? null, kidFriendly: r.kidFriendly ?? null,
-      draft: r.draft, ...provenance(r, now),
+      ...recommendationFacts(r), draft: r.draft, ...provenance(r, now),
     });
+    await fillRecommendationFacts(db, seedId(ID_BASE.recommendations + i), r);
   }
   for (const [i, it] of seed.itineraries.entries()) {
     await upsert(itineraryTemplates, {

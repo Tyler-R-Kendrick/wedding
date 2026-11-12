@@ -30,6 +30,20 @@ async function openTab(page: Page, name: RegExp | string) {
   }).toPass({ timeout: 20_000 });
 }
 
+/** Clears what this guest told the planner about themselves (what they eat, what they would spend), so every run starts unasked. */
+async function clearAnswers(page: Page) {
+  await openTab(page, 'Things to do');
+  const who = plan(page).getByLabel('Who we are planning for');
+  const change = who.getByRole('button', { name: 'Change', exact: true });
+  if ((await change.count()) === 0) return;
+  await change.click();
+  const clear = who.getByRole('button', { name: 'Clear my answers' });
+  if ((await clear.count()) > 0) {
+    await clear.click();
+    await expect(who.locator('form')).toHaveCount(0);
+  } else await who.getByRole('button', { name: 'Cancel' }).click();
+}
+
 /** Takes out whatever this guest saved from the planner, so the run leaves the fixture as it found it. */
 async function clearWeekend(page: Page) {
   await openTab(page, /My plans/);
@@ -242,6 +256,7 @@ test('a meal is asked about first; answered, our places come first and places fr
   const page = await ctx.newPage();
   await page.goto('/guests/travel#plan');
   await clearWeekend(page);
+  await clearAnswers(page);
   await plan(page).getByLabel('Ask us about the weekend').fill('Where should we get dinner?');
   await plan(page).getByRole('button', { name: 'Ask', exact: true }).click();
   const question = plan(page).locator('.trip-turn').last();
@@ -256,7 +271,8 @@ test('a meal is asked about first; answered, our places come first and places fr
   await expect(turn.locator('.trip-turn__asked')).toContainText('Vegetarian, Quick and casual');
   const nearby = turn.getByRole('region', { name: 'Tagged vegetarian, near the hotel' });
   await expect(nearby).toBeVisible();
-  await expect(turn.getByText(/We have not checked our own picks for vegetarian menus/)).toBeVisible();
+  // What they answered is kept with them, and shown where the ideas are.
+  await expect(plan(page).getByLabel('Who we are planning for')).toContainText('Vegetarian');
   // The recorded sample has these tagged vegetarian; each name once, however many branches there are.
   const names = (await nearby.locator('.trip-nearby__name').allInnerTexts()).map((n) => n.split('\n')[0]!.trim());
   expect(names.length).toBeGreaterThanOrEqual(2);
@@ -286,6 +302,51 @@ test('a meal is asked about first; answered, our places come first and places fr
   await expect(plan(page).locator('.trip-turn').last().locator('article.trip-place').first()).toBeVisible();
   await expect(plan(page).getByRole('heading', { level: 3, name: 'Two things first, so the places fit' })).toHaveCount(1);
   await clearWeekend(page);
+  await clearAnswers(page);
+  await ctx.close();
+});
+
+test('the planner says who it is planning for; what the guest sets there is saved, shapes the next answer, and is theirs to clear', async ({ browser }) => {
+  const ctx = await contextAs(browser, 'A1', { viewport: { width: 390, height: 844 } });
+  const page = await ctx.newPage();
+  await page.goto('/guests/travel#plan');
+  await clearWeekend(page);
+  await clearAnswers(page);
+  const who = plan(page).getByLabel('Who we are planning for');
+  // The party is the household on the invitation; nothing else is presumed.
+  await expect(who).toContainText('2 adults and 1 child');
+  await who.getByRole('button', { name: 'Make the ideas fit you' }).click();
+  const form = who.locator('form');
+  await expect(form.getByText('Your RSVP and your meal at the wedding stay as you left them.')).toBeVisible();
+  await form.getByRole('button', { name: 'Vegetarian' }).click();
+  await form.getByRole('button', { name: 'Up to $40 each' }).click();
+  await form.getByRole('button', { name: 'Save' }).click();
+  await expect(form).toHaveCount(0);
+  await expect(who).toContainText('Vegetarian');
+  await expect(who).toContainText('Up to $40 each for a meal');
+  // The line that changed is still in view, under the tabs, and the page is where the guest can read it.
+  await expect(who).toBeInViewport();
+
+  // Saved with the guest: a reload (or another device) shows the same, and dinner is answered without the question.
+  await page.reload();
+  await openTab(page, 'Things to do');
+  await expect(plan(page).getByLabel('Who we are planning for')).toContainText('Up to $40 each for a meal');
+  await plan(page).getByLabel('Ask us about the weekend').fill('Where should we get dinner on Friday?');
+  await plan(page).getByRole('button', { name: 'Ask', exact: true }).click();
+  const turn = plan(page).locator('.trip-turn').last();
+  await expect(turn.locator('article.trip-place').first()).toBeVisible();
+  await expect(plan(page).getByRole('heading', { level: 3, name: 'Two things first, so the places fit' })).toHaveCount(0);
+  await expect(turn.getByText(/meals up to \$40 each in mind/)).toBeVisible();
+  // Each place says what to know before going, in words; nothing known to cost more is offered.
+  const know = turn.getByRole('list', { name: 'Good to know' }).first();
+  await expect(know).toBeVisible();
+  await expect(turn.getByText('$$$', { exact: true })).toHaveCount(0);
+  const results = await new AxeBuilder({ page }).include('#plan').withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
+  expect(results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical')).toEqual([]);
+
+  // Theirs to clear: back to what the invitation says.
+  await clearAnswers(page);
+  await expect(plan(page).getByLabel('Who we are planning for')).not.toContainText('Vegetarian');
   await ctx.close();
 });
 

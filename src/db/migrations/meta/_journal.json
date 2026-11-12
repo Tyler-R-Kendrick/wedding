@@ -162,6 +162,13 @@
       "when": 1794443527612,
       "tag": "0023_large_songbird",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1794505052253,
+      "tag": "0024_quiet_cannonball",
+      "breakpoints": true
     }
   ]
 }

@@ -1,0 +1,224 @@
+# Hold-out cases, third batch: the same ground as challenge3.yaml (place facts: price, hours,
+# booking, diets, step-free way in, setting, cost; and the guest's profile) with different wording,
+# places and profiles. Written by the same independent tester from the place catalogue only.
+# NOT to be shown to whoever tunes the planner; run it only to check that challenge3 gains carry over.
+# The assumptions listed at the top of challenge3.yaml apply here too; "DEBATABLE" means the same.
+
+# ---------- opening hours ----------
+# DEBATABLE: the parts of the day are coarse (evening is 6 to 10 pm) and this asks about a clock
+# time. On Sunday the hotel bars and Esmé shut at 9, the steakhouse at 9:30, The Aviary all day;
+# the burger counter is open until midnight.
+- description: 'hours: food at 10 pm on Sunday gets the one place of ours still open, not the ones that shut at 9 or 9:30'
+  vars:
+    category: holdout
+    request: anywhere still doing food at 10 on sunday night? just landed, starving
+    prefs: { diet: [], meal: quick, asked: true }
+    expect:
+      clarifies: false
+      ours:
+        includes: [shake-shack]
+        excludes: [esme, game-room, drawing-room, michael-jordans-steakhouse, the-aviary]
+# The Drawing Room opens at 7 and serves breakfast until 11.
+- description: 'hours: breakfast in the hotel at 8 on Sunday gets the lounge that serves it, and nothing outside the hotel'
+  vars:
+    category: holdout
+    request: Breakfast in the hotel at 8 on Sunday before we check out?
+    prefs: { diet: [], meal: quick, asked: true }
+    expect:
+      clarifies: false
+      ours: { includes: [drawing-room], inHotel: true, open: true }
+# The Shedd, the science museum, the zoo and the Art Institute are all shut by 5 on Sunday.
+# Maggie Daley Park is open until 9.
+- description: 'hours: something for the children at 7 pm on Sunday leaves out everything that shut at 4 or 5'
+  vars:
+    category: holdout
+    request: "what's still open for the kids around 7pm on sunday? they napped late"
+    profile: { adults: 2, children: 2 }
+    expect:
+      clarifies: false
+      ours:
+        min: 1
+        open: true
+        allAges: true
+        excludes: [shedd-aquarium, griffin-msi, lincoln-park-zoo, art-institute]
+
+# ---------- price ----------
+# DEBATABLE: "not too pricey" certainly rules out over $100 a head (level 4). Whether $40 to
+# $100 (level 3) is too pricey is left open, so only level 4 is ruled out.
+- description: 'price: a misspelt "not to pricey" dinner for six never offers a tasting menu at over $100 a head'
+  vars:
+    category: holdout
+    request: somwhere not to pricey for dinner fri, theres 6 of us
+    prefs: { diet: [], meal: sit-down, asked: true }
+    expect:
+      clarifies: false
+      ours: { min: 1, maxPrice: 3, open: true, excludes: [alinea, esme] }
+# DEBATABLE: the saved budget is "the most one person wants to spend on a meal". A drink is not
+# a meal, so the hotel bars (level 2) are still the answer for a guest whose budget is level 1.
+- description: 'price: the lowest saved meal budget does not take the hotel bars away from a guest asking for a drink'
+  vars:
+    category: holdout
+    request: A drink in the hotel bar on Friday night?
+    profile: { adults: 2, prefs: { diet: [], budget: 1, asked: true } }
+    expect:
+      clarifies: false
+      ours: { min: 1, inHotel: true, anyOf: [game-room, drawing-room] }
+- description: 'price: a saved budget with no ceiling gives way when the request asks for cheap and cheerful'
+  vars:
+    category: holdout
+    request: Cheap and cheerful lunch on Sunday, nothing dear.
+    profile: { adults: 2, prefs: { diet: [], meal: quick, budget: 4, asked: true } }
+    expect:
+      clarifies: false
+      ours: { min: 1, maxPrice: 2, open: true }
+
+# ---------- access ----------
+# The hotel's own interiors and the Riverwalk say step-free. The river cruise and the walking
+# tours hold no access fact: they may be offered, but not with a step-free claim.
+- description: 'access: a power-chair user asking for architecture gets a sight known to be step-free, and no step-free claim on the cruise or the tours'
+  vars:
+    category: holdout
+    request: Any architecture things I can do from my chair on Friday afternoon?
+    profile: { adults: 1, accessibility: 'Power chair user. Ramps or lifts needed everywhere.' }
+    expect:
+      clarifies: false
+      ours: { min: 1, stepFree: true, anyOf: [caa-explore, chicago-riverwalk] }
+      cards:
+        excludes:
+          - 'River Cruise:[^\n]*[Ss]tep-free way in'
+          - 'Walking Tours:[^\n]*[Ss]tep-free way in'
+- description: 'access: an RSVP that says short distances only gets dinner from places near the hotel'
+  vars:
+    category: holdout
+    request: dinner friday?
+    profile:
+      adults: 2
+      accessibility: 'I get breathless (COPD) and can only manage short distances'
+      prefs: { diet: [], meal: sit-down, asked: true }
+    expect:
+      clarifies: false
+      outside: { min: 1, kinds: [restaurant], near: 900 }
+# Esmé holds no access fact. An honest answer says it is not known and to ask the restaurant.
+- description: 'access: asked outright whether a restaurant with no access on record is accessible, the answer says to check and does not claim it'
+  vars:
+    category: holdout
+    request: "Is Esmé wheelchair accessible? My mother can't do steps at all."
+    expect:
+      cards: { excludes: ['Esm.:[^\n]*[Ss]tep-free way in'] }
+      text:
+        includes:
+          - "check|call|ask|contact|confirm|don.t (know|have|hold)|do not (know|have|hold)|not sure|unknown|not (known|recorded|listed|on record)|no (record|note|information)"
+
+# ---------- children ----------
+- description: 'kids: a nightcap once the children are asleep, without leaving the hotel, gets a hotel bar and nothing outside the building'
+  vars:
+    category: holdout
+    request: "Once the kids are asleep we'd love a nightcap without leaving the hotel (baby monitor range!). Friday."
+    profile: { adults: 2, children: 2 }
+    expect:
+      clarifies: false
+      ours: { min: 1, inHotel: true, anyOf: [game-room, drawing-room] }
+- description: 'kids: children on the invitation but a saved "not bringing them" gets a grown-up bar, not the playground'
+  vars:
+    category: holdout
+    request: A proper grown-up cocktail bar for Friday night?
+    profile: { adults: 2, children: 2, prefs: { kids: false, asked: true } }
+    expect:
+      clarifies: false
+      ours:
+        min: 1
+        anyOf: [the-aviary, game-room, drawing-room]
+        excludes: [shake-shack, maggie-daley-park, museum-of-ice-cream]
+# DEBATABLE: nobody on the invitation is a child, but the guest saved that children are coming.
+# The request says nothing either way, so the saved answer should show in what is offered.
+- description: 'kids: no children on the invitation but a saved "children are coming" gets something they can go to on Sunday afternoon'
+  vars:
+    category: holdout
+    request: What shall we do on Sunday afternoon?
+    profile: { adults: 2, children: 0, prefs: { kids: true, asked: true } }
+    expect:
+      clarifies: false
+      ours:
+        min: 1
+        allAges: true
+        open: true
+        anyOf: [maggie-daley-park, shedd-aquarium, art-institute, lincoln-park-zoo, griffin-msi, museum-of-ice-cream, architecture-river-cruise, caa-explore]
+
+# ---------- diet ----------
+# The three hotel spots mark gluten-free and are open at Sunday lunchtime.
+- description: 'diet: "coeliac" on the RSVP is gluten-free: no question, a gluten-free outside search, and one of our places that marks it'
+  vars:
+    category: holdout
+    request: Lunch on Sunday, sit-down?
+    profile: { adults: 2, dietary: 'Coeliac (diagnosed) - must be strictly GF' }
+    expect:
+      clarifies: false
+      ours: { open: true, anyOf: [game-room, drawing-room, shake-shack] }
+      outside: { diet: gluten-free }
+# No place of ours marks kosher.
+- description: 'diet: with no profile, a kosher sit-down dinner is answered at once, kosher outside, and none of our places is shown as kosher'
+  vars:
+    category: holdout
+    request: kosher sit-down dinner friday night?
+    expect:
+      clarifies: false
+      outside: { diet: kosher }
+      cards: { excludes: ['[Kk]osher'] }
+# DEBATABLE: the saved answer is gluten-free and the request names a vegan guest. The request
+# wins at least to this extent: wherever is offered from outside has to feed the vegan.
+- description: 'diet: a vegan guest named in the request is searched for, whatever diet the profile saved'
+  vars:
+    category: holdout
+    request: My vegan niece is joining us for a quick lunch on Friday. Where?
+    profile: { adults: 2, prefs: { diet: [gluten-free], meal: quick, asked: true } }
+    expect:
+      clarifies: false
+      outside: { diet: vegan }
+
+# ---------- profile, and no profile at all ----------
+# Grant Park, the Riverwalk and Maggie Daley Park are marked outdoors.
+- description: 'profile: with no profile, a wet Friday afternoon indoors offers nothing that is marked outdoors'
+  vars:
+    category: holdout
+    request: "It's bucketing down on Friday afternoon. What can we do that's indoors?"
+    expect:
+      clarifies: false
+      ours: { min: 1, open: true, excludes: [grant-park, chicago-riverwalk, maggie-daley-park] }
+# Saved interests are coffee and museums; the request is for somewhere to run about.
+- description: 'profile: saved interests give way to a request for somewhere the children can burn off energy'
+  vars:
+    category: holdout
+    request: the kids need to burn off energy sunday morning. where?
+    profile: { adults: 2, children: 2, prefs: { interests: [coffee, museum], asked: true } }
+    expect:
+      clarifies: false
+      ours: { min: 1, includes: [maggie-daley-park], kidFriendly: true, allAges: true, open: true }
+# DEBATABLE: the profile says who is coming and nothing about food, and no answers were saved,
+# so the planner knows no more about what they eat than it does for an anonymous guest.
+- description: 'profile: a profile that holds only the party size does not answer the food question, so dinner is still asked about'
+  vars:
+    category: holdout
+    request: "Where's good for dinner on Friday evening?"
+    profile: { adults: 2 }
+    expect: { clarifies: true, asksAbout: [diet] }
+
+# ---------- honesty ----------
+# The Roastery holds no price level.
+- description: 'honesty: asked whether a place with no price on record is pricey, its card shows no price'
+  vars:
+    category: holdout
+    request: Is the Starbucks Roastery pricey? Worth the walk?
+    expect:
+      clarifies: false
+      ours: { includes: [starbucks-reserve-roastery] }
+      cards: { excludes: ['Roastery:[^\n]*\$'] }
+# Alinea holds no hours, only "Evening seatings only. The days vary, so check when you book",
+# and a booking is required.
+- description: 'honesty: asked whether a restaurant with no hours on record is open on Sunday night, the answer invents none and says to book'
+  vars:
+    category: holdout
+    request: is alinea open sunday night? and how do we get a table
+    expect:
+      ours: { includes: [alinea] }
+      cards: { excludes: ['Alinea:[^\n]*(Open \d|Closed on)'] }
+      text: { includes: ['book|reserv'] }

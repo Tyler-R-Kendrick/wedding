@@ -139,6 +139,7 @@ export function describeValue(f: FieldSpec, v: unknown, editor: Pick<ContentEdit
   if (f.type === 'json' && Array.isArray(v)) {
     if (v.length === 0) return '';
     if (f.editor === 'refs') return v.map((id) => refName(f.ref, id)).join(' · ');
+    if (f.editor === 'choices') return v.map((x) => f.optionLabels?.[String(x)] ?? String(x)).join(' · ');
     if (f.editor === 'rows') return `${v.length} ${v.length === 1 ? 'row' : 'rows'}`;
     return clip(v.map(String).join(' · '));
   }

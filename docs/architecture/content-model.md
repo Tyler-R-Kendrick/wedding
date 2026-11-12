@@ -11,7 +11,7 @@ carries provenance ([provenance.md](provenance.md)).
 | `story_sections` | Our Story chapters (`met → connection → relationship → love → future → engagement → marriage`) | `paragraphs` JSON; placeholder paragraphs contain the marker |
 | `places` | Nodes of the experience graph | address / coords only when known; `insideVenue` for CAA outlets |
 | `adventure_memories` | `AdventureMemory` records; `id` is the ExperienceId | date exact/approx, season, time of day, place, `memory[]`, `saraMemory`, `tylerMemory`, media refs, tags, duration, accessibility, related recommendations |
-| `recommendations` | Practical layer + memory link | `experienceId` + `whyWeShareThis`, `operationalKey` for live hours/menus, `bookingUrl`, `draft` |
+| `recommendations` | Practical layer + memory link | `experienceId` + `whyWeShareThis`, `operationalKey` for live hours/menus, `bookingUrl`, `draft`; guest-facing facts (`priceLevel`, `hours` in OSM `opening_hours` syntax, `hoursNote`, `reservations`, `diets`, `stepFree`, `setting`, `minAge`) with `factSources` + `factsCheckedAt`. Null or empty means not known and nothing is shown; the words guests read are in `src/domain/content/place-facts.ts`. A deploy fills a fact into a row the couple edited only where the row holds none |
 | `itinerary_templates` | 45 min / 2–3 h / Friday afternoon / Saturday morning / with kids / architecture / food & drink / stay inside CAA | `stops[] = { recommendationId, minutes?, note? }`; all seeded as `draft: true` |
 | `venue_spaces` | The four kit spaces | `capacities.note` always says "Kit figure — verify" |
 | `venue_facts` | Durable, cited history and "look for this" | landmark designation date deliberately absent |

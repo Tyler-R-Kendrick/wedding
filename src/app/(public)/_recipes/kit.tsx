@@ -1,8 +1,9 @@
 import Link from 'next/link';
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { FreshnessBadge, ProvenanceLine, Text } from '@/components/provenance';
 import { formatMinutes } from '@/domain/adventures/itineraries';
 import { humanize } from '@/domain/content/format';
+import { placeFactRows, type PlaceFactKey } from '@/domain/content/place-facts';
 import type { HandoffView, OperationalFieldView, ProvenanceViewData, RecommendationCard, RecommendationSummary } from '@/domain/content/views';
 import { ROUTES } from '@/domain/routes';
 import './placeholder.css';
@@ -155,6 +156,24 @@ export function OperationalRow({ field }: { field: OperationalFieldView }) {
 
 export function RecommendationCardView({ card, headingLevel = 3 }: { card: RecommendationCard; headingLevel?: 2 | 3 }) {
   const H = headingLevel === 2 ? 'h2' : 'h3';
+  // Price, hours, booking and the rest: only the facts the record holds, each in plain words.
+  const facts = placeFactRows(card.facts);
+  const fact = (...keys: PlaceFactKey[]) =>
+    facts
+      .filter((r) => keys.includes(r.key))
+      .map((r) => (
+        <Fragment key={r.key}>
+          <dt>{r.label}</dt>
+          <dd>
+            {r.lines.map((line, n) => (
+              <Fragment key={line}>
+                {n ? <br /> : null}
+                {line}
+              </Fragment>
+            ))}
+          </dd>
+        </Fragment>
+      ));
   return (
     <article className="wp-card" data-recommendation={card.slug}>
       <H>
@@ -195,6 +214,7 @@ export function RecommendationCardView({ card, headingLevel = 3 }: { card: Recom
             </dd>
           </>
         ) : null}
+        {fact('price')}
         {card.cost ? (
           <>
             <dt>Cost</dt>
@@ -203,6 +223,7 @@ export function RecommendationCardView({ card, headingLevel = 3 }: { card: Recom
             </dd>
           </>
         ) : null}
+        {fact('hours', 'booking', 'diets')}
         {card.accessibility ? (
           <>
             <dt>Accessibility</dt>
@@ -211,12 +232,14 @@ export function RecommendationCardView({ card, headingLevel = 3 }: { card: Recom
             </dd>
           </>
         ) : null}
+        {fact('stepFree', 'setting')}
         {card.kidFriendly !== null ? (
           <>
             <dt>With kids</dt>
             <dd>{card.kidFriendly ? 'Yes' : 'Better without'}</dd>
           </>
         ) : null}
+        {fact('ages')}
       </dl>
       {card.operational ? (
         <p>

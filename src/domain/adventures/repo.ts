@@ -3,15 +3,17 @@ import { asc, eq } from 'drizzle-orm';
 import type { ExternalHandoff } from '@/contracts/providers';
 import type { Citation } from '@/contracts/provenance';
 import {
-  adventureMemories, itineraryTemplates, operationalFields, places, recommendations,
+  PLACE_SETTINGS, PRICE_LEVELS, RESERVATION_POLICIES, adventureMemories, itineraryTemplates, operationalFields, places, recommendations,
   type AdventureMemoryRow, type ItineraryTemplateRow, type OperationalFieldRow, type PlaceRow, type RecommendationRow,
 } from '@/db/schema';
 import { assertAllowedRedirect } from '@/lib/redirects';
 import { getProvider } from '@/providers/registry';
 import { dedupeCitations, toProvenanceView, toRecordCitation } from '@/domain/content/provenance';
 import type { ReadContext } from '@/domain/content/read-context';
-import { optionalText, textBlock, textBlocks } from '@/domain/content/text';
-import type { AdventureCard, AdventureDetail, HandoffView, ItineraryView, PlaceView, RecommendationCard, RecommendationSummary } from '@/domain/content/views';
+import { guestText, optionalText, textBlock, textBlocks, withoutPlaceholders } from '@/domain/content/text';
+import type { AdventureCard, AdventureDetail, HandoffView, ItineraryView, PlaceFactsView, PlaceView, RecommendationCard, RecommendationSummary } from '@/domain/content/views';
+import { hoursAreReadable } from '@/domain/content/place-facts';
+import { DIETS } from '@/domain/trip-planner/types';
 import { filterVisible, isValidAt } from '@/domain/content/visibility';
 import { toOperationalFieldView } from '@/domain/venue/repo';
 import { ROUTES } from '@/domain/routes';
@@ -109,6 +111,35 @@ export async function recommendationDeps(ctx: ReadContext): Promise<Recommendati
   };
 }
 
+const oneOf = <T extends string | number>(allowed: readonly T[], value: unknown): T | undefined => (allowed as readonly unknown[]).includes(value) ? (value as T) : undefined;
+
+/**
+ * The facts a recommendation's record holds, only those that are set: a null column, an empty list,
+ * a value the site no longer knows, hours it cannot read back, or a note that is still a TODO is
+ * left out, so a card never says more than the record does. `undefined` when none is set.
+ */
+export function toPlaceFacts(row: Pick<RecommendationRow, 'priceLevel' | 'hours' | 'hoursNote' | 'reservations' | 'diets' | 'stepFree' | 'setting' | 'minAge'>): PlaceFactsView | undefined {
+  const priceLevel = oneOf(PRICE_LEVELS, row.priceLevel);
+  const hours = row.hours && hoursAreReadable(row.hours) ? row.hours.trim() : undefined;
+  // Settled sentences only: a note that is still a TODO to the couple is not a fact for a guest.
+  const hoursNote = guestText(withoutPlaceholders([row.hoursNote]).join(' '));
+  const reservations = oneOf(RESERVATION_POLICIES, row.reservations);
+  const diets = DIETS.filter((d) => (row.diets ?? []).includes(d));
+  const setting = oneOf(PLACE_SETTINGS, row.setting);
+  const minAge = typeof row.minAge === 'number' && Number.isInteger(row.minAge) && row.minAge >= 1 ? row.minAge : undefined;
+  const facts: PlaceFactsView = {
+    ...(priceLevel ? { priceLevel } : {}),
+    ...(hours ? { hours } : {}),
+    ...(hoursNote ? { hoursNote } : {}),
+    ...(reservations ? { reservations } : {}),
+    ...(diets.length ? { diets } : {}),
+    ...(typeof row.stepFree === 'boolean' ? { stepFree: row.stepFree } : {}),
+    ...(setting ? { setting } : {}),
+    ...(minAge ? { minAge } : {}),
+  };
+  return Object.keys(facts).length ? facts : undefined;
+}
+
 export async function toRecommendationCard(row: RecommendationRow, ctx: ReadContext, deps: RecommendationDeps): Promise<RecommendationCard> {
   const place = row.placeId ? deps.places.get(row.placeId) : undefined;
   const memory = row.experienceId ? deps.memories.get(row.experienceId) : undefined;
@@ -123,6 +154,7 @@ export async function toRecommendationCard(row: RecommendationRow, ctx: ReadCont
   }
   const official = officialHandoff(operational?.url ?? row.sourceUrl ?? place?.url, row.title);
   if (official && !handoffs.booking) handoffs.official = official;
+  const facts = toPlaceFacts(row);
   return {
     id: row.id,
     slug: row.slug,
@@ -137,6 +169,7 @@ export async function toRecommendationCard(row: RecommendationRow, ctx: ReadCont
     cost: optionalText(row.cost),
     accessibility: optionalText(row.accessibility),
     kidFriendly: row.kidFriendly,
+    ...(facts ? { facts } : {}),
     draft: row.draft,
     placeholder: row.placeholder,
     ...(operational ? { operational: toOperationalFieldView(operational, ctx) } : {}),

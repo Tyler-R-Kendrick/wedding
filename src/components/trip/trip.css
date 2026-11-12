@@ -670,6 +670,27 @@
   gap: 0 var(--spacing-md);
 }
 
+/* Good to know before going: price, the day's hours, booking, in one line of plain words. */
+.trip-place__know {
+  color: var(--color-on-surface);
+}
+
+/* Not open at the time it would go in the plans: said in the warm ink, with a clock, above the button. */
+.trip-place__shut {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-xs);
+  margin: 0;
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  color: var(--color-tertiary);
+}
+
+.trip-place__shut > .trip-icon {
+  block-size: 1lh;
+}
+
 .trip-place__in {
   display: inline-flex;
   flex-basis: 100%;
@@ -1530,6 +1551,88 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* ---------- who the planner plans for ---------- */
+
+/* One line above the ideas: who they are for, in the guest's own facts, and one way to change it.
+   A hairline under it sets it apart from the ideas without boxing it. */
+.trip-who {
+  display: grid;
+  gap: var(--spacing-md);
+  min-inline-size: 0;
+  padding-block-end: var(--spacing-md);
+  border-block-end: 1px solid var(--color-outline);
+
+  /* Brought back into view after its form closes: under the pinned tabs, like a question. */
+  scroll-margin-block-start: calc(var(--trip-top) + var(--trip-tabs) + var(--spacing-md) - var(--trip-clear));
+}
+
+.trip-who__line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--spacing-xs) var(--spacing-lg);
+}
+
+.trip-who__for {
+  flex: 1 1 16rem;
+  min-inline-size: 0;
+  margin: 0;
+  font-family: var(--font-text);
+  font-size: var(--type-body-md-size);
+  line-height: var(--type-body-md-line);
+  color: var(--color-on-surface);
+}
+
+.trip-who__label {
+  margin-inline-end: var(--spacing-sm);
+  color: var(--color-on-surface-muted);
+}
+
+.trip-who__fact {
+  font-weight: 600;
+}
+
+.trip-who__from {
+  font-weight: 400;
+  color: var(--color-on-surface-muted);
+}
+
+/* A middle dot between facts, drawn after each but the last so a wrapped line never starts with one. */
+.trip-who__dot::before {
+  margin-inline: var(--spacing-sm);
+  font-weight: 400;
+  color: var(--color-gold-deep);
+  content: "\00b7";
+}
+
+.trip-who__change {
+  flex: none;
+}
+
+.trip-who__form {
+  display: grid;
+  gap: var(--spacing-lg);
+  min-inline-size: 0;
+}
+
+.trip-who__hint {
+  margin-block-start: var(--spacing-sm);
+}
+
+.trip-who__problem {
+  color: var(--color-error);
+}
+
+.trip-who__go [aria-disabled="true"] {
+  cursor: default;
+  opacity: 0.72;
+}
+
+.trip-who__clear {
+  margin-inline-start: auto;
+}
+
 /* ---------- starters ---------- */
 .trip-open {
   display: grid;
@@ -2359,6 +2462,11 @@
 
 .trip-saved__fact > .trip-icon {
   block-size: 1lh;
+}
+
+/* The place is known to be shut at the time it is planned for. */
+.trip-saved__fact--shut {
+  color: var(--color-tertiary);
 }
 
 /* A part of the day holding more than fits it, said plainly with a way out. */

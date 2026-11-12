@@ -3,6 +3,7 @@ import type { KnowledgeKind, KnowledgeRecordInsert } from '@/db/schema/knowledge
 import type { Db } from '@/db/client';
 import { knowledgeRecords } from '@/db/schema';
 import { isMissingTable } from '@/db/missing-table';
+import { placeFactRows } from '@/domain/content/place-facts';
 import { withoutPlaceholders } from '@/domain/content/text';
 import { ROUTES } from '@/domain/routes';
 import { thingsToDoDetailPath } from '@/domain/lifecycle/guest-portal';
@@ -65,7 +66,13 @@ export function buildKnowledgeRecords(rows: Rows, now: Date): KnowledgeRecordIns
   }
   for (const r of rows.recommendations) {
     const place = r.placeId ? placeById.get(r.placeId) : undefined;
-    push('recommendation', 'recommendations', r, r.title, thingsToDoDetailPath(r.slug), [r.what, r.distanceFromCaa, r.cost, r.accessibility, place && !place.placeholder ? `Place: ${place.name}${place.address ? `, ${place.address}` : ''}` : null]);
+    // Price, hours, booking and the rest, in the words the place's page uses ("Hours: Monday to Thursday: 7 am to 6 pm; Sunday: Closed.").
+    // The note on the hours is the couple's own text, so it goes in by itself: `push` drops a sentence of it that is still a TODO.
+    const facts = placeFactRows({ ...r, hoursNote: null }).map((f) => `${f.label}: ${f.lines.join('; ')}.`);
+    push('recommendation', 'recommendations', r, r.title, thingsToDoDetailPath(r.slug), [
+      r.what, r.distanceFromCaa, r.cost, r.accessibility, ...facts, r.hoursNote,
+      place && !place.placeholder ? `Place: ${place.name}${place.address ? `, ${place.address}` : ''}` : null,
+    ]);
   }
   for (const i of rows.itinerary_templates) push('itinerary', 'itinerary_templates', i, i.title, `${ROUTES.guestTravel}#plan`, [i.intro]);
   for (const v of rows.venue_spaces) push('venue-space', 'venue_spaces', v, v.name, `${ROUTES.ourVenue}/${v.slug}`, [v.character, ...v.lookForThis, `Capacities are ${v.capacities.note}`]);

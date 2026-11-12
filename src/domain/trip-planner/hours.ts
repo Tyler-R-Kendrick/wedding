@@ -82,12 +82,17 @@ const WEEKDAY: [RegExp, number][] = [
 ];
 const PART_SPAN: Record<string, [number, number]> = { morning: [8 * 60, 12 * 60], afternoon: [12 * 60, 17 * 60], evening: [18 * 60, 22 * 60] };
 
-/** The first day of the week a request names, Monday as 0, or null. */
+/**
+ * The day of the week a request is about, Monday as 0, or null: the first one it names, passing
+ * over a day that only bounds the stay ("staying till Wednesday") when another is named.
+ */
 export function weekdayIn(text: string): number | null {
-  let best: { at: number; day: number } | null = null;
+  let best: { at: number; day: number; bound: boolean } | null = null;
   for (const [re, day] of WEEKDAY) {
     const m = re.exec(text);
-    if (m && (!best || m.index < best.at)) best = { at: m.index, day };
+    if (!m) continue;
+    const bound = /\b(till|until|through|thru|before|leav(e|ing)( on)?|fly(ing)? (home|out|back)( on)?)\s+$/.test(text.slice(0, m.index));
+    if (!best || (best.bound && !bound) || (best.bound === bound && m.index < best.at)) best = { at: m.index, day, bound };
   }
   return best ? best.day : null;
 }
@@ -112,4 +117,30 @@ export function askedTime(text: string, part: string | undefined): AskedTime | n
   if (/\bnight\b/.test(text) && part === 'evening') return { weekday, from: 19 * 60, to: 23 * 60 };
   const span = part ? PART_SPAN[part] : undefined;
   return span ? { weekday, from: span[0], to: span[1] } : { weekday, from: 9 * 60, to: 21 * 60 };
+}
+
+/** A part of a day as a span of the clock, for asking whether a place is open then. */
+export function partTime(weekday: number, part: string): AskedTime {
+  const [from, to] = PART_SPAN[part] ?? [9 * 60, 21 * 60];
+  return { weekday, from, to };
+}
+
+/** The day of the week a calendar date falls on, Monday as 0. */
+export function weekdayOfDate(dateIso: string): number {
+  return (new Date(`${dateIso}T12:00:00Z`).getUTCDay() + 6) % 7;
+}
+
+/**
+ * Whether a place is open in a part of a day: true or false when its hours are understood, null
+ * when they are not held (which is never read as shut).
+ */
+export function openIn(hours: string | undefined, weekday: number, part: string): boolean | null {
+  if (!parseHours(hours)) return null;
+  return mayBeOpen(hours, partTime(weekday, part));
+}
+
+/** Whether a place opens at all on a day of the week; null when its hours are not held. */
+export function openOnDay(hours: string | undefined, weekday: number): boolean | null {
+  const week = parseHours(hours);
+  return week ? week[weekday]!.length > 0 : null;
 }

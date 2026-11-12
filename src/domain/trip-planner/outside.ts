@@ -55,6 +55,9 @@ export function outsideQueryFor(intent: Intent, diet: readonly Diet[] = intent.d
   if (eating && meal === 'quick') kinds = ['fast_food', 'cafe', 'restaurant'];
   if (eating && meal === 'sit-down') kinds = ['restaurant'];
   if (eating && diet.length && meal !== 'sit-down') kinds = [...new Set([...kinds, ...FOOD_KINDS])];
+  // Few places are tagged halal or kosher: whatever is, is shown, whatever kind of meal was asked for.
+  const rare = eating && diet.some((d) => d === 'halal' || d === 'kosher');
+  if (rare) kinds = [...FOOD_KINDS];
   // A cuisine or a chain by name is looked for wherever it is served, and nothing else is.
   if (intent.cuisine.length || intent.named.length) kinds = meal === 'sit-down' ? ['restaurant'] : [...FOOD_KINDS];
   else {
@@ -70,7 +73,7 @@ export function outsideQueryFor(intent: Intent, diet: readonly Diet[] = intent.d
     kinds,
     diet: eating ? [...diet] : [],
     cuisine: [...intent.cuisine],
-    ...(eating && meal ? { meal } : {}),
+    ...(eating && meal && !rare ? { meal } : {}),
     limit: 5,
     ...(notNamed.length ? { notNamed } : {}),
     ...(words.length ? { words } : {}),

@@ -1,8 +1,10 @@
 import { z } from 'zod';
 import { SOURCE_TYPES, TRUST_CLASSES } from '@/contracts/provenance';
 import {
-  CONTENT_VISIBILITIES, FAQ_CATEGORIES, ITINERARY_BUCKETS, OPERATIONAL_KINDS, PLACE_KINDS, RECOMMENDATION_CATEGORIES, SEASONS, STORY_CHAPTERS, TIMES_OF_DAY, VENUE_FACT_CATEGORIES,
+  CONTENT_VISIBILITIES, FAQ_CATEGORIES, ITINERARY_BUCKETS, OPERATIONAL_KINDS, PLACE_KINDS, PLACE_SETTINGS, RECOMMENDATION_CATEGORIES, RESERVATION_POLICIES, SEASONS, STORY_CHAPTERS, TIMES_OF_DAY,
+  VENUE_FACT_CATEGORIES,
 } from '@/db/schema/content';
+import { DIETS } from '@/domain/trip-planner/types';
 
 /**
  * Theme-agnostic view shapes. Capabilities validate their output against these, and the page
@@ -74,6 +76,30 @@ export const operationalFieldViewSchema = z.object({
 });
 export type OperationalFieldView = z.infer<typeof operationalFieldViewSchema>;
 
+/**
+ * What a guest weighs before going to a place, as the couple's record holds it (the planner's
+ * `PlaceFacts`, less `cost` and `access`, which a card carries as its own `cost` and `accessibility`
+ * text). Every key is optional and present only when the fact is set: absent means not known.
+ * `src/domain/content/place-facts.ts` has the words for each.
+ */
+export const placeFactsViewSchema = z.object({
+  /** Food and drink, per person: 1 under $15, 2 $15 to $40, 3 $40 to $100, 4 over $100. */
+  priceLevel: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]).optional(),
+  /** Regular hours in OpenStreetMap's `opening_hours` syntax ("Mo-Th 07:00-18:00; Su off"). */
+  hours: z.string().optional(),
+  /** A caveat on the hours, in plain words. */
+  hoursNote: z.string().optional(),
+  reservations: z.enum(RESERVATION_POLICIES).optional(),
+  /** Diets the place's own menu marks options for. Never empty. */
+  diets: z.array(z.enum(DIETS)).min(1).optional(),
+  /** The place says it has a step-free way in (false: it says it does not). */
+  stepFree: z.boolean().optional(),
+  setting: z.enum(PLACE_SETTINGS).optional(),
+  /** The youngest age let in, when the place sets one. */
+  minAge: z.number().int().min(1).optional(),
+});
+export type PlaceFactsView = z.infer<typeof placeFactsViewSchema>;
+
 export const recommendationCardSchema = z.object({
   id: z.string(),
   slug: z.string(),
@@ -88,6 +114,8 @@ export const recommendationCardSchema = z.object({
   cost: textBlockSchema.optional(),
   accessibility: textBlockSchema.optional(),
   kidFriendly: z.boolean().nullable(),
+  /** Price, hours, booking, diet options, the way in, setting and ages. Absent when none is known. */
+  facts: placeFactsViewSchema.optional(),
   draft: z.boolean(),
   placeholder: z.boolean(),
   /** Live hours/menu link with freshness, when the recommendation points at an operational field. */

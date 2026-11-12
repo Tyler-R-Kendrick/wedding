@@ -13,8 +13,18 @@ import placesSeed from '@/content/seed/places.json';
 import itinerariesSeed from '@/content/seed/itineraries.json';
 import outsideFixture from '@/providers/place-search/fixture.json';
 
-type Rec = { slug: string; title: string; category: string; interests?: string[]; placeSlug?: string; what?: string; durationMinutes?: number; whyWeShareThis?: string; draft?: boolean; placeholder?: boolean; kidFriendly?: boolean };
+type Facts = { priceLevel?: number; hours?: string; hoursNote?: string; reservations?: string; diets?: string[]; stepFree?: boolean; setting?: string; minAge?: number; cost?: string; accessibility?: string };
+type Rec = Facts & { slug: string; title: string; category: string; interests?: string[]; placeSlug?: string; what?: string; durationMinutes?: number; whyWeShareThis?: string; draft?: boolean; placeholder?: boolean; kidFriendly?: boolean };
 type Spot = { slug: string; kind?: string; address?: string; lat?: number; lng?: number };
+
+/** What the place's own record says a guest should know (planner-data.ts hands the planner the same). A seed without them has none. */
+function factsOf(r: Rec): { facts?: Record<string, unknown> } {
+  const facts: Record<string, unknown> = {};
+  for (const k of ['priceLevel', 'hours', 'hoursNote', 'reservations', 'stepFree', 'setting', 'minAge', 'cost'] as const) if (r[k] !== undefined && r[k] !== null) facts[k] = r[k];
+  if (r.diets?.length) facts.diets = r.diets;
+  if (r.accessibility) facts.access = r.accessibility;
+  return Object.keys(facts).length ? { facts } : {};
+}
 
 const spots = new Map((placesSeed as Spot[]).map((p) => [p.slug, p]));
 
@@ -34,6 +44,7 @@ export const PLACES: PlannerPlace[] = (recommendations as Rec[])
       ...(why ? { why } : {}),
       ...(r.durationMinutes ? { minutes: r.durationMinutes } : {}),
       ...(typeof r.kidFriendly === 'boolean' ? { kidFriendly: r.kidFriendly } : {}),
+      ...factsOf(r),
       ...(at?.address ? { address: at.address } : {}),
       ...(typeof at?.lat === 'number' && typeof at?.lng === 'number' ? { lat: at.lat, lng: at.lng } : {}),
       href: `/guests/things-to-do/${r.slug}`,
@@ -66,6 +77,12 @@ export type Scenario = {
   /** Their answers to a clarifying question, if the planner asks one: the request is then answered with them. */
   answers?: { diet?: string[]; meal?: string | null };
   events?: 'set' | 'unset';
+  /**
+   * Who the guest is, as the site's own records and their saved answers have it: the party on the
+   * invitation, what the RSVP says about food and getting around (free text, as guests write it),
+   * and what they set for themselves on the planner.
+   */
+  profile?: { adults?: number; children?: number; dietary?: string; accessibility?: string; prefs?: Record<string, unknown> };
 };
 
 export type Answer = {
@@ -74,7 +91,7 @@ export type Answer = {
   intro: string;
   clarifies: boolean;
   asksAbout: string[];
-  ours: { id: string; name: string; category: string; kidFriendly: boolean; inHotel: boolean; day?: string; part?: string }[];
+  ours: { id: string; name: string; category: string; kidFriendly: boolean; inHotel: boolean; day?: string; part?: string; priceLevel?: number; stepFree?: boolean; minAge?: number; shut?: string; know: string[] }[];
   outside: { name: string; kind: string; cuisine: string[]; diet: string[]; meters: number }[];
   own: { title: string; slots: [string, string][] } | null;
   next: string[];
@@ -90,7 +107,10 @@ const hotel = { name: 'Our hotel', ...(outsideFixture as { near: { lat: number; 
 function once(s: Scenario, prefs: Scenario['prefs']): { plan: Plan; outside: Answer['outside']; program: string } {
   const saved = s.saved ?? [];
   const events = EVENTS[s.events ?? 'unset']!;
-  const plan = planner.draftPlan({ request: s.request, places: PLACES, saved, itineraries: ITINERARIES, events, ...(prefs ? ({ prefs } as object) : {}) } as Parameters<typeof planner.draftPlan>[0]);
+  // The profile is put together the way the page does it; a planner from before profiles answers without one.
+  const who = profileFor(s) as { diet: string[]; meal: string | null; asked: boolean } | null;
+  const told = prefs ?? (who ? { diet: who.diet, meal: who.meal, asked: who.asked } : undefined);
+  const plan = planner.draftPlan({ request: s.request, places: PLACES, saved, itineraries: ITINERARIES, events, ...(told ? ({ prefs: told } as object) : {}), ...(who ? ({ profile: who } as object) : {}) } as Parameters<typeof planner.draftPlan>[0]);
   let found: unknown[] = [];
   const query = (plan as unknown as { outside?: unknown }).outside;
   if (query && has('pickOutside')) found = p.pickOutside!(...([query, (outsideFixture as { places: unknown[] }).places, PLACES, hotel] as never[])) as unknown[];
@@ -103,7 +123,19 @@ function once(s: Scenario, prefs: Scenario['prefs']): { plan: Plan; outside: Ans
   return { plan, outside, program };
 }
 
+/** What a card for this place would say before going, at the time the answer offers it: read through the planner's own words for it. */
+function knownOf(pl: PlannerPlace, x: { day?: string; part?: string }, who: unknown): { priceLevel?: number; stepFree?: boolean; minAge?: number; shut?: string; know: string[] } {
+  const f = (pl as unknown as { facts?: Facts }).facts ?? {};
+  const when = x.day && x.part ? { date: planner.weekendDate(x.day as never), part: x.part } : null;
+  const k = has('knowBeforeYouGo') ? (p.knowBeforeYouGo!(...([pl, when, who ?? undefined] as never[])) as { items: { text: string }[]; shut: string | null }) : { items: [], shut: null };
+  return { ...(f.priceLevel ? { priceLevel: f.priceLevel } : {}), ...(typeof f.stepFree === 'boolean' ? { stepFree: f.stepFree } : {}), ...(f.minAge ? { minAge: f.minAge } : {}), ...(k.shut ? { shut: k.shut } : {}), know: k.items.map((i) => i.text) };
+}
+
+const profileFor = (s: Scenario) =>
+  s.profile && has('profileOf') ? p.profileOf!(...([{ adults: s.profile.adults ?? 1, children: s.profile.children ?? 0, dietary: s.profile.dietary ?? null, accessibility: s.profile.accessibility ?? null }, s.profile.prefs ? p.readPrefs!(...([s.profile.prefs] as never[])) : null] as never[])) : null;
+
 export function answer(s: Scenario): Answer {
+  const who = profileFor(s);
   let prefs = s.prefs;
   let { plan, outside, program } = once(s, prefs);
   let turns = 1;
@@ -116,6 +148,10 @@ export function answer(s: Scenario): Answer {
     turns = 2;
   }
   const picks = (plan.picks ?? []).filter((x) => BY_ID.has(x.id));
+  const ours = picks.map((x) => {
+    const pl = BY_ID.get(x.id)!;
+    return { id: pl.id, name: pl.name, category: pl.category, kidFriendly: pl.kidFriendly === true || pl.category === 'with-kids' || pl.interests.includes('kids'), inHotel: pl.interests.includes('inside-caa'), ...(x.day ? { day: x.day } : {}), ...(x.part ? { part: x.part } : {}), ...knownOf(pl, x, who) };
+  });
   const own = (plan as unknown as { own?: { title: string; slots: { day: string; part: string }[] } }).own;
   const strings = [...program.matchAll(/"((?:[^"\\]|\\.)*)"/g)].map((m) => m[1]!.replace(/\\"/g, '"'));
   return {
@@ -124,15 +160,12 @@ export function answer(s: Scenario): Answer {
     intro: plan.intro,
     clarifies: s.answers ? first.clarifies : plan.shape === 'clarify',
     asksAbout: first.asksAbout,
-    ours: picks.map((x) => {
-      const pl = BY_ID.get(x.id)!;
-      return { id: pl.id, name: pl.name, category: pl.category, kidFriendly: pl.kidFriendly === true || pl.category === 'with-kids' || pl.interests.includes('kids'), inHotel: pl.interests.includes('inside-caa'), ...(x.day ? { day: x.day } : {}), ...(x.part ? { part: x.part } : {}) };
-    }),
+    ours,
     outside,
     own: own ? { title: own.title, slots: own.slots.map((x) => [x.day, x.part]) } : null,
     next: plan.next ?? [],
-    // Every word the guest would read in the answer (the program's own strings).
-    text: strings.join(' \n '),
+    // Every word the guest would read in the answer: the program's own strings, and what each of our places' cards says before you go.
+    text: [...strings, ...ours.flatMap((o) => [...o.know, ...(o.shut ? [o.shut] : [])])].join(' \n '),
     turns,
   };
 }

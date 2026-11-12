@@ -22,7 +22,7 @@ import { FlightSearchForm, HotelSearchForm } from './search-form';
 import { TripPlanner } from '@/components/trip/TripPlanner';
 import { stayFacts } from '@/domain/trip-planner';
 import { loadPlanner } from './planner-data';
-import { removePlannerOwn, removePlannerPlace, savePlannerOwn, savePlannerPlace, searchPlannerNearby } from './planner-actions';
+import { removePlannerOwn, removePlannerPlace, savePlannerOwn, savePlannerPlace, searchPlannerNearby, savePlannerPrefs, refreshPlanner } from './planner-actions';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Your Trip' };
@@ -85,7 +85,9 @@ export default async function TravelPage() {
               itineraries={planner.itineraries}
               stay={stayFacts(hotels.value.data.venue.block)}
               // A guest's weekend is saved as their trip items; an administrator previewing keeps it in memory.
-              actions={planner.persist ? { save: savePlannerPlace, remove: removePlannerPlace, saveOwn: savePlannerOwn, removeOwn: removePlannerOwn, searchNearby: searchPlannerNearby } : undefined}
+              profile={planner.profile}
+              prefs={planner.prefs}
+              actions={planner.persist ? { save: savePlannerPlace, remove: removePlannerPlace, saveOwn: savePlannerOwn, removeOwn: removePlannerOwn, searchNearby: searchPlannerNearby, savePrefs: savePlannerPrefs, refresh: refreshPlanner } : undefined}
             />
           ),
         }}

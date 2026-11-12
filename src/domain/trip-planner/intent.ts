@@ -1,6 +1,6 @@
 import { askedTime, weekdayIn } from './hours';
 import { normalize } from './normalize';
-import type { Day, Diet, Intent, Meal, Part, Theme } from './types';
+import type { Day, Diet, Intent, Meal, Part, PriceLevel, Theme } from './types';
 
 /**
  * Reads a guest's request with plain rules: which day and part of the day, how long, who is coming,
@@ -208,8 +208,21 @@ const CLOSE = /\b(closer|closest|nearest|very close|not (too |very )?far|nothing
 const ALLERGY = /\b(shellfish|seafood|fish|peanut|tree nut|nut|dairy|lactose|egg|soy|sesame)s?\b[^.?!]{0,24}\ballerg\w*|\ballerg\w*\b[^.?!]{0,24}\b(shellfish|seafood|fish|peanut|tree nut|nut|dairy|lactose|egg|soy|sesame)s?\b|\ballerg(y|ic|ies)\b/;
 const ACCESS = /\b(wheelchair|accessib\w*|step[- ]free|stairs|elevator|ramp)\b/;
 /** When a place of ours opens or shuts: something we hold no record of. */
-const ASKS_HOURS = /\b(what time|when) (does|do|is|are|will) [^?.!]{0,60}\b(open|close|shut)s?\b|\b(opening|closing) (hours|times?)\b/;
+const ASKS_HOURS = /\b(what time|when) (does|do|is|are|will) [^?.!]{0,60}\b(open|close|shut)s?\b|\b(opening|closing) (hours|times?)\b|\b(is|are|will)\b[^?.!]{0,40}\b(open|closed|shut)\b/;
 const FREE = /\b(free|no cost|costs? nothing|without spending)\b/;
+/** A journey named only as when ("before we head to the airport"): the request is about what comes before it. */
+const AROUND_TRAVEL = /\b(before|after|until|till|on (the|our) way to)\b[^.?!]{0,40}\b(airports?|flights?|fly\w*|o['’]?hare|midway|trains?|drive (home|back)|head (out|home|off|back))\b/g;
+/** Nothing is booked and they want to walk in. */
+const WALK_IN = /\b(no reservations?|without (a )?(booking|reservation)|walk[- ]?ins?|just (turn|show|rock) up|turn up and|(have|did)n'?t (booked|book|reserved?)|not booked|nothing booked|last[- ]minute|spur of the moment)\b/;
+/** A sum of money named as a limit ("under $20", "30 dollars each"), and the words that mean "not much". */
+const DOLLARS = /\$\s?(\d{1,3})\b|\b(\d{1,3})\s?(?:dollars|bucks)\b/;
+const CHEAP = /\b(cheap\w*|inexpensive|affordable|on a budget|budget|low[- ]cost|won'?t break the bank|not (too |very |so )?(pricey|expensive))\b/;
+/** This one is for the grown-ups, whoever else is on the trip. */
+const GROWN_UPS = /\b(date night|without (the |our )?(kids|children|little ones?)|just (the two of us|us two|us adults|adults|the adults|the grown[- ]?ups)|adults?[- ]only|grown[- ]?ups?|kid[- ]free|child[- ]free|romantic|no kids|(baby)?sitter)\b/;
+/** What a sum per person is, as the price levels places carry. */
+export function priceLevelFor(dollars: number): PriceLevel {
+  return dollars <= 15 ? 1 : dollars <= 40 ? 2 : dollars <= 100 ? 3 : 4;
+}
 const NOT_THAT_FREE = /\b(gluten|dairy|nut|step|sugar|meat)[- ]free\b|\bfree (morning|afternoon|evening|night|time|day|hours?|friday|saturday|sunday)\b|\b(am|are|is) (i|we|he|she) free\b|\bfree to\b/g;
 /** Chains a guest asks for by name, as a search of the neighbourhood spells them. */
 const BRANDS: [string, RegExp][] = [
@@ -262,7 +275,9 @@ export function understand(request: string): Intent {
   const wanted = ` ${text.replace(AROUND_MEAL, ' ').replace(NOT_FANCY, ' ').replace(NO_DIET, ' ').replace(NEGATED, ' ')} `;
   // "A five minute walk" is how far, not how long they have.
   const minutes = minutesIn(text.replace(/\b\d+[- ]?(minutes?|mins?)[- ](walk|away|from|drive|ride)\b/g, ' '));
-  const kids = KIDS.test(text);
+  // "Without the kids" names them to leave them out.
+  const grownUps = GROWN_UPS.test(text);
+  const kids = KIDS.test(text) && !grownUps;
   const indoors = INDOORS.test(text.replace(HOTEL_AS_PLACE, ' '));
   const onFoot = ON_FOOT.test(text);
   const themes = THEMES.filter(([, re]) => re.test(wanted)).map(([t]) => t);
@@ -279,6 +294,9 @@ export function understand(request: string): Intent {
   // A cuisine, a diet or a chain by name is a request for somewhere to eat, whether or not it says "eat".
   if ((cuisine.length || diet.length || named.length) && !themes.some((t) => t === 'dinner' || t === 'food' || t === 'breakfast' || t === 'coffee')) themes.push('food');
   const free = FREE.test(text.replace(NOT_THAT_FREE, ' '));
+  // A sum named is the limit; "cheap" with no sum is anything up to a moderate bill.
+  const sum = DOLLARS.exec(text);
+  const budget: PriceLevel | null = sum ? priceLevelFor(Number(sum[1] ?? sum[2])) : CHEAP.test(wanted) ? 2 : null;
   const within = VERY_CLOSE.test(text) ? 400 : CLOSE.test(text) ? 900 : null;
   const pairs = [...text.matchAll(PAIR)].map((m) => [m[1]!.slice(0, 3) as Day, (m[2] === 'night' ? 'evening' : m[2]) as Part] as [Day, Part]);
   const weekday = weekdayIn(text);
@@ -299,6 +317,9 @@ export function understand(request: string): Intent {
   // A meal asked for by name ("where should we eat before our flight") is about the meal.
   const aMeal = themes.some((t) => t === 'dinner' || t === 'food' || t === 'breakfast') && /\b(eat|dinner|supper|lunch|brunch|breakfast|restaurants?|food)\b/.test(wanted);
 
+  // A coffee "before we head to the airport" is about the coffee.
+  const journey = themes.length ? text.replace(AROUND_TRAVEL, ' ') : text;
+
   let kind: Intent['kind'] = 'places';
   if (CALENDAR.test(text)) kind = 'calendar';
   else if (own) kind = 'own';
@@ -306,8 +327,8 @@ export function understand(request: string): Intent {
   else if (ofTheDay && onlyTheDay) kind = 'schedule';
   else if (ERRAND.test(text) && !doing) kind = 'errand';
   else if (ROOM.test(text)) kind = 'stay';
-  else if (ARRIVE.test(text.replace(ARRIVE_WEAK, ' ')) && !doing && !aMeal) kind = 'arrive';
-  else if (ARRIVE_WEAK.test(text) && !doing && !themes.length && !days.length) kind = 'arrive';
+  else if (ARRIVE.test(journey.replace(ARRIVE_WEAK, ' ')) && !doing && !aMeal) kind = 'arrive';
+  else if (ARRIVE_WEAK.test(journey) && !doing && !themes.length && !days.length) kind = 'arrive';
   else if (STAY.test(asStay) && !doing && !themes.some((t) => t !== 'hotel' && t !== 'quiet')) kind = 'stay';
   else if (loose) kind = 'schedule';
   else if (!themes.length && !days.length && !parts.length && minutes === null && !kids && !indoors && !onFoot) kind = 'open';
@@ -321,6 +342,7 @@ export function understand(request: string): Intent {
   return {
     kind, days, parts, minutes, kids, indoors, onFoot, themes, words: words(text), weddingTime, asks, diet, meal, cuisine, avoid, noDiet,
     named, allergy, avoidCuisine, free, within, access: ACCESS.test(text), asksHours, at, otherDay,
+    budget, grownUps, hoursDay: asksHours ? weekday : null, walkIn: WALK_IN.test(text),
     ...(pairs.length >= 2 ? { ownSlots: pairs } : {}),
     ...(kind === 'own' && own ? { own } : {}),
   };

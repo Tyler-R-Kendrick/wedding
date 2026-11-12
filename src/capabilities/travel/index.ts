@@ -8,9 +8,11 @@ import { adminSaveTravelLink } from './admin_save_travel_link';
 import { deleteMyTravelProfile } from './delete_my_travel_profile';
 import { getMyTravelProfile } from './get_my_travel_profile';
 import { getMyTrip } from './get_my_trip';
+import { getMyTripProfile } from './get_my_trip_profile';
 import { listHotelRecommendations } from './list_hotel_recommendations';
 import { openBookingLink } from './open_booking_link';
 import { removeTripItemCapability } from './remove_trip_item';
+import { saveMyTripPreferences } from './save_my_trip_preferences';
 import { searchTravelOptions } from './search_travel_options';
 import { updateMyTravelProfile } from './update_my_travel_profile';
 import { updateTripItemCapability } from './update_trip_item';
@@ -27,6 +29,8 @@ export const travelCapabilities: readonly AnyCapability[] = [
   updateTripItemCapability,
   removeTripItemCapability,
   getMyTrip,
+  getMyTripProfile,
+  saveMyTripPreferences,
   adminGetTravelConfig,
   adminSaveHotel,
   adminRemoveHotel,
@@ -45,6 +49,8 @@ export {
   updateTripItemCapability,
   removeTripItemCapability,
   getMyTrip,
+  getMyTripProfile,
+  saveMyTripPreferences,
   adminGetTravelConfig,
   adminSaveHotel,
   adminRemoveHotel,

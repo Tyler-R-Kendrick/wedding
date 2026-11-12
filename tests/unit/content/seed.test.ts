@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { rightsXmp } from '../../../scripts/stamp-photo-rights.mjs';
-import { adventureMemorySeedSchema, crossReferenceProblems, isPlaceholderText, loadContentSeed, PLACEHOLDER_MARKER, storySectionSeedSchema } from '@/content';
+import { adventureMemorySeedSchema, crossReferenceProblems, editableSchemas, isPlaceholderText, loadContentSeed, PLACEHOLDER_MARKER, recommendationSeedSchema, storySectionSeedSchema } from '@/content';
 
 import { BRIEF_SOURCE_ID } from '@/db/seed/sources';
 import { SOURCE_KEYS } from '@/content/sources';
@@ -25,6 +25,42 @@ describe('content seed (facts from docs/design/brief.md only)', () => {
       expect(['TRUSTED_WEDDING', 'EXTERNAL_DATA']).toContain(r.trustClass);
       if (r.sourceType === 'official-web') expect(r.sourceUrl).toMatch(/^https:\/\//);
     }
+  });
+
+  it('takes a recommendation’s facts, each optional, and turns back ones the site could not show', () => {
+    const base = seed.recommendations.find((r) => !r.placeholder)!;
+    const facts = {
+      priceLevel: 2, hours: 'Mo-Th 07:00-18:00; Fr,Sa 07:00-20:00; Su off', hoursNote: 'Shorter hours in winter.', reservations: 'walk-in', diets: ['vegetarian', 'vegan'],
+      stepFree: false, setting: 'indoors', minAge: 21, factSources: ['https://www.example.com/visit'], factsCheckedAt: '2026-11-10',
+    };
+    const full = recommendationSeedSchema.safeParse({ ...base, ...facts });
+    expect(full.success && full.data).toMatchObject(facts);
+    // With none of them, the lists default to empty and the rest stay absent: not known.
+    const bare = recommendationSeedSchema.safeParse({ ...base, priceLevel: undefined, hours: undefined, diets: undefined, factSources: undefined });
+    expect(bare.success && bare.data).toMatchObject({ diets: [], factSources: [] });
+    expect(bare.success && bare.data.priceLevel).toBeUndefined();
+    expect(bare.success && bare.data.hours).toBeUndefined();
+    expect(editableSchemas.recommendations).toBe(recommendationSeedSchema);
+
+    const rejected = (over: Record<string, unknown>) => {
+      const r = recommendationSeedSchema.safeParse({ ...base, ...facts, ...over });
+      return r.success ? [] : r.error.issues.map((i) => i.path.join('.'));
+    };
+    for (const priceLevel of [0, 5, 1.5]) expect(rejected({ priceLevel }), String(priceLevel)).toEqual(['priceLevel']);
+    for (const hours of ['9 to 5', 'Mon-Fri 09:00-17:00', 'Mo 25:00-26:00', '']) expect(rejected({ hours }), hours).toEqual(['hours']);
+    expect(rejected({ reservations: 'sometimes' })).toEqual(['reservations']);
+    expect(rejected({ diets: ['vegetarian', 'paleo'] })).toEqual(['diets.1']);
+    expect(rejected({ stepFree: 'yes' })).toEqual(['stepFree']);
+    expect(rejected({ setting: 'patio' })).toEqual(['setting']);
+    for (const minAge of [0, 22, 18.5]) expect(rejected({ minAge }), String(minAge)).toEqual(['minAge']);
+    expect(rejected({ factSources: ['http://www.example.com/visit'] })).toEqual(['factSources.0']);
+    for (const factsCheckedAt of ['2026-11', 'November 10', '2026-13-01']) expect(rejected({ factsCheckedAt }), factsCheckedAt).toEqual(['factsCheckedAt']);
+    // A note on the hours that is still a TODO makes the record a placeholder, like any other text.
+    expect(rejected({ hoursNote: 'TODO(Tyler & Sara): holiday hours', placeholder: false })).toEqual(['placeholder']);
+  });
+
+  it('every opening-hours string in the seed can be read back to guests', () => {
+    for (const r of seed.recommendations) if (r.hours) expect(recommendationSeedSchema.shape.hours.safeParse(r.hours).success, r.slug).toBe(true);
   });
 
   it('enforces the placeholder invariant: TODO text without placeholder: true is rejected', () => {

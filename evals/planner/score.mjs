@@ -8,6 +8,11 @@
  *   asksAbout        what the question covers (diet, meal)
  *   ours             our own places in it: min, max, includes, excludes, categories (every place is
  *                    one of these), kidFriendly (every place is), inHotel (every place is)
+ *                    maxPrice (none of them is known to cost more than this price level, 1 to 4),
+ *                    open (none is offered for a time its own hours say it is shut),
+ *                    stepFree (none says it has no step-free way in),
+ *                    allAges (none sets an age limit of 18 or over)
+ *   cards            includes / excludes: patterns over the facts shown on our places' cards
  *   slot             every one of our places is offered for this day and/or part of the day
  *   outside          places from outside our list: min, max, kinds (every one), diet (every one is
  *                    tagged for it), cuisine (at least one has it), notNamed (none matches)
@@ -43,6 +48,14 @@ export default function score(output, context) {
   if (o.categories) check(`ours all ${arr(o.categories).join('/')}`, ours.length > 0 && ours.every((p) => arr(o.categories).includes(p.category)), ours.map((p) => `${p.id}:${p.category}`).join(', '));
   if (o.kidFriendly) check('ours all kid-friendly', ours.length > 0 && ours.every((p) => p.kidFriendly), ours.filter((p) => !p.kidFriendly).map((p) => p.id).join(', '));
   if (o.inHotel) check('ours all in the hotel', ours.length > 0 && ours.every((p) => p.inHotel), ours.filter((p) => !p.inHotel).map((p) => p.id).join(', '));
+
+  if (o.maxPrice !== undefined) check(`ours cost at most ${o.maxPrice}`, !ours.some((p) => (p.priceLevel ?? 0) > o.maxPrice), ours.filter((p) => (p.priceLevel ?? 0) > o.maxPrice).map((p) => `${p.id}:${p.priceLevel}`).join(', '));
+  if (o.open) check('ours all open then', !ours.some((p) => p.shut), ours.filter((p) => p.shut).map((p) => `${p.id}: ${p.shut}`).join(', '));
+  if (o.stepFree) check('ours none without a step-free way in', !ours.some((p) => p.stepFree === false), ours.filter((p) => p.stepFree === false).map((p) => p.id).join(', '));
+  if (o.allAges) check('ours none adults-only', !ours.some((p) => (p.minAge ?? 0) >= 18), ours.filter((p) => (p.minAge ?? 0) >= 18).map((p) => p.id).join(', '));
+  const cards = ours.map((p) => `${p.name}: ${(p.know ?? []).join(' | ')}${p.shut ? ` | ${p.shut}` : ''}`).join(' \n ');
+  for (const pat of arr(e.cards?.includes)) check(`cards say /${pat}/`, re(pat).test(cards), cards.slice(0, 200) || 'no cards');
+  for (const pat of arr(e.cards?.excludes)) check(`cards never say /${pat}/`, !re(pat).test(cards), `found: ${(cards.match(re(pat)) ?? [''])[0]}`);
 
   if (e.slot) {
     const off = ours.filter((p) => (e.slot.day && p.day !== e.slot.day) || (e.slot.part && p.part !== e.slot.part));

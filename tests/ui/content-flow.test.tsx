@@ -144,6 +144,69 @@ describe('content record flow', () => {
     expect(operational.value).toBe('outlet.cindys');
   });
 
+  it('asks for a place’s facts in words, and saves the price as a number and the diets as a list', async () => {
+    const stored = {
+      title: 'Coffee at Cindy’s', category: 'food-drink', what: 'Coffee upstairs.', priceLevel: 2, hours: 'Mo-Fr 07:00-15:00', reservations: 'walk-in', diets: ['vegan'], stepFree: null, setting: null, minAge: null,
+      factSources: ['https://www.example.com/menu'], factsCheckedAt: '2026-11-10',
+      sourceId: '01SEED00000000000000000101', sourceType: 'authored', verifiedAt: '2026-09-05T00:00:00.000Z', trustClass: 'TRUSTED_WEDDING', visibility: 'public', placeholder: false,
+    };
+    fetchMock.mockReturnValueOnce(answer({ ok: true, data: { table: 'recommendations', id: '01J00000000000000000000R01', values: stored, contentVersion: 1, editedBy: 'seed:x', updatedAt: '2026-09-05T00:00:00.000Z', freshness: 'fresh', revisions: [] } }));
+    render(<ContentRecordFlow editor={contentEditor('recommendations', lists)} record={{ id: '01J00000000000000000000R01', title: 'Coffee at Cindy’s' }} label="Edit" />);
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Edit Coffee at Cindy’s' })));
+    await waitFor(() => expect(screen.getByLabelText('Title')).toBeTruthy());
+    // The facts are asked together, on a step of their own after the record's words.
+    await next();
+    expect(screen.queryByLabelText(/^Price/)).toBeNull();
+    await next();
+    expect(screen.getByRole('heading', { name: 'Good to know before going' })).toBeTruthy();
+
+    const price = screen.getByLabelText(/^Price/) as HTMLSelectElement;
+    expect([...price.options].map((o) => o.textContent)).toEqual(['Not set', '$ (under $15 each)', '$$ ($15 to $40)', '$$$ ($40 to $100)', '$$$$ (over $100)']);
+    expect(price.value).toBe('2');
+    fireEvent.change(price, { target: { value: '3' } });
+
+    const booking = screen.getByLabelText(/^Booking \(/) as HTMLSelectElement;
+    expect([...booking.options].map((o) => o.textContent)).toEqual(['Not set', 'Book ahead (required)', 'Booking a good idea', 'Just walk in', 'Timed tickets']);
+    expect(booking.value).toBe('walk-in');
+
+    // Diets are ticked, not typed.
+    expect(screen.getByRole('group', { name: 'Menu marks options for (optional)' })).toBeTruthy();
+    expect((screen.getByLabelText('Vegan') as HTMLInputElement).checked).toBe(true);
+    fireEvent.click(screen.getByLabelText('Gluten-free'));
+    fireEvent.click(screen.getByLabelText('Vegetarian'));
+
+    const stepFree = screen.getByLabelText(/^Step-free way in/) as HTMLSelectElement;
+    expect([...stepFree.options].map((o) => o.textContent)).toEqual(['Not known', 'Yes', 'No']);
+    fireEvent.change(stepFree, { target: { value: 'no' } });
+    expect([...(screen.getByLabelText(/^Indoors or outdoors/) as HTMLSelectElement).options].map((o) => o.textContent)).toEqual(['Not set', 'Indoors', 'Outdoors', 'Both']);
+    expect((screen.getByLabelText(/^Where these facts were checked/) as HTMLTextAreaElement).value).toBe('https://www.example.com/menu');
+    expect((screen.getByLabelText(/^Facts last checked/) as HTMLInputElement).value).toBe('2026-11-10');
+
+    // Hours the site could not read back, and an age no place sets, are caught on their own step.
+    const hours = screen.getByLabelText(/^Opening hours/) as HTMLInputElement;
+    expect(hours.value).toBe('Mo-Fr 07:00-15:00');
+    fireEvent.change(hours, { target: { value: 'Weekdays 7 to 3' } });
+    fireEvent.change(screen.getByLabelText(/^Youngest age let in/), { target: { value: '30' } });
+    await next();
+    expect(screen.getByText('Write the hours like this: Mo-Th 07:00-18:00; Fr,Sa 07:00-20:00; Su off')).toBeTruthy();
+    expect(screen.getByText('Enter a whole number from 1 to 21.')).toBeTruthy();
+    fireEvent.change(screen.getByLabelText(/^Opening hours/), { target: { value: 'Mo-Fr 07:00-15:00; Sa 08:00-14:00' } });
+    fireEvent.change(screen.getByLabelText(/^Youngest age let in/), { target: { value: '' } });
+
+    // Past where it comes from, to the last step, which reads the facts back in the same words.
+    await next();
+    await next();
+    expect(screen.getByText('$$$ ($40 to $100)')).toBeTruthy();
+    expect(screen.getByText('Vegetarian · Vegan · Gluten-free')).toBeTruthy();
+    fetchMock.mockReturnValueOnce(answer({ ok: true, data: { id: '01J00000000000000000000R01', contentVersion: 2, created: false } }));
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Save recommendation' })));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expect(sentBody(1).input.data).toMatchObject({
+      priceLevel: 3, hours: 'Mo-Fr 07:00-15:00; Sa 08:00-14:00', hoursNote: null, reservations: 'walk-in', diets: ['vegetarian', 'vegan', 'gluten-free'], stepFree: false, setting: null, minAge: null,
+      factSources: ['https://www.example.com/menu'], factsCheckedAt: '2026-11-10',
+    });
+  });
+
   it('ticks related recommendations with the kit’s checkbox group', async () => {
     render(<ContentRecordFlow editor={contentEditor('adventure_memories', lists)} label="Add an adventure" />);
     fireEvent.click(screen.getByRole('button', { name: 'Add an adventure' }));
