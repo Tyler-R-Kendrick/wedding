@@ -3752,6 +3752,15 @@
   block-size: 100%;
 }
 
+/* Inside a card, the links sit on its last line, so the cards in a row end on one line too. */
+.bd-travel__hotels .bd-card {
+  align-content: stretch;
+}
+
+.bd-travel__hotels .bd-card__inner {
+  grid-template-rows: auto 1fr auto;
+}
+
 /* The airports beside the search: where to fly into, then the form that searches it. */
 .bd-travel__flights {
   display: grid;

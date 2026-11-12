@@ -2,22 +2,54 @@ import { sql } from 'drizzle-orm';
 import type { Db } from '../client';
 import { hotelRecommendations } from '../schema/travel';
 import { seedId } from './sources';
+import { bookingComUrl, hyattSearchUrl } from '@/providers/hotels/deep-link';
 import { CAA_KIT_SOURCE_ID, CAA_BOOKING_URL, CAA_GROUP_CODE, CAA_BLOCK_CHECK_IN, CAA_BLOCK_CHECK_OUT, VENUE, VENUE_HOTEL_ID, caaPhoneBookingSentence } from '@/domain/travel';
 
 const SEED_VERIFIED = '2026-11-01T00:00:00.000Z';
 const actor = { kind: 'system', component: 'seed' } as const;
 
+/** The room block's nights, so every booking link opens on the wedding weekend. */
+const WEEKEND = { checkIn: CAA_BLOCK_CHECK_IN, checkOut: CAA_BLOCK_CHECK_OUT, adults: 2, rooms: 1 } as const;
+
 /**
- * Hotels near the venue, by name only. Nothing else is known yet, so nothing else is said: no
- * address, rate, distance or link, and no reason (who suggested them is no help to a guest).
- * They are not placeholders (there is nothing pending to show); an admin adds details in
- * /admin/travel, and from then on this seed leaves the row alone (`contentVersion = 1`).
+ * Hotels near the venue that the planner suggested, under the names the couple gave them. Each has
+ * its own website (the brand's page for that property, found by its property code) and a booking
+ * link that opens on the room block's nights: Hyatt's own booking for the Hyatt, and a Booking.com
+ * search for that exact hotel for the others (Marriott's and Hilton's sites take no dates in a
+ * link we could rely on). Nothing else is said: no rate, distance or reason. An admin edits any of
+ * it in /admin/travel, and from then on this seed leaves the row alone (`contentVersion = 1`).
+ *
+ * "Residence Inn by Marriott" is the Chicago Downtown/Loop one, the closest to the venue.
  */
 export const PLANNER_SUGGESTED_HOTELS = [
-  { id: seedId(802), name: 'Renaissance Hotel Chicago' },
-  { id: seedId(803), name: 'The Hampton Inn (Majestic Chicago Theatre)' },
-  { id: seedId(804), name: 'Residence Inn by Marriott' },
-  { id: seedId(805), name: 'Hyatt Centric - The Loop' },
+  {
+    id: seedId(802),
+    name: 'Renaissance Hotel Chicago',
+    address: '1 W Wacker Dr, Chicago, IL 60601',
+    websiteUrl: 'https://www.marriott.com/en-us/hotels/chisr-renaissance-chicago-downtown-hotel/overview/',
+    bookingUrl: bookingComUrl({ ...WEEKEND, area: 'Renaissance Chicago Downtown Hotel, Chicago' }),
+  },
+  {
+    id: seedId(803),
+    name: 'The Hampton Inn (Majestic Chicago Theatre)',
+    address: '22 W Monroe St, Chicago, IL 60603',
+    websiteUrl: 'https://www.hilton.com/en/hotels/chitdhx-hampton-majestic-chicago-theatre-district/',
+    bookingUrl: bookingComUrl({ ...WEEKEND, area: 'Hampton Inn Majestic Chicago Theatre District, Chicago' }),
+  },
+  {
+    id: seedId(804),
+    name: 'Residence Inn by Marriott',
+    address: '11 S LaSalle St, Chicago, IL 60603',
+    websiteUrl: 'https://www.marriott.com/en-us/hotels/chirl-residence-inn-chicago-downtown-loop/overview/',
+    bookingUrl: bookingComUrl({ ...WEEKEND, area: 'Residence Inn by Marriott Chicago Downtown/Loop, Chicago' }),
+  },
+  {
+    id: seedId(805),
+    name: 'Hyatt Centric - The Loop',
+    address: '100 W Monroe St, Chicago, IL 60603',
+    websiteUrl: 'https://www.hyatt.com/en-US/hotel/illinois/hyatt-centric-the-loop-chicago/chihl',
+    bookingUrl: hyattSearchUrl(WEEKEND, { propertyCode: 'chihl' }),
+  },
 ] as const;
 
 /**
@@ -85,14 +117,14 @@ export async function seedTravelHotels(db: Db, now: Date): Promise<void> {
     const row = {
       id: h.id,
       name: h.name,
-      address: null,
+      address: h.address,
       isVenue: false,
       sortOrder: 10 + i * 10,
       reasons: [] as { kind: 'other'; text: string }[],
       priceBand: null,
       walkMinutesToVenue: null,
-      websiteUrl: null,
-      bookingUrl: null,
+      websiteUrl: h.websiteUrl,
+      bookingUrl: h.bookingUrl,
       block: null,
       placeholder: false,
       active: true,
@@ -108,7 +140,7 @@ export async function seedTravelHotels(db: Db, now: Date): Promise<void> {
       .values(row)
       .onConflictDoUpdate({
         target: hotelRecommendations.id,
-        set: { name: row.name, reasons: row.reasons, sortOrder: row.sortOrder, placeholder: row.placeholder, active: row.active, updatedBy: row.updatedBy, updatedAt: row.updatedAt },
+        set: { name: row.name, address: row.address, websiteUrl: row.websiteUrl, bookingUrl: row.bookingUrl, reasons: row.reasons, sortOrder: row.sortOrder, placeholder: row.placeholder, active: row.active, updatedBy: row.updatedBy, updatedAt: row.updatedAt },
         setWhere: sql`${hotelRecommendations.contentVersion} = 1`,
       });
   }

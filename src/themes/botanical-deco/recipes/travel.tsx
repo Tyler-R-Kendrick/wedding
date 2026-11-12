@@ -1,4 +1,4 @@
-import { formatLongDate } from "@/domain/travel";
+import { CAA_BLOCK_CHECK_IN, CAA_BLOCK_CHECK_OUT, formatLongDate } from "@/domain/travel";
 import {
   blockNights,
   CAA_BOOKING_PHONE,
@@ -14,6 +14,10 @@ import { kit } from "../kit";
 
 const { Shell, Section, SectionHeading, Prose, Link, Button, Card, Stat, Placeholder, content } = kit;
 const { PageHead, Chips } = content;
+
+/** The room block's nights, which the suggested hotels' booking links open on: "July 16 to 18". */
+const nightOf = (iso: string) => new Date(`${iso}T12:00:00Z`);
+const STAY_DATES = `${nightOf(CAA_BLOCK_CHECK_IN).toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" })} to ${nightOf(CAA_BLOCK_CHECK_OUT).getUTCDate()}`;
 
 /**
  * Your Trip, Botanical Hour: one page for the whole trip, in the order a guest books it.
@@ -116,8 +120,29 @@ export const BotanicalTravelPage: ContentRecipe<TravelProps> = ({ venue, alterna
             <ul className="bd-travel__hotels">
               {alternatives.map((h) => (
                 <li key={h.id}>
-                  <Card title={h.name} headingLevel={4}>
+                  <Card
+                    title={h.name}
+                    headingLevel={4}
+                    actions={
+                      h.bookingUrl || h.websiteUrl ? (
+                        <>
+                          {/* Opens on the wedding weekend's nights; the dates can be changed there. */}
+                          {h.bookingUrl ? (
+                            <Link href={h.bookingUrl} external standalone>
+                              {`Check rooms for ${STAY_DATES}`}
+                            </Link>
+                          ) : null}
+                          {h.websiteUrl ? (
+                            <Link href={h.websiteUrl} external standalone>
+                              Hotel website
+                            </Link>
+                          ) : null}
+                        </>
+                      ) : undefined
+                    }
+                  >
                     <Prose>
+                      {h.address ? <p>{h.address}</p> : null}
                       {h.walkMinutesToVenue ? <p>{h.walkMinutesToVenue} minutes on foot.</p> : null}
                       {h.reasons.length ? (
                         <ul>
@@ -132,13 +157,6 @@ export const BotanicalTravelPage: ContentRecipe<TravelProps> = ({ venue, alterna
                         </p>
                       ) : null}
                     </Prose>
-                    {h.bookingUrl ? (
-                      <p>
-                        <Link href={h.bookingUrl} external standalone>
-                          Check rates
-                        </Link>
-                      </p>
-                    ) : null}
                   </Card>
                 </li>
               ))}

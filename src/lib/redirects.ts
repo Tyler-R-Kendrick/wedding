@@ -18,6 +18,9 @@ export interface AllowedHost {
 
 export const ALLOWED_REDIRECT_HOSTS: readonly AllowedHost[] = [
   { host: 'hyatt.com' },
+  // The suggested hotels' own pages (Marriott and Hilton properties near the venue).
+  { host: 'marriott.com' },
+  { host: 'hilton.com' },
   { host: 'chicagoathletichotel.com' },
   { host: 'uber.com' },
   { host: 'theknot.com' },
