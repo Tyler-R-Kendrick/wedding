@@ -7,12 +7,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
  */
 type Row = { id: string; kind: string; status: string; title: string; startAt: string; endAt: string | null; provider: string | null; details: Record<string, unknown> };
 
-const store = vi.hoisted(() => ({ rows: [] as Row[], next: 1, calls: [] as { cap: string; input: unknown }[] }));
+const store = vi.hoisted(() => ({ rows: [] as Row[], next: 1, calls: [] as { cap: string; input: unknown }[], prefs: null as Record<string, unknown> | null, prefsAt: null as string | null, records: { adults: 2, children: 1, dietary: null as string | null, accessibility: null as string | null } }));
 const caps = vi.hoisted(() => ({
   getMyTrip: { name: 'get_my_trip' },
   addTripItemCapability: { name: 'add_trip_item' },
   updateTripItemCapability: { name: 'update_trip_item' },
   removeTripItemCapability: { name: 'remove_trip_item' },
+  getMyTripProfile: { name: 'get_my_trip_profile' },
+  saveMyTripPreferences: { name: 'save_my_trip_preferences' },
   findAdventures: { name: 'find_adventures' },
   listMyEvents: { name: 'list_my_events' },
 }));
@@ -21,6 +23,8 @@ vi.mock('@/capabilities/travel', () => ({
   addTripItemCapability: caps.addTripItemCapability,
   updateTripItemCapability: caps.updateTripItemCapability,
   removeTripItemCapability: caps.removeTripItemCapability,
+  getMyTripProfile: caps.getMyTripProfile,
+  saveMyTripPreferences: caps.saveMyTripPreferences,
 }));
 vi.mock('@/capabilities/find_adventures', () => ({ findAdventures: caps.findAdventures }));
 vi.mock('@/capabilities/rsvp', () => ({ listMyEvents: caps.listMyEvents }));
@@ -38,6 +42,24 @@ vi.mock('@/app/(guest)/guests/travel/_shared/server', () => ({
         return ok({ items: i?.slug ? [{ slug: i.slug, title: `Title of ${i.slug}` }] : [] });
       case 'list_my_events':
         return ok({ events: [] });
+      case 'get_my_trip_profile': {
+        const { profileOf, readPrefs } = await import('@/domain/trip-planner/profile');
+        const prefs = store.prefs ? readPrefs(store.prefs) : null;
+        return ok({ profile: profileOf(store.records, prefs), prefs, updatedAt: store.prefsAt });
+      }
+      case 'save_my_trip_preferences': {
+        const { profileOf, readPrefs, hasPrefs } = await import('@/domain/trip-planner/profile');
+        const sent = input as { prefs: Record<string, unknown>; basedOn?: string | null };
+        // Saved (or cleared) somewhere else since the page read it: what is saved comes back, untouched.
+        if (sent.basedOn !== undefined && (store.prefsAt ?? null) !== sent.basedOn) {
+          const kept = store.prefs ? readPrefs(store.prefs) : null;
+          return ok({ profile: profileOf(store.records, kept), prefs: kept, updatedAt: store.prefsAt ?? null, conflict: true });
+        }
+        const prefs = readPrefs(sent.prefs);
+        store.prefs = hasPrefs(prefs) ? prefs : null;
+        store.prefsAt = store.prefs ? `2027-07-01T00:00:0${store.next++ % 10}.000Z` : null;
+        return ok({ profile: profileOf(store.records, store.prefs ? prefs : null), prefs: store.prefs ? prefs : null, updatedAt: store.prefsAt, conflict: false });
+      }
       case 'list_itineraries':
         return ok({ route: '/guests/travel', buckets: [], itineraries: [] });
       case 'get_my_trip':
@@ -66,7 +88,7 @@ vi.mock('@/app/(guest)/guests/travel/_shared/server', () => ({
 
 import { addDays, weekendDate } from '@/domain/trip-planner';
 
-const { savePlannerPlace, removePlannerPlace, savePlannerOwn, removePlannerOwn } = await import('@/app/(guest)/guests/travel/planner-actions');
+const { savePlannerPlace, removePlannerPlace, savePlannerOwn, removePlannerOwn, savePlannerPrefs, refreshPlanner } = await import('@/app/(guest)/guests/travel/planner-actions');
 const { loadPlanner } = await import('@/app/(guest)/guests/travel/planner-data');
 
 const planner = (placeId: string, day = 'sat', part = 'morning', id = ulid(store.next++)): Row => ({
@@ -86,6 +108,9 @@ beforeEach(() => {
   store.rows = [];
   store.next = 1;
   store.calls = [];
+  store.prefs = null;
+  store.prefsAt = null;
+  store.records = { adults: 2, children: 1, dietary: null, accessibility: null };
 });
 
 describe('planner actions, keyed on the place', () => {
@@ -215,5 +240,59 @@ describe('loadPlanner', () => {
     store.rows.push(planner('bean-house'), planner('bean-house', 'fri', 'evening'), planner('art-museum', 'sun', 'morning'));
     const data = await loadPlanner({ kind: 'guest', guestId: 'g', householdId: 'h' } as never);
     expect(data.saved.map((s) => s.id).sort()).toEqual(['art-museum', 'bean-house']);
+  });
+});
+
+describe('who the planner plans for', () => {
+  const guest = { kind: 'guest', guestId: 'g1', householdId: 'h1' } as never;
+
+  it('starts from the party the invitation and RSVP give, and what the RSVP says they eat', async () => {
+    store.records = { adults: 2, children: 1, dietary: 'Vegetarian, and a peanut allergy', accessibility: 'Uses a wheelchair' };
+    const { profile, prefs } = await loadPlanner(guest);
+    expect(profile.party).toEqual({ adults: 2, children: 1 });
+    expect(profile).toMatchObject({ kids: true, diet: ['vegetarian'], allergy: 'peanut', stepFree: true, asked: true, saved: false });
+    expect(profile.from).toEqual({ diet: 'rsvp', stepFree: 'rsvp', shortWalks: null, kids: 'rsvp' });
+    expect(prefs).toEqual({ value: null, updatedAt: null });
+  });
+
+  it('saves what the guest sets, and their own answer wins over the RSVP', async () => {
+    store.records = { adults: 2, children: 1, dietary: 'vegetarian', accessibility: null };
+    const r = await savePlannerPrefs({ prefs: { diet: ['vegan'], meal: 'quick', budget: 2, stepFree: false, shortWalks: true, interests: ['coffee'], kids: false, asked: true } });
+    expect(r).toMatchObject({ ok: true, conflict: false });
+    if (!r.ok) return;
+    expect(r.profile).toMatchObject({ diet: ['vegan'], budget: 2, shortWalks: true, kids: false, interests: ['coffee'], saved: true });
+    expect(r.profile.from).toMatchObject({ diet: 'you', kids: 'you' });
+    expect((await loadPlanner(guest)).profile.diet).toEqual(['vegan']);
+  });
+
+  it('drops anything the page sends that is not a preference', async () => {
+    const r = await savePlannerPrefs({ prefs: { diet: ['vegan', 'carnivore'], meal: 'banquet', budget: 9, stepFree: 'yes', interests: ['coffee', 'gossip'], kids: 'maybe', notes: '<script>' } as never });
+    expect(r).toMatchObject({ ok: true, prefs: { diet: ['vegan'], meal: null, budget: null, stepFree: null, shortWalks: null, interests: ['coffee'], kids: null, asked: false } });
+  });
+
+  it('saving nothing clears what was saved', async () => {
+    await savePlannerPrefs({ prefs: { diet: ['vegan'], meal: null, budget: null, stepFree: false, shortWalks: false, interests: [], kids: null, asked: false } });
+    const r = await savePlannerPrefs({ prefs: { diet: null, meal: null, budget: null, stepFree: null, shortWalks: null, interests: [], kids: null, asked: false } });
+    expect(r).toMatchObject({ ok: true, prefs: null, updatedAt: null });
+    expect(store.prefs).toBeNull();
+  });
+
+  it('does not overwrite a change made on another device since the page read it', async () => {
+    const first = await savePlannerPrefs({ prefs: { diet: ['vegan'], meal: null, budget: null, stepFree: false, shortWalks: false, interests: [], kids: null, asked: false }, basedOn: null });
+    expect(first).toMatchObject({ ok: true, conflict: false });
+    // A second page still holds "nothing saved" and tries to save its own.
+    const stale = await savePlannerPrefs({ prefs: { diet: ['kosher'], meal: null, budget: null, stepFree: false, shortWalks: false, interests: [], kids: null, asked: false }, basedOn: null });
+    expect(stale).toMatchObject({ ok: true, conflict: true, prefs: { diet: ['vegan'] } });
+    expect(store.prefs).toMatchObject({ diet: ['vegan'] });
+  });
+
+  it('refreshPlanner returns the plans and profile as they are now', async () => {
+    await savePlannerPlace({ placeId: 'the-aviary', day: 'fri', part: 'evening' });
+    await savePlannerPrefs({ prefs: { diet: [], meal: null, budget: 1, stepFree: false, shortWalks: false, interests: [], kids: null, asked: false } });
+    const r = await refreshPlanner();
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.saved.map((s) => s.id)).toEqual(['the-aviary']);
+    expect(r.profile.budget).toBe(1);
   });
 });

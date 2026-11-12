@@ -187,6 +187,14 @@ export const RECOMMENDATION_CATEGORIES = ['food-drink', 'architecture', 'outdoor
 export type RecommendationCategory = (typeof RECOMMENDATION_CATEGORIES)[number];
 
 /** Share an Adventure: the practical layer plus an optional memory link. */
+export const PRICE_LEVELS = [1, 2, 3, 4] as const;
+export type PriceLevel = (typeof PRICE_LEVELS)[number];
+/** `tickets`: a timed ticket is bought ahead; `walk-in`: no booking is taken or needed. */
+export const RESERVATION_POLICIES = ['required', 'recommended', 'walk-in', 'tickets'] as const;
+export type ReservationPolicy = (typeof RESERVATION_POLICIES)[number];
+export const PLACE_SETTINGS = ['indoors', 'outdoors', 'both'] as const;
+export type PlaceSetting = (typeof PLACE_SETTINGS)[number];
+
 export const recommendations = pgTable(
   'recommendations',
   {
@@ -211,6 +219,29 @@ export const recommendations = pgTable(
     experienceId: text('experience_id'),
     whyWeShareThis: text('why_we_share_this'),
     kidFriendly: boolean('kid_friendly'),
+    /**
+     * What a guest weighs before going, each one checked against the place's own pages
+     * (`factSources`, `factsCheckedAt`). Null or empty means not known, and the site says nothing
+     * rather than guessing.
+     */
+    /** Food and drink: what one person typically spends. 1 under $15, 2 $15 to $40, 3 $40 to $100, 4 over $100. */
+    priceLevel: integer('price_level').$type<PriceLevel>(),
+    /** Regular opening hours in OpenStreetMap's `opening_hours` syntax ("Mo-Th 07:00-18:00; Su off"). */
+    hours: text('hours'),
+    /** A caveat on the hours in plain words ("Shorter hours in winter"). */
+    hoursNote: text('hours_note'),
+    reservations: text('reservations').$type<ReservationPolicy>(),
+    /** Diets the place's own menu marks options for. */
+    diets: jsonb('diets').$type<string[]>().notNull().default([]),
+    /** The place says it has a step-free way in. Null: it does not say. */
+    stepFree: boolean('step_free'),
+    setting: text('setting').$type<PlaceSetting>(),
+    /** The youngest age let in, when the place sets one (21 for a bar). */
+    minAge: integer('min_age'),
+    /** The pages the facts above were read from. */
+    factSources: jsonb('fact_sources').$type<string[]>().notNull().default([]),
+    /** The day they were last read, "YYYY-MM-DD". */
+    factsCheckedAt: text('facts_checked_at'),
     /** Drafts until curated by the couple; drafts render with a "draft" badge, never silently. */
     draft: boolean('draft').notNull().default(true),
     ...provenanceColumns,

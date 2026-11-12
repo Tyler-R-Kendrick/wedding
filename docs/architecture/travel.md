@@ -16,7 +16,7 @@ personalisation only from invitation data and opt-in preferences, never IP (brie
 
 | Area | Path |
 |---|---|
-| Schema | `src/db/schema/travel.ts` (`guest_travel_profiles`, `guest_itinerary_items`, `hotel_recommendations`, `travel_links`), migration `0002_travel_profile_trip` |
+| Schema | `src/db/schema/travel.ts` (`guest_travel_profiles`, `guest_itinerary_items`, `hotel_recommendations`, `travel_links`, `guest_trip_preferences`), migrations `0002_travel_profile_trip`, `0024_quiet_cannonball` |
 | Domain | `src/domain/travel/{types,facts,snapshot,profile,hotels,links,trip,search,webhook,format}.ts` |
 | Providers | `src/providers/flights/{types,http,deep-link,mock,skyscanner,duffel-links,duffel-webhook,index}.ts`, `src/providers/hotels/{types,deep-link,mock,booking-demand,duffel-stays,index}.ts` |
 | Capabilities | `src/capabilities/travel/*` (registered from `src/capabilities/index.ts`) |
@@ -175,3 +175,32 @@ its credentials reports the missing names (never values) and keeps deep links wo
 - Theme kit (level 04) is not on this base: recipes are plain and token-only.
 - Share an Adventure consumes `get_my_trip.freeTime`; the link target `/share-an-adventure`
   is Swarm C's page.
+
+## Who the planner plans for
+
+The Your Trip planner shapes its answers to the guest (`src/domain/trip-planner/profile.ts`). A
+profile is put together on each page load from two things and nothing else:
+
+- **The site's own records** (`tripRecordsFor`): how many adults and children are on the invitation
+  and have not declined, and what the people this guest answers for wrote at RSVP about food and
+  getting around (`guest_needs`). The notes are read for what they mean (a diet, an allergy, a
+  step-free way in, short walks); the words themselves go no further.
+- **What the guest set for themselves** (`guest_trip_preferences`, one row per guest, deleted when
+  they clear it): what they eat, the most they would spend on a meal, step-free places only, staying
+  near the hotel, whether children come along, what they enjoy. `null` means "not said" (the RSVP
+  fills in, today's and any later one); an empty list or `false` is an answer and stands. A save
+  keeps as the guest's own only what was theirs already or what they changed (`ownAnswers`): an
+  answer that only repeats the RSVP stays `null`, so a need told to us at RSVP after an earlier
+  save is still read, and a household member's RSVP note is never copied into this guest's row.
+
+Nothing is looked up about a guest anywhere else, and nothing is guessed from a name, an address or
+a device. Everything in the profile is shown to the guest ("Planning for…") and is theirs to change;
+changing it never changes their RSVP. Because it is shaped by RSVP notes, the two capabilities
+(`get_my_trip_profile`, `save_my_trip_preferences`) are website-only (`exposure.ai` and
+`exposure.webmcp` are false) and the save is not replayable, so no result is stored against an
+idempotency key.
+
+A save carries the time the page last read the preferences (`basedOn`): if another device has saved
+or cleared them since, nothing is written and what is saved now comes back. A page sends its own
+saves one after the other, each from where the last ended. A page brought back into view asks again
+for the saved plans and profile (`refreshPlanner`), and tabs in one browser tell each other at once.

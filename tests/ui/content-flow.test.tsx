@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ContentRecordFlow, MoveRecord } from '@/app/(admin)/admin/content/_components/ContentFlows';
-import { contentEditor, contentMoveCalls, sourceOptions } from '@/app/(admin)/admin/content/_components/shared';
+import { contentEditor, contentMoveCalls, describeValue, sourceOptions } from '@/app/(admin)/admin/content/_components/shared';
 import type { EditorLists } from '@/app/(admin)/admin/content/_components/types';
 import { SEED_SOURCES } from '@/db/seed/sources';
 
@@ -144,6 +144,87 @@ describe('content record flow', () => {
     expect(operational.value).toBe('outlet.cindys');
   });
 
+  it('asks for a place’s facts in words, and saves the price as a number and the diets as a list', async () => {
+    const stored = {
+      title: 'Coffee at Cindy’s', category: 'food-drink', what: 'Coffee upstairs.', priceLevel: 2, hours: 'Mo-Fr 07:00-15:00', reservations: 'walk-in', diets: ['vegan'], stepFree: null, setting: null, minAge: null,
+      factSources: ['https://www.example.com/menu'], factsCheckedAt: '2026-11-10',
+      sourceId: '01SEED00000000000000000101', sourceType: 'authored', verifiedAt: '2026-09-05T00:00:00.000Z', trustClass: 'TRUSTED_WEDDING', visibility: 'public', placeholder: false,
+    };
+    fetchMock.mockReturnValueOnce(answer({ ok: true, data: { table: 'recommendations', id: '01J00000000000000000000R01', values: stored, contentVersion: 1, editedBy: 'seed:x', updatedAt: '2026-09-05T00:00:00.000Z', freshness: 'fresh', revisions: [] } }));
+    render(<ContentRecordFlow editor={contentEditor('recommendations', lists)} record={{ id: '01J00000000000000000000R01', title: 'Coffee at Cindy’s' }} label="Edit" />);
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Edit Coffee at Cindy’s' })));
+    await waitFor(() => expect(screen.getByLabelText('Title')).toBeTruthy());
+    // The facts are asked together, on a step of their own after the record's words.
+    await next();
+    expect(screen.queryByLabelText(/^Price/)).toBeNull();
+    await next();
+    expect(screen.getByRole('heading', { name: 'Good to know before going' })).toBeTruthy();
+
+    const price = screen.getByLabelText(/^Price/) as HTMLSelectElement;
+    expect([...price.options].map((o) => o.textContent)).toEqual(['Not set', '$ (under $15 each)', '$$ ($15 to $40)', '$$$ ($40 to $100)', '$$$$ (over $100)']);
+    expect(price.value).toBe('2');
+    fireEvent.change(price, { target: { value: '3' } });
+
+    const booking = screen.getByLabelText(/^Booking \(/) as HTMLSelectElement;
+    expect([...booking.options].map((o) => o.textContent)).toEqual(['Not set', 'Book ahead (required)', 'Booking a good idea', 'Just walk in', 'Timed tickets']);
+    expect(booking.value).toBe('walk-in');
+
+    // Diets are ticked, not typed.
+    expect(screen.getByRole('group', { name: 'Menu marks options for (optional)' })).toBeTruthy();
+    expect((screen.getByLabelText('Vegan') as HTMLInputElement).checked).toBe(true);
+    fireEvent.click(screen.getByLabelText('Gluten-free'));
+    fireEvent.click(screen.getByLabelText('Vegetarian'));
+
+    const stepFree = screen.getByLabelText(/^Step-free way in/) as HTMLSelectElement;
+    expect([...stepFree.options].map((o) => o.textContent)).toEqual(['Not known', 'Yes', 'No']);
+    fireEvent.change(stepFree, { target: { value: 'no' } });
+    expect([...(screen.getByLabelText(/^Indoors or outdoors/) as HTMLSelectElement).options].map((o) => o.textContent)).toEqual(['Not set', 'Indoors', 'Outdoors', 'Both']);
+    expect((screen.getByLabelText(/^Where these facts were checked/) as HTMLTextAreaElement).value).toBe('https://www.example.com/menu');
+    expect((screen.getByLabelText(/^Facts last checked/) as HTMLInputElement).value).toBe('2026-11-10');
+
+    // Under the field, the hours as a guest will read them, for as long as what is typed can be read.
+    const hours = screen.getByLabelText(/^Opening hours/) as HTMLInputElement;
+    expect(hours.value).toBe('Mo-Fr 07:00-15:00');
+    const hint = () => document.getElementById(hours.getAttribute('aria-describedby')!.split(' ')[0]!)!;
+    const reads = () => [...hint().querySelectorAll('.cf-reads > span')].map((s) => s.textContent);
+    expect(reads()).toEqual(['Guests will read:', 'Monday to Friday: 7\u00a0am to 3\u00a0pm', 'Saturday and Sunday: Closed']);
+    expect(hint().textContent).toContain('written like this: Mo-Th 07:00-18:00');
+
+    // Hours the site could not read back, and an age no place sets, are caught on their own step.
+    fireEvent.change(hours, { target: { value: 'Weekdays 7 to 3' } });
+    expect(reads()).toEqual([]);
+    fireEvent.change(screen.getByLabelText(/^Youngest age let in/), { target: { value: '30' } });
+    // jsdom has no scrollIntoView; the flow brings the first problem's sentence into view, not just its input.
+    const scrolled = vi.fn();
+    Object.defineProperty(Element.prototype, 'scrollIntoView', { configurable: true, value(this: Element, opts: unknown) { scrolled(this.textContent, opts); } });
+    await next();
+    await waitFor(() => expect(scrolled).toHaveBeenCalledWith('Write the hours like this: Mo-Th 07:00-18:00; Fr,Sa 07:00-20:00; Su off', { block: 'nearest' }));
+    expect(document.activeElement).toBe(screen.getByLabelText(/^Opening hours/));
+    delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+    expect(screen.getByText('Write the hours like this: Mo-Th 07:00-18:00; Fr,Sa 07:00-20:00; Su off')).toBeTruthy();
+    expect(screen.getByText('Enter a whole number from 1 to 21.')).toBeTruthy();
+    fireEvent.change(screen.getByLabelText(/^Opening hours/), { target: { value: 'Mo-Fr 07:00-15:00; Sa 08:00-14:00' } });
+    expect(reads()).toEqual(['Guests will read:', 'Monday to Friday: 7\u00a0am to 3\u00a0pm', 'Saturday: 8\u00a0am to 2\u00a0pm', 'Sunday: Closed']);
+    fireEvent.change(screen.getByLabelText(/^Youngest age let in/), { target: { value: '' } });
+
+    // Past where it comes from, to the last step, which reads the facts back in the same words.
+    await next();
+    await next();
+    expect(screen.getByText('$$$ ($40 to $100)')).toBeTruthy();
+    expect(screen.getByText('Vegetarian · Vegan · Gluten-free')).toBeTruthy();
+    // The hours are read back as a guest will read them, a line for each run of days, never as typed.
+    const review = [...document.querySelectorAll('.flow-review > div')].find((d) => d.querySelector('dt')?.textContent === 'Opening hours');
+    expect(review?.querySelector('dd')?.textContent).toBe('Monday to Friday: 7\u00a0am to 3\u00a0pm\nSaturday: 8\u00a0am to 2\u00a0pm\nSunday: Closed');
+    expect(screen.queryByText(/Mo-Fr 07:00/)).toBeNull();
+    fetchMock.mockReturnValueOnce(answer({ ok: true, data: { id: '01J00000000000000000000R01', contentVersion: 2, created: false } }));
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Save recommendation' })));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expect(sentBody(1).input.data).toMatchObject({
+      priceLevel: 3, hours: 'Mo-Fr 07:00-15:00; Sa 08:00-14:00', hoursNote: null, reservations: 'walk-in', diets: ['vegetarian', 'vegan', 'gluten-free'], stepFree: false, setting: null, minAge: null,
+      factSources: ['https://www.example.com/menu'], factsCheckedAt: '2026-11-10',
+    });
+  });
+
   it('ticks related recommendations with the kit’s checkbox group', async () => {
     render(<ContentRecordFlow editor={contentEditor('adventure_memories', lists)} label="Add an adventure" />);
     fireEvent.click(screen.getByRole('button', { name: 'Add an adventure' }));
@@ -161,6 +242,18 @@ describe('content record flow', () => {
     await act(async () => fireEvent.click(screen.getAllByRole('button', { name: 'Add an adventure' }).at(-1)!));
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
     expect(sentBody().input.data).toMatchObject({ relatedRecommendationIds: ['01J00000000000000000000R02'] });
+  });
+});
+
+describe('reading a record back on its own page', () => {
+  it('says opening hours in words, and keeps hours it cannot read as they were typed', () => {
+    const editor = contentEditor('recommendations', lists);
+    const hours = editor.fields.find((f) => f.name === 'hours')!;
+    const said = (v: unknown) => describeValue(hours, v, editor, (at) => at);
+    expect(said('Mo-Th 11:00-23:00; Fr,Sa 11:00-24:00; Su off')).toBe('Monday to Thursday: 11\u00a0am to 11\u00a0pm\nFriday and Saturday: 11\u00a0am to midnight\nSunday: Closed');
+    expect(said('24/7')).toBe('Open all day, every day');
+    expect(said('Dinner only')).toBe('Dinner only');
+    expect(said(null)).toBe('');
   });
 });
 

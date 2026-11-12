@@ -16,7 +16,19 @@
     "verifiedAt": "2026-09-05T13:30:00.000Z",
     "trustClass": "EXTERNAL_DATA",
     "editedBy": "seed:link-check-2026-09-05",
-    "visibility": "public"
+    "visibility": "public",
+    "hoursNote": "Trails are open from 7 am to sunset.",
+    "reservations": "walk-in",
+    "stepFree": false,
+    "setting": "outdoors",
+    "cost": "Free",
+    "accessibility": "No step-free trails into the canyons, and every overlook has 50 to 150 steps. The visitor center has a ramp.",
+    "factSources": [
+      "https://dnr.illinois.gov/content/dam/soi/en/web/dnr/parks/documents/starvedrock-common-park-qa.pdf",
+      "https://dnr.illinois.gov/parks/park.starvedrock.html",
+      "https://dnr.illinois.gov/parks/accessibility/park.starvedrock.html"
+    ],
+    "factsCheckedAt": "2026-11-12"
   },
   {
     "slug": "caa-self-guided-tour",
@@ -34,7 +46,18 @@
     "verifiedAt": "2026-09-04T00:00:00.000Z",
     "trustClass": "TRUSTED_WEDDING",
     "editedBy": "seed:brief-2026-09-04",
-    "visibility": "public"
+    "visibility": "public",
+    "hours": "Mo-Su 05:00-02:00",
+    "hoursNote": "Each room inside keeps its own hours.",
+    "stepFree": true,
+    "setting": "indoors",
+    "accessibility": "Hotel FAQ: the check-in area, accessible guest rooms and all on-site restaurants are reachable from the accessible public entrance; directional signage is in Braille.",
+    "kidFriendly": true,
+    "factSources": [
+      "https://www.chicagoathletichotel.com/restaurants/drawing-room/",
+      "https://www.chicagoathletichotel.com/about/faq/"
+    ],
+    "factsCheckedAt": "2026-11-12"
   },
   {
     "slug": "millennium-park-walk",
@@ -53,7 +76,17 @@
     "verifiedAt": "2026-09-05T13:30:00.000Z",
     "trustClass": "EXTERNAL_DATA",
     "editedBy": "seed:link-check-2026-09-05",
-    "visibility": "public"
+    "visibility": "public",
+    "hours": "Mo-Su 06:00-23:00",
+    "reservations": "walk-in",
+    "stepFree": true,
+    "setting": "outdoors",
+    "accessibility": "The city says every aspect of the park's physical space is designed to be accessible; wheelchairs are loaned free from the Patron Services tent at events; accessible parking in each Millennium Garage.",
+    "factSources": [
+      "https://www.chicago.gov/city/en/depts/dca/supp_info/millennium_park.html",
+      "https://www.chicago.gov/city/en/depts/dca/supp_info/millennium_park_accessibility.html"
+    ],
+    "factsCheckedAt": "2026-11-12"
   },
   {
     "slug": "cindys-rooftop",
@@ -72,13 +105,28 @@
     "verifiedAt": "2026-09-05T13:30:00.000Z",
     "trustClass": "EXTERNAL_DATA",
     "editedBy": "seed:link-check-2026-09-05",
-    "visibility": "public"
+    "visibility": "public",
+    "priceLevel": 3,
+    "hours": "Mo-Th 11:00-23:00; Fr 11:00-24:00; Sa 10:00-24:00; Su 10:00-23:00",
+    "hoursNote": "Brunch at weekends until 2 pm. The terrace closes at 11 pm.",
+    "reservations": "recommended",
+    "diets": ["vegetarian", "gluten-free"],
+    "stepFree": true,
+    "setting": "both",
+    "accessibility": "Hotel FAQ lists all on-site restaurants as reachable from the accessible public entrance; Cindy's is on the 13th floor, reached by the express elevator (third from the right).",
+    "kidFriendly": true,
+    "factSources": [
+      "https://places.singleplatform.com/cindys-rooftop-bar-0/menu",
+      "https://www.cindysrooftop.com/",
+      "https://www.chicagoathletichotel.com/about/faq/"
+    ],
+    "factsCheckedAt": "2026-11-12"
   },
   {
     "slug": "game-room",
     "title": "Game Room",
     "category": "stay-inside-caa",
-    "interests": ["drink", "play", "inside-caa"],
+    "interests": ["food", "drink", "play", "inside-caa"],
     "placeSlug": "chicago-athletic-association-hotel",
     "what": "Cocktails, casual bites, billiards, shuffleboard, and other games.",
     "durationMinutes": 60,
@@ -91,13 +139,27 @@
     "verifiedAt": "2026-10-12T00:00:00.000Z",
     "trustClass": "EXTERNAL_DATA",
     "editedBy": "seed:sara-feedback-2026-10-12",
-    "visibility": "public"
+    "visibility": "public",
+    "priceLevel": 2,
+    "hours": "Mo-Th 13:00-23:00; Fr,Sa 11:00-01:00; Su 11:00-21:00",
+    "hoursNote": "The kitchen closes at 11 pm, and at 9 pm on Sunday.",
+    "reservations": "walk-in",
+    "diets": ["vegetarian", "gluten-free"],
+    "stepFree": true,
+    "setting": "indoors",
+    "accessibility": "Hotel FAQ lists all on-site restaurants as reachable from the accessible public entrance; the Game Room is on the 2nd floor.",
+    "factSources": [
+      "https://www.gameroomchi.com/menu",
+      "https://www.chicagoathletichotel.com/restaurants/game-room/",
+      "https://www.chicagoathletichotel.com/about/faq/"
+    ],
+    "factsCheckedAt": "2026-11-12"
   },
   {
     "slug": "drawing-room",
     "title": "Drawing Room",
     "category": "stay-inside-caa",
-    "interests": ["drink", "inside-caa", "quiet"],
+    "interests": ["food", "drink", "inside-caa", "quiet"],
     "placeSlug": "chicago-athletic-association-hotel",
     "what": "A cozy lounge for drinks and relaxing.",
     "durationMinutes": 60,
@@ -110,7 +172,20 @@
     "verifiedAt": "2026-10-12T00:00:00.000Z",
     "trustClass": "EXTERNAL_DATA",
     "editedBy": "seed:sara-feedback-2026-10-12",
-    "visibility": "public"
+    "visibility": "public",
+    "priceLevel": 2,
+    "hours": "Mo-Th 07:00-23:00; Fr,Sa 07:00-24:00; Su 07:00-21:00",
+    "hoursNote": "Breakfast until 11 am. The kitchen closes at 11 pm, and at 9 pm on Sunday.",
+    "diets": ["vegetarian", "gluten-free"],
+    "stepFree": true,
+    "setting": "indoors",
+    "accessibility": "Hotel FAQ lists all on-site restaurants as reachable from the accessible public entrance.",
+    "factSources": [
+      "https://www.drawingroomchicago.com/all-day-menu",
+      "https://www.drawingroomchicago.com/",
+      "https://www.chicagoathletichotel.com/about/faq/"
+    ],
+    "factsCheckedAt": "2026-11-12"
   },
   {
     "slug": "shake-shack",
@@ -130,7 +205,20 @@
     "verifiedAt": "2026-10-12T00:00:00.000Z",
     "trustClass": "EXTERNAL_DATA",
     "editedBy": "seed:sara-feedback-2026-10-12",
-    "visibility": "public"
+    "visibility": "public",
+    "priceLevel": 2,
+    "hours": "Mo 10:00-23:00; Tu-Su 10:00-24:00",
+    "reservations": "walk-in",
+    "diets": ["vegetarian", "gluten-free"],
+    "stepFree": true,
+    "setting": "indoors",
+    "accessibility": "Hotel FAQ lists all on-site restaurants as reachable from the accessible public entrance.",
+    "factSources": [
+      "https://www.chicagoathletichotel.com/wp-content/uploads/2026/06/2026-06-25_151754-menu.pdf",
+      "https://www.chicagoathletichotel.com/restaurants/shake-shack/",
+      "https://www.chicagoathletichotel.com/about/faq/"
+    ],
+    "factsCheckedAt": "2026-11-12"
   },
   {
     "slug": "the-ives",
@@ -149,7 +237,19 @@
     "verifiedAt": "2026-09-05T13:30:00.000Z",
     "trustClass": "EXTERNAL_DATA",
     "editedBy": "seed:link-check-2026-09-05",
-    "visibility": "public"
+    "visibility": "public",
+    "priceLevel": 3,
+    "hours": "Mo-Th 17:00-22:00; Fr,Sa 17:00-23:00; Su off",
+    "hoursNote": "Dinner only.",
+    "stepFree": true,
+    "setting": "indoors",
+    "accessibility": "Hotel FAQ lists all on-site restaurants as reachable from the accessible public entrance.",
+    "factSources": [
+      "https://places.singleplatform.com/the-ives/menu",
+      "https://www.theiveschicago.com/",
+      "https://www.chicagoathletichotel.com/about/faq/"
+    ],
+    "factsCheckedAt": "2026-11-12"
   },
   {
     "slug": "midosuji",
@@ -168,7 +268,19 @@
     "verifiedAt": "2026-09-05T13:30:00.000Z",
     "trustClass": "EXTERNAL_DATA",
     "editedBy": "seed:link-check-2026-09-05",
-    "visibility": "public"
+    "visibility": "public",
+    "priceLevel": 3,
+    "hours": "Tu-Sa 17:00-22:00; Su,Mo off",
+    "reservations": "recommended",
+    "stepFree": true,
+    "setting": "indoors",
+    "accessibility": "Hotel FAQ lists all on-site restaurants as reachable from the accessible public entrance; Midosuji is on the second floor.",
+    "factSources": [
+      "https://cdn.prod.website-files.com/68a64a5c02f7d8b7f2d8c929/6ad632eef10235fc593dc8f1_MIDO%20Midosuji%20Menu%2010.12.26.pdf",
+      "https://midosujichicago.com/",
+      "https://www.chicagoathletichotel.com/about/faq/"
+    ],
+    "factsCheckedAt": "2026-11-12"
   },
   {
     "slug": "fairgrounds",
@@ -187,7 +299,19 @@
     "verifiedAt": "2026-09-05T13:30:00.000Z",
     "trustClass": "EXTERNAL_DATA",
     "editedBy": "seed:link-check-2026-09-05",
-    "visibility": "public"
+    "visibility": "public",
+    "priceLevel": 1,
+    "hours": "Mo-Th 06:00-18:00; Fr-Su 06:00-19:00",
+    "reservations": "walk-in",
+    "stepFree": true,
+    "setting": "indoors",
+    "accessibility": "Hotel FAQ lists all on-site restaurants as reachable from the accessible public entrance.",
+    "factSources": [
+      "https://fairgrounds.craverapp.com/locations",
+      "https://fairgrounds.cafe/cafes/",
+      "https://www.chicagoathletichotel.com/about/faq/"
+    ],
+    "factsCheckedAt": "2026-11-12"
   },
   {
     "slug": "topgolf-swing-suite",
@@ -206,7 +330,12 @@
     "verifiedAt": "2026-09-05T13:30:00.000Z",
     "trustClass": "EXTERNAL_DATA",
     "editedBy": "seed:link-check-2026-09-05",
-    "visibility": "public"
+    "visibility": "public",
+    "setting": "indoors",
+    "factSources": [
+      "https://www.chicagoathletichotel.com/about/amenities/topgolf-swing-suite/"
+    ],
+    "factsCheckedAt": "2026-11-12"
   },
   {
     "slug": "museum-of-ice-cream",
@@ -223,7 +352,21 @@
     "trustClass": "TRUSTED_WEDDING",
     "editedBy": "seed:sara-feedback-2026-10-12",
     "visibility": "guest",
-    "placeholder": false
+    "placeholder": false,
+    "hours": "Mo,We,Th 11:00-19:30; Tu off; Fr 11:00-21:00; Sa 10:00-21:00; Su 10:00-19:30",
+    "hoursNote": "Hours can vary by day, so check when you book.",
+    "reservations": "tickets",
+    "diets": ["vegan"],
+    "stepFree": true,
+    "setting": "indoors",
+    "cost": "From about $24 each; children 2 and under free.",
+    "accessibility": "FAQ: 'Museum of Ice Cream - Chicago is wheelchair accessible.' Strollers are allowed, but there is no stroller parking.",
+    "kidFriendly": true,
+    "factSources": [
+      "https://www.museumoficecream.com/chicago/",
+      "https://www.museumoficecream.com/frequently-asked-questions/"
+    ],
+    "factsCheckedAt": "2026-11-12"
   },
   {
     "slug": "richardson-farm",
@@ -258,7 +401,18 @@
     "trustClass": "TRUSTED_WEDDING",
     "editedBy": "seed:sara-feedback-2026-10-12",
     "visibility": "guest",
-    "placeholder": false
+    "placeholder": false,
+    "priceLevel": 3,
+    "hours": "Su,Mo 17:00-21:30; Tu-Sa 17:00-22:00",
+    "hoursNote": "These are the dining room’s dinner hours. Lunch and weekend brunch are served in the bar.",
+    "reservations": "recommended",
+    "diets": ["gluten-free"],
+    "setting": "indoors",
+    "factSources": [
+      "https://www.michaeljordansteakhouse.com/chicago/dinner-menu",
+      "https://michaeljordansteakhouse.com/chicago/"
+    ],
+    "factsCheckedAt": "2026-11-12"
   },
   {
     "sourceKey": "sara-feedback",
@@ -271,11 +425,21 @@
     "title": "Explore Chicago Athletic Association",
     "category": "architecture",
     "what": "Explore the historic interiors of our wedding venue. Ask the hotel about building tours and access to Stagg Court.",
-    "sourceUrl": "https://www.chicagoathletichotel.com/about/history/",
+    "sourceUrl": "https://www.chicagoathletichotel.com/chicago-hotel-history/",
     "interests": ["architecture", "walk", "inside-caa"],
     "draft": false,
     "visibility": "guest",
-    "placeSlug": "guide-caa-explore"
+    "placeSlug": "guide-caa-explore",
+    "hoursNote": "The hotel lists tours on weekdays at 2 pm and at weekends at 11:30 am, when it can run them.",
+    "stepFree": true,
+    "setting": "indoors",
+    "accessibility": "The hotel says the check-in area, accessible guest rooms and all on-site restaurants are accessible from the public entrance; signage is in Braille.",
+    "kidFriendly": true,
+    "factSources": [
+      "https://www.chicagoathletichotel.com/?p=191",
+      "https://www.chicagoathletichotel.com/about/faq/"
+    ],
+    "factsCheckedAt": "2026-11-12"
   },
   {
     "sourceKey": "sara-feedback",
@@ -290,7 +454,14 @@
     "what": "Compare bundled admission options if you plan to visit several major attractions.",
     "interests": ["museum"],
     "draft": false,
-    "visibility": "guest"
+    "visibility": "guest",
+    "reservations": "tickets",
+    "cost": "About $144 for adults and $114 for children 3 to 11, for five attractions.",
+    "factSources": [
+      "https://www.citypass.com/chicago-comparison",
+      "https://www.citypass.com/chicago"
+    ],
+    "factsCheckedAt": "2026-11-12"
   },
   {
     "sourceKey": "sara-feedback",
@@ -305,7 +476,18 @@
     "what": "See the skyline while learning about Chicago’s architecture and history. Check departure locations and book ahead.",
     "interests": ["architecture", "walk"],
     "draft": false,
-    "visibility": "guest"
+    "visibility": "guest",
+    "hoursNote": "Cruises run from mid-March to late November, several times a day, and last 90 minutes.",
+    "reservations": "tickets",
+    "setting": "both",
+    "cost": "From about $57 a ticket. Everyone needs one, babies included.",
+    "accessibility": "The dock is down two flights of stairs, with a ramp. Manual wheelchairs only; electric chairs and scooters cannot board. Call ahead for help boarding.",
+    "kidFriendly": true,
+    "factSources": [
+      "https://www.architecture.org/tours/detail/chicago-architecture-foundation-center-river-cruise-aboard-chicagos-first-lady/",
+      "https://firstlady.com/accessibility"
+    ],
+    "factsCheckedAt": "2026-11-12"
   },
   {
     "sourceKey": "sara-feedback",
@@ -320,7 +502,17 @@
     "what": "Discover Chicago’s architecture, history, and neighborhoods with knowledgeable guides. Confirm your tour’s meeting point.",
     "interests": ["architecture", "walk"],
     "draft": false,
-    "visibility": "guest"
+    "visibility": "guest",
+    "hoursNote": "Times depend on the tour.",
+    "reservations": "tickets",
+    "setting": "both",
+    "accessibility": "It depends on the tour: each one says whether it has stairs.",
+    "factSources": [
+      "https://www.aaa.com/tripcanvas/thing-to-do/chicago-walking-tour-a-walk-through-time-3173P9",
+      "https://www.architecture.org/city-tours",
+      "https://architecture.org/tours/detail/chicago-architecture-a-walk-through-time"
+    ],
+    "factsCheckedAt": "2026-11-12"
   },
   {
     "sourceKey": "sara-feedback",
@@ -336,7 +528,19 @@
     "interests": ["outdoors", "walk"],
     "draft": false,
     "visibility": "guest",
-    "placeSlug": "guide-chicago-riverwalk"
+    "placeSlug": "guide-chicago-riverwalk",
+    "hours": "Mo-Su 06:00-23:00",
+    "reservations": "walk-in",
+    "stepFree": true,
+    "setting": "outdoors",
+    "cost": "Free",
+    "accessibility": "The city lists ADA accessible ramps down to the Riverwalk on the west side of Clark Street and the east side of State Street.",
+    "factSources": [
+      "https://chicago.gov/city/en/sites/chicagoriverwalk/home/faq.html",
+      "https://chicago.gov/city/en/sites/chicagoriverwalk/home.html",
+      "https://www.chicago.gov/city/en/sites/chicagoriverwalk/home/getting-there.html"
+    ],
+    "factsCheckedAt": "2026-11-12"
   },
   {
     "sourceKey": "sara-feedback",
@@ -352,7 +556,17 @@
     "interests": ["food", "drink"],
     "draft": false,
     "visibility": "guest",
-    "placeSlug": "guide-alinea"
+    "placeSlug": "guide-alinea",
+    "priceLevel": 4,
+    "hoursNote": "Evening seatings only. The days vary, so check when you book.",
+    "reservations": "required",
+    "diets": ["vegetarian", "gluten-free"],
+    "setting": "indoors",
+    "factSources": [
+      "https://www.opentable.com/r/alinea",
+      "https://www.alinearestaurant.com/faq"
+    ],
+    "factsCheckedAt": "2026-11-12"
   },
   {
     "sourceKey": "sara-feedback",
@@ -368,7 +582,18 @@
     "interests": ["food", "drink"],
     "draft": false,
     "visibility": "guest",
-    "placeSlug": "guide-esme"
+    "placeSlug": "guide-esme",
+    "priceLevel": 4,
+    "hours": "Mo,Tu off; We-Su 17:00-21:00",
+    "reservations": "required",
+    "diets": ["vegetarian", "gluten-free"],
+    "setting": "indoors",
+    "factSources": [
+      "https://www.opentable.com/r/esme-chicago",
+      "https://www.esmechicago.com/",
+      "https://www.esmechicago.com/faq"
+    ],
+    "factsCheckedAt": "2026-11-12"
   },
   {
     "sourceKey": "sara-feedback",
@@ -384,7 +609,16 @@
     "interests": ["food", "drink"],
     "draft": false,
     "visibility": "guest",
-    "placeSlug": "guide-the-aviary"
+    "placeSlug": "guide-the-aviary",
+    "priceLevel": 3,
+    "hours": "Su,Mo off; Tu-Th 17:00-23:00; Fr 17:00-01:00; Sa 16:30-01:00",
+    "reservations": "recommended",
+    "setting": "indoors",
+    "factSources": [
+      "https://www.opentable.com/r/the-aviary-chicago",
+      "https://www.theaviary.com/"
+    ],
+    "factsCheckedAt": "2026-11-12"
   },
   {
     "sourceKey": "sara-feedback",
@@ -415,7 +649,17 @@
     "interests": ["outdoors", "walk"],
     "draft": false,
     "visibility": "guest",
-    "placeSlug": "guide-grant-park"
+    "placeSlug": "guide-grant-park",
+    "hours": "Mo-Su 06:00-23:00",
+    "hoursNote": "Buckingham Fountain runs from May to October.",
+    "reservations": "walk-in",
+    "setting": "outdoors",
+    "cost": "Free",
+    "factSources": [
+      "https://thebettervacation.com/chicago/grant-park/amp/",
+      "https://www.chicagoparkdistrict.com/parks-facilities/grant-ulysses-park"
+    ],
+    "factsCheckedAt": "2026-11-12"
   },
   {
     "sourceKey": "sara-feedback",
@@ -431,7 +675,20 @@
     "interests": ["kids"],
     "draft": false,
     "visibility": "guest",
-    "placeSlug": "guide-maggie-daley-park"
+    "placeSlug": "guide-maggie-daley-park",
+    "hours": "Mo-Su 06:00-21:00",
+    "hoursNote": "The Play Garden’s water features run from late May to early September.",
+    "reservations": "walk-in",
+    "stepFree": true,
+    "setting": "outdoors",
+    "accessibility": "Wheelchair and stroller-friendly park entrances and paved pathways throughout; the Play Garden has a soft poured surface meeting ADA standards; accessible parking on Randolph Street.",
+    "kidFriendly": true,
+    "factSources": [
+      "https://www.maggiedaleypark.com/things-to-do-see/ice-skating-ribbon",
+      "https://www.chicagoparkdistrict.com/parks-facilities/maggie-daley-park",
+      "https://www.maggiedaleypark.com/about/park-accessibility"
+    ],
+    "factsCheckedAt": "2026-11-12"
   },
   {
     "sourceKey": "sara-feedback",
@@ -447,7 +704,21 @@
     "interests": ["kids"],
     "draft": false,
     "visibility": "guest",
-    "placeSlug": "guide-lincoln-park-zoo"
+    "placeSlug": "guide-lincoln-park-zoo",
+    "hours": "Mo-Su 10:00-17:00",
+    "hoursNote": "Hours change with the season.",
+    "reservations": "walk-in",
+    "stepFree": true,
+    "setting": "both",
+    "cost": "Free",
+    "accessibility": "All public buildings have at least one wheelchair-accessible entrance. Wheelchairs free to borrow at Searle Visitor Center (photo ID or $20 deposit); electric scooters $30. Some paths are narrow or uneven.",
+    "kidFriendly": true,
+    "factSources": [
+      "https://www.lpzoo.org/visit/",
+      "https://www.lpzoo.org/visit/hours-location/",
+      "https://www.lpzoo.org/visit/accessibility/"
+    ],
+    "factsCheckedAt": "2026-11-12"
   },
   {
     "sourceKey": "sara-feedback",
@@ -463,7 +734,20 @@
     "interests": ["outdoors", "walk"],
     "draft": false,
     "visibility": "guest",
-    "placeSlug": "guide-chicago-botanic-garden"
+    "placeSlug": "guide-chicago-botanic-garden",
+    "hoursNote": "Hours change with the season, so check before you go.",
+    "reservations": "tickets",
+    "stepFree": true,
+    "setting": "both",
+    "cost": "Paid entry, priced by the day; cheaper when booked ahead.",
+    "accessibility": "Nearly all areas of the Garden are accessible by wheelchair. Wheelchairs are free at the Visitor Center information desk; electric convenience vehicles rent for $20 (non-members). Accessible parking in Lots 1 and 2.",
+    "kidFriendly": true,
+    "factSources": [
+      "https://www.chicagobotanic.org/visit/plan-ahead-pricing",
+      "https://www.chicagobotanic.org/visit/hours",
+      "https://www.chicagobotanic.org/visit/accessibility"
+    ],
+    "factsCheckedAt": "2026-11-12"
   },
   {
     "sourceKey": "sara-feedback",
@@ -479,7 +763,20 @@
     "interests": ["museum"],
     "draft": false,
     "visibility": "guest",
-    "placeSlug": "guide-art-institute"
+    "placeSlug": "guide-art-institute",
+    "hours": "Mo,We,Fr-Su 11:00-17:00; Th 11:00-20:00; Tu off",
+    "reservations": "tickets",
+    "stepFree": true,
+    "setting": "indoors",
+    "cost": "Adults about $32; children under 14 free.",
+    "accessibility": "Ramp access at both the Michigan Avenue and Modern Wing (Monroe Street) entrances; drop-off lane at the Modern Wing only. Free manual wheelchairs at both checkrooms; elevators to all levels.",
+    "kidFriendly": true,
+    "factSources": [
+      "https://www.artic.edu/visit",
+      "https://www.citypass.com/chicago/art-institute-chicago",
+      "https://www.artic.edu/visit/accessibility/visitors-with-mobility-needs"
+    ],
+    "factsCheckedAt": "2026-11-12"
   },
   {
     "sourceKey": "sara-feedback",
@@ -495,7 +792,21 @@
     "interests": ["kids"],
     "draft": false,
     "visibility": "guest",
-    "placeSlug": "guide-shedd-aquarium"
+    "placeSlug": "guide-shedd-aquarium",
+    "hours": "Mo-Su 09:00-17:00",
+    "hoursNote": "Hours vary by day, so check before you go.",
+    "reservations": "tickets",
+    "stepFree": true,
+    "setting": "indoors",
+    "cost": "Adults about $40, children 3 to 11 about $30; less when booked ahead.",
+    "accessibility": "Exhibits, restrooms and most behind-the-scenes program locations are fully accessible. Wheelchairs and rollator walkers free at the information desk with photo ID, first come, first served.",
+    "kidFriendly": true,
+    "factSources": [
+      "https://www.sheddaquarium.org/plan-a-visit/get-tickets",
+      "https://www.sheddaquarium.org/",
+      "https://www.sheddaquarium.org/plan-a-visit/accessibility"
+    ],
+    "factsCheckedAt": "2026-11-12"
   },
   {
     "sourceKey": "sara-feedback",
@@ -511,7 +822,21 @@
     "interests": ["kids"],
     "draft": false,
     "visibility": "guest",
-    "placeSlug": "guide-griffin-msi"
+    "placeSlug": "guide-griffin-msi",
+    "hours": "Mo-Su 09:30-16:00",
+    "hoursNote": "Often open later, so check the day you plan to go.",
+    "reservations": "tickets",
+    "stepFree": true,
+    "setting": "indoors",
+    "cost": "Adults about $26, children 3 to 11 about $15.",
+    "accessibility": "Curb cuts and push-button doors at the main entrance; elevators and ramps reach all floors, and elevators connect each parking level to the Entry Hall. Manual wheelchairs free to borrow with photo ID.",
+    "kidFriendly": true,
+    "factSources": [
+      "https://www.griffinmsi.org/gift-cards",
+      "https://www.griffinmsi.org/hours",
+      "https://www.griffinmsi.org/accessibility"
+    ],
+    "factsCheckedAt": "2026-11-12"
   },
   {
     "sourceKey": "sara-feedback",
@@ -523,11 +848,24 @@
     "slug": "starbucks-reserve-roastery",
     "title": "Starbucks Reserve Roastery",
     "category": "food-drink",
-    "what": "The five-story Reserve Roastery on Michigan Avenue — espresso, pour-overs, and pastries a short walk from the hotel.",
+    "what": "The five-story Reserve Roastery on Michigan Avenue: espresso, pour-overs, and pastries, a little under a mile north of the hotel.",
     "interests": ["food", "drink"],
     "draft": false,
     "visibility": "guest",
-    "placeSlug": "guide-starbucks-reserve-roastery"
+    "placeSlug": "guide-starbucks-reserve-roastery",
+    "hours": "Mo-Th 08:00-20:00; Fr-Su 08:00-21:30",
+    "hoursNote": "Listings differ on the exact hours; it is open at least these.",
+    "reservations": "walk-in",
+    "stepFree": true,
+    "setting": "indoors",
+    "accessibility": "Starbucks states that all Roasteries are designed to be accessible; Choose Chicago lists it as wheelchair accessible.",
+    "kidFriendly": true,
+    "factSources": [
+      "https://chicagoonthecheap.com/check-out-the-starbucks-reserve-roastery-at-20-off/",
+      "https://www.choosechicago.com/listing/starbucks-reserve-roastery-3/",
+      "https://www.starbucksreserve.com/stories/frequently-asked-questions-faqs"
+    ],
+    "factsCheckedAt": "2026-11-12"
   },
   {
     "sourceKey": "sara-feedback",
@@ -539,11 +877,19 @@
     "slug": "blue-bottle-grand",
     "title": "Blue Bottle Coffee",
     "category": "food-drink",
-    "what": "Bright, minimal specialty coffee on Grand Avenue in River North.",
+    "what": "Bright, minimal specialty coffee at Wolf Point in River North.",
     "interests": ["food", "drink"],
     "draft": false,
     "visibility": "guest",
-    "placeSlug": "guide-blue-bottle-grand"
+    "placeSlug": "guide-blue-bottle-grand",
+    "priceLevel": 1,
+    "reservations": "walk-in",
+    "setting": "both",
+    "factSources": [
+      "https://garciacoffee.com/blue-bottle-coffee-3/",
+      "https://frankiapp.com/business/blue-bottle-coffee-23618.md"
+    ],
+    "factsCheckedAt": "2026-11-12"
   },
   {
     "sourceKey": "sara-feedback",
@@ -559,7 +905,16 @@
     "interests": ["food", "drink"],
     "draft": false,
     "visibility": "guest",
-    "placeSlug": "guide-intelligentsia-monadnock"
+    "placeSlug": "guide-intelligentsia-monadnock",
+    "priceLevel": 1,
+    "hours": "Mo-Fr 07:00-18:00; Sa 08:00-14:00; Su off",
+    "reservations": "walk-in",
+    "setting": "both",
+    "factSources": [
+      "https://order.toasttab.com/online/intelligentsia-coffee-monadnock",
+      "https://www.intelligentsia.com/pages/monadnock-coffeebar"
+    ],
+    "factsCheckedAt": "2026-11-12"
   },
   {
     "sourceKey": "sara-feedback",
@@ -575,7 +930,16 @@
     "interests": ["food", "drink"],
     "draft": false,
     "visibility": "guest",
-    "placeSlug": "guide-sawada-coffee"
+    "placeSlug": "guide-sawada-coffee",
+    "priceLevel": 1,
+    "hours": "Mo-Su 08:00-16:00",
+    "reservations": "walk-in",
+    "setting": "indoors",
+    "factSources": [
+      "https://www.airbnb.com.br/things-to-do/places/1374338",
+      "https://www.sawadacoffee.com/chi/about"
+    ],
+    "factsCheckedAt": "2026-11-12"
   },
   {
     "sourceKey": "sara-feedback",
@@ -587,11 +951,15 @@
     "slug": "metric-fulton",
     "title": "Metric Coffee — Fulton Market",
     "category": "food-drink",
-    "what": "Metric’s Fulton Market cafe for meticulously sourced espresso and filter coffee.",
+    "what": "Metric’s cafe on West Fulton Street, for meticulously sourced espresso and filter coffee.",
     "interests": ["food", "drink"],
     "draft": false,
     "visibility": "guest",
-    "placeSlug": "guide-metric-fulton"
+    "placeSlug": "guide-metric-fulton",
+    "hours": "Mo-Su 07:00-16:00",
+    "reservations": "walk-in",
+    "factSources": ["https://metriccoffee.com/pages/cafe"],
+    "factsCheckedAt": "2026-11-12"
   },
   {
     "sourceKey": "sara-feedback",
@@ -603,11 +971,14 @@
     "slug": "dollop-dearborn",
     "title": "Dollop Coffee",
     "category": "food-drink",
-    "what": "Neighborhood-roasted coffee and baked goods on Dearborn, an easy Loop walk from the hotel.",
+    "what": "Neighborhood-roasted coffee and baked goods on Monroe Street, an easy Loop walk from the hotel.",
     "interests": ["food", "drink"],
     "draft": false,
     "visibility": "guest",
-    "placeSlug": "guide-dollop-dearborn"
+    "placeSlug": "guide-dollop-dearborn",
+    "reservations": "walk-in",
+    "factSources": ["https://www.dollopcoffee.com/locations"],
+    "factsCheckedAt": "2026-11-12"
   },
   {
     "sourceKey": "sara-feedback",
@@ -619,10 +990,14 @@
     "slug": "hexe-coffee",
     "title": "Hexe Coffee Co.",
     "category": "food-drink",
-    "what": "Small-batch roasts and thoughtful drinks near Maxwell Street in the West Loop.",
+    "what": "Small-batch roasts and thoughtful drinks on Diversey Parkway, on the North Side.",
     "interests": ["food", "drink"],
     "draft": false,
     "visibility": "guest",
-    "placeSlug": "guide-hexe-coffee"
+    "placeSlug": "guide-hexe-coffee",
+    "hours": "Mo-Su 07:30-20:00",
+    "reservations": "walk-in",
+    "factSources": ["https://hexecoffee.com/"],
+    "factsCheckedAt": "2026-11-12"
   }
 ]

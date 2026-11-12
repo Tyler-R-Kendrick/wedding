@@ -248,11 +248,11 @@
     "slug": "guide-lincoln-park-zoo",
     "name": "Lincoln Park Zoo",
     "kind": "other",
-    "address": "2001 N. Clark Street, Chicago",
+    "address": "2400 N Cannon Drive, Chicago, IL 60614",
     "city": "Chicago",
     "region": "IL",
-    "lat": 41.9211,
-    "lng": -87.6339,
+    "lat": 41.9312,
+    "lng": -87.6373,
     "visibility": "guest"
   },
   {
@@ -333,10 +333,10 @@
     "slug": "guide-starbucks-reserve-roastery",
     "name": "Starbucks Reserve Roastery",
     "kind": "restaurant",
-    "address": "203 N Michigan Ave, Chicago, IL 60601",
+    "address": "646 N Michigan Ave, Chicago, IL 60611",
     "city": "Chicago",
     "region": "IL",
-    "lat": 41.8842,
+    "lat": 41.8939,
     "lng": -87.6246,
     "visibility": "guest"
   },
@@ -350,11 +350,11 @@
     "slug": "guide-blue-bottle-grand",
     "name": "Blue Bottle Coffee",
     "kind": "restaurant",
-    "address": "313 W Grand Ave, Chicago, IL 60654",
+    "address": "313 W Wolf Point Plaza, Chicago, IL 60654",
     "city": "Chicago",
     "region": "IL",
-    "lat": 41.889,
-    "lng": -87.6358,
+    "lat": 41.8878,
+    "lng": -87.6368,
     "visibility": "guest"
   },
   {
@@ -401,11 +401,11 @@
     "slug": "guide-metric-fulton",
     "name": "Metric Coffee — Fulton Market",
     "kind": "restaurant",
-    "address": "109 N May St, Chicago, IL 60607",
+    "address": "2021 W Fulton St, Chicago, IL 60612",
     "city": "Chicago",
     "region": "IL",
-    "lat": 41.8862,
-    "lng": -87.653,
+    "lat": 41.8866,
+    "lng": -87.6777,
     "visibility": "guest"
   },
   {
@@ -418,11 +418,11 @@
     "slug": "guide-dollop-dearborn",
     "name": "Dollop Coffee",
     "kind": "restaurant",
-    "address": "343 S Dearborn St, Chicago, IL 60604",
+    "address": "55 W Monroe St, Chicago, IL 60603",
     "city": "Chicago",
     "region": "IL",
-    "lat": 41.8772,
-    "lng": -87.6295,
+    "lat": 41.8804,
+    "lng": -87.6298,
     "visibility": "guest"
   },
   {
@@ -435,11 +435,11 @@
     "slug": "guide-hexe-coffee",
     "name": "Hexe Coffee Co.",
     "kind": "restaurant",
-    "address": "727 W Maxwell St, Chicago, IL 60607",
+    "address": "2000 W Diversey Pkwy, Chicago, IL 60647",
     "city": "Chicago",
     "region": "IL",
-    "lat": 41.865,
-    "lng": -87.6475,
+    "lat": 41.9325,
+    "lng": -87.6789,
     "visibility": "guest"
   }
 ]

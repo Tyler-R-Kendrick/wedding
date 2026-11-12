@@ -2,12 +2,14 @@
 
 import { findAdventures } from '@/capabilities/find_adventures';
 import { findPlacesNearby } from '@/capabilities/find_places_nearby';
-import { addTripItemCapability, getMyTrip, removeTripItemCapability, updateTripItemCapability } from '@/capabilities/travel';
+import { addTripItemCapability, getMyTrip, getMyTripProfile, removeTripItemCapability, saveMyTripPreferences, updateTripItemCapability } from '@/capabilities/travel';
 import { WEDDING_TIMEZONE } from '@/contracts/lifecycle';
 import { newId } from '@/contracts/ids';
 import { WEDDING_DATE_ISO } from '@/contracts/lifecycle';
 import { addDays, DIETS, isWeddingTime, MEALS, OUTSIDE_KINDS, PART_HOURS, slotForDate, weekendDate, type Day, type OutsidePick, type OutsideQuery, type Part } from '@/domain/trip-planner';
+import { readPrefs, type TripPrefs, type TripProfile } from '@/domain/trip-planner/profile';
 import { runAsUi } from './_shared/server';
+import { loadPlannerSaved } from './planner-data';
 
 /**
  * The planner's "My weekend", kept as the guest's own trip items: one `other` item per saved place,
@@ -208,4 +210,36 @@ export async function searchPlannerNearby(query: OutsideQuery, ours: string[] = 
     ours: names,
   });
   return r.ok ? { ok: true, places: r.value.data.places } : { ok: false };
+}
+
+// ---------- who the planner plans for ----------
+
+export type PlannerProfileResult = { ok: true; profile: TripProfile; prefs: TripPrefs | null; updatedAt: string | null; conflict: boolean } | { ok: false; message: string };
+
+const PREFS_FAILED = 'We could not save that just now. Your answers still apply on this page.';
+
+/**
+ * Saves what the guest set for the planner, with their guest record. Whatever the page sends is read
+ * the way stored preferences are (unknown values dropped) before the capability validates it.
+ * `basedOn` is the save this change started from: if another device has saved since, nothing is
+ * overwritten and what is saved comes back for the page to show.
+ */
+export async function savePlannerPrefs(input: { prefs: TripPrefs; basedOn?: string | null }): Promise<PlannerProfileResult> {
+  const basedOn = typeof input?.basedOn === 'string' && input.basedOn.length <= 40 ? input.basedOn : input?.basedOn === null ? null : undefined;
+  const r = await runAsUi(saveMyTripPreferences, { prefs: readPrefs(input?.prefs), ...(basedOn !== undefined ? { basedOn } : {}) }, { idempotencyKey: newId() });
+  if (!r.ok) return { ok: false, message: r.error.code === 'unauthenticated' ? SIGN_IN : PREFS_FAILED };
+  return { ok: true, ...r.value.data };
+}
+
+export type PlannerFreshResult = { ok: true; saved: NonNullable<Awaited<ReturnType<typeof loadPlannerSaved>>>; profile: TripProfile; prefs: TripPrefs | null; updatedAt: string | null } | { ok: false };
+
+/**
+ * What may have changed somewhere else since the page loaded: the guest's plans and what they set
+ * for the planner. The page asks when it comes back into view, so a phone and a laptop (or two
+ * people sharing one sign-in) show the same plans without a reload.
+ */
+export async function refreshPlanner(): Promise<PlannerFreshResult> {
+  const [saved, mine] = await Promise.all([loadPlannerSaved(), runAsUi(getMyTripProfile, {})]);
+  if (!saved || !mine.ok) return { ok: false };
+  return { ok: true, saved, ...mine.value.data };
 }

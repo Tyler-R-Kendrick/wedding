@@ -255,7 +255,8 @@ function askProgram(plan: Plan, ctx: ComposeContext): string {
     p.root.push('stops');
     p.lines.push(`stops = ${grid(picks)}`);
   }
-  return end(p, plan);
+  // Nothing of ours, and a search of the neighbourhood asked for: what it found goes under it.
+  return end(p, plan, plan.outside ? ctx : undefined);
 }
 
 function weekendProgram(plan: Plan, ctx: ComposeContext): string {

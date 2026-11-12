@@ -8,7 +8,7 @@ export default class PlannerProvider {
   async callApi(_prompt, context) {
     const v = context?.vars ?? {};
     try {
-      const out = answer({ request: String(v.request ?? ''), saved: v.saved, prefs: v.prefs, answers: v.answers, events: v.events });
+      const out = answer({ request: String(v.request ?? ''), saved: v.saved, prefs: v.prefs, answers: v.answers, events: v.events, profile: v.profile });
       return { output: JSON.stringify(out) };
     } catch (e) {
       return { error: `planner threw: ${e?.stack ?? e}` };

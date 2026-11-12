@@ -1,0 +1,197 @@
+# Cases written with the planner, for what it does with each place's own facts (price, opening
+# hours, booking, a step-free way in) and with who the guest is (their party, what the RSVP says,
+# what they set for themselves). Tuned against. The independent tester's are challenge3.yaml.
+
+# ---------- opening hours ----------
+- description: 'hours: coffee on Sunday morning leaves out the cafe that is shut on Sundays'
+  vars:
+    category: hours
+    reads: all
+    request: Coffee on Sunday morning
+    expect: { clarifies: false, ours: { min: 2, excludes: [intelligentsia-monadnock], open: true }, slot: { day: sun, part: morning } }
+- description: 'hours: dinner on Sunday evening leaves out the bar that is shut on Sundays and offers nothing at a time it is shut'
+  vars:
+    category: hours
+    reads: all
+    request: Dinner on Sunday evening
+    prefs: { diet: [], meal: null, asked: true }
+    expect: { clarifies: false, ours: { min: 1, excludes: [the-aviary], open: true } }
+- description: 'hours: a museum on a Tuesday after the weekend leaves out the two that are shut on Tuesdays'
+  vars:
+    category: hours
+    reads: all
+    request: We fly home Wednesday. A museum for Tuesday?
+    expect: { ours: { min: 1, excludes: [art-institute, museum-of-ice-cream] } }
+- description: 'hours: asked when one place opens on a day, it says that day''s hours for that place and to check'
+  vars:
+    category: hours
+    reads: all
+    request: What time does the Art Institute open on Sunday?
+    expect: { clarifies: false, ours: { includes: [art-institute] }, text: { includes: ['Art Institute of Chicago is open 11 am to 5 pm on Sundays', 'check'] } }
+- description: 'hours: asked about a day the place is shut, it says so'
+  vars:
+    category: hours
+    reads: all
+    request: Is the Art Institute open on Tuesday? What time does it open?
+    expect: { text: { includes: ['Art Institute of Chicago is closed on Tuesdays'] } }
+- description: 'hours: a place with no hours on record is still offered, and no hours are made up for it'
+  vars:
+    category: hours
+    reads: all
+    request: Coffee on Sunday morning near the hotel
+    expect: { ours: { anyOf: [dollop-dearborn, blue-bottle-grand] }, cards: { excludes: ['Dollop Coffee: [^\n]*Open', 'Blue Bottle Coffee: [^\n]*Open'] } }
+- description: 'hours: cocktails late on Friday are offered at places open in the evening, each saying its hours'
+  vars:
+    category: hours
+    reads: all
+    request: Cocktails on Friday evening
+    expect: { ours: { min: 1, open: true }, cards: { includes: ['Open [^|\n]* on Friday'] } }
+
+# ---------- price ----------
+- description: 'price: dinner under $40 each offers nothing known to cost more'
+  vars:
+    category: price
+    reads: all
+    request: Dinner on Friday for under $40 each
+    prefs: { diet: [], meal: null, asked: true }
+    expect: { clarifies: false, ours: { min: 1, maxPrice: 2, excludes: [alinea, esme, michael-jordans-steakhouse] } }
+- description: 'price: "cheap" is a limit too'
+  vars:
+    category: price
+    reads: all
+    request: Somewhere cheap for dinner on Friday
+    expect: { clarifies: false, ours: { min: 1, maxPrice: 2 } }
+- description: 'price: a splurge is answered with the places that are one'
+  vars:
+    category: price
+    reads: all
+    request: We want one big splurge dinner on Friday
+    expect: { clarifies: false, ours: { anyOf: [alinea, esme] }, cards: { includes: ['\$\$\$\$'] } }
+- description: 'price: a sum nothing on our list meets is said plainly, and our places are still shown'
+  vars:
+    category: price
+    reads: all
+    request: Dinner for under $10 a head
+    prefs: { diet: [], meal: null, asked: true }
+    expect: { ours: { min: 1, maxPrice: 2 }, text: { includes: ['costs that little'] } }
+- description: 'price: a price is shown only where we hold one'
+  vars:
+    category: price
+    reads: all
+    request: Coffee on Friday morning
+    expect: { cards: { includes: ['Sawada Coffee: \$|Intelligentsia[^:]*: \$|Blue Bottle Coffee: \$'], excludes: ['Dollop Coffee: \$', 'Hexe Coffee Co\.: \$'] } }
+
+# ---------- who the guest is ----------
+- description: 'profile: a saved limit on meals is kept to, and the answer says what it had in mind'
+  vars:
+    category: profile
+    reads: all
+    request: Where should we get dinner on Friday?
+    profile: { adults: 2, prefs: { budget: 2, asked: true } }
+    expect: { clarifies: false, ours: { min: 1, maxPrice: 2 }, text: { includes: ['meals up to \$40 each in mind'] } }
+- description: 'profile: a splurge asked for in so many words wins over the saved limit'
+  vars:
+    category: profile
+    reads: all
+    request: Actually, tonight we want the best tasting menu in town
+    profile: { adults: 2, prefs: { budget: 1, asked: true } }
+    expect: { ours: { anyOf: [alinea, esme] }, text: { excludes: ['in mind'] } }
+- description: 'profile: a saved limit on meals does not narrow a coffee'
+  vars:
+    category: profile
+    reads: all
+    request: Good coffee on Friday morning
+    profile: { adults: 1, prefs: { budget: 1, asked: true } }
+    expect: { ours: { min: 3 }, text: { excludes: ['Nothing on our own list', 'meals'] } }
+- description: 'diet: what the RSVP says they eat is not asked again, and the search carries it'
+  vars:
+    category: diet
+    reads: all
+    request: Where should we get dinner on Friday?
+    profile: { adults: 2, dietary: 'We are both vegetarian' }
+    expect: { clarifies: false, outside: { min: 1, diet: vegetarian }, cards: { includes: ['Vegetarian options on the menu'] } }
+- description: 'diet: "none" at RSVP is an answer, so the question is not asked'
+  vars:
+    category: diet
+    reads: all
+    request: Where should we get dinner on Friday?
+    profile: { adults: 2, dietary: 'None' }
+    expect: { clarifies: false, ours: { min: 1 } }
+- description: 'diet: nothing said at RSVP and nothing saved still asks first'
+  vars:
+    category: diet
+    reads: all
+    request: Where should we get dinner on Friday?
+    profile: { adults: 2 }
+    expect: { clarifies: true, asksAbout: [diet, meal] }
+- description: 'kids: with children on the invitation the answer says it had them in mind and offers nowhere with an age limit'
+  vars:
+    category: kids
+    reads: all
+    request: What should we do on Sunday morning?
+    profile: { adults: 2, children: 2 }
+    expect: { ours: { min: 2, allAges: true, open: true }, text: { includes: ['the children'] } }
+- description: 'kids: "we have a sitter" is for the grown-ups, whoever is on the invitation'
+  vars:
+    category: kids
+    reads: all
+    request: Cocktails on Friday night, we have a sitter
+    profile: { adults: 2, children: 2 }
+    expect: { ours: { anyOf: [the-aviary, game-room, drawing-room] }, text: { excludes: ['the children'] } }
+- description: 'access: a wheelchair at RSVP shapes the answer and marks a step-free way in where the place says so'
+  vars:
+    category: access
+    reads: all
+    request: A museum for Sunday morning
+    profile: { adults: 2, accessibility: 'My husband uses a wheelchair' }
+    expect: { ours: { min: 2, stepFree: true }, cards: { includes: ['Step-free way in'] }, text: { includes: ['step-free way in'], excludes: ['in mind'] } }
+- description: 'access: a place whose access we do not hold is never said to be step-free'
+  vars:
+    category: access
+    reads: all
+    request: Coffee near the hotel on Friday morning
+    profile: { adults: 1, accessibility: 'wheelchair user' }
+    expect: { cards: { includes: ['Dollop Coffee: [^\n]*Call ahead about access|Blue Bottle Coffee: [^\n]*Call ahead about access'], excludes: ['Dollop Coffee: [^\n]*Step-free way in', 'Blue Bottle Coffee: [^\n]*Step-free way in'] } }
+- description: 'access: someone who cannot walk far is kept near the hotel, for our places and the search'
+  vars:
+    category: access
+    reads: all
+    request: Where should we get dinner on Friday?
+    profile: { adults: 2, dietary: 'none', accessibility: 'Mum cannot walk far, short distances only' }
+    expect: { clarifies: false, ours: { min: 1 }, outside: { min: 1, near: 1500 }, text: { includes: ['a short walk from the hotel'] } }
+# (The unit tests pin the other half: when nothing of ours for it is near, the answer says our
+# places are a ride away. With the hotel's own lounges counted as somewhere to eat, something is.)
+- description: 'access: a special dinner for someone who stays near the hotel is never an empty answer'
+  vars:
+    category: access
+    reads: all
+    request: Somewhere special for dinner on Friday
+    profile: { adults: 2, dietary: 'none', prefs: { shortWalks: true, asked: true } }
+    expect: { ours: { min: 1, open: true }, text: { includes: ['a short walk from the hotel|a ride away'] } }
+- description: 'access: a day out asked for in so many words wins over staying near the hotel'
+  vars:
+    category: access
+    reads: all
+    request: A day trip to the Botanic Garden on Sunday
+    profile: { adults: 2, prefs: { shortWalks: true, asked: true } }
+    expect: { ours: { includes: [chicago-botanic-garden] }, text: { excludes: ['short walk from the hotel'] } }
+- description: 'profile: what they enjoy shapes an open question'
+  vars:
+    category: profile
+    reads: all
+    request: What should we do on Friday afternoon?
+    profile: { adults: 2, prefs: { interests: [architecture], asked: true } }
+    expect: { ours: { anyOf: [architecture-river-cruise, architecture-walking-tours, caa-explore] } }
+- description: 'profile: a whole weekend is planned around the children, at times each place is open'
+  vars:
+    category: profile
+    reads: all
+    request: Plan my whole weekend
+    profile: { adults: 2, children: 1 }
+    expect: { shape: weekend, ours: { min: 4, allAges: true, open: true }, text: { includes: ['the children'] } }
+- description: 'profile: a guest we know nothing about is answered as before, with no "in mind"'
+  vars:
+    category: profile
+    reads: all
+    request: Something to do with kids on Sunday morning
+    expect: { ours: { min: 2, kidFriendly: true, open: true }, text: { excludes: ['in mind'] } }

@@ -22,6 +22,7 @@ import {
   draftPlan,
   isWeddingTime,
   itineraryStarter,
+  knowBeforeYouGo,
   legBetween,
   PART_LENGTH,
   PART_START,
@@ -52,9 +53,11 @@ import {
   type TripItemInput,
   type WeddingEventInput,
 } from '@/domain/trip-planner';
+import { answersOf, ownAnswers, profileOf, profileStarters, withPrefs, type TripPrefs, type TripProfile } from '@/domain/trip-planner/profile';
 import { embed, ensureLocal, getLocalModels, holdLocal } from '@/lib/ai/local';
 import { speechSupport, startDictation, type Dictation, type DictationError } from '@/lib/speech';
 import { Icon, type IconName } from '@/themes/shared/icons';
+import { TripProfileBar } from './TripProfile';
 import './trip.css';
 
 /**
@@ -85,6 +88,10 @@ export type PlannerActions = {
   removeOwn(input: { itemId: string }): Promise<{ ok: true } | { ok: false; message: string }>;
   /** Places near the hotel from outside our own list, for one answer. Absent: answers are ours alone. */
   searchNearby?(query: OutsideQuery, ours: string[]): Promise<{ ok: true; places: OutsidePick[] } | { ok: false }>;
+  /** Saves what the guest set for the planner. `conflict`: another device saved since, and what is saved comes back instead. */
+  savePrefs?(input: { prefs: TripPrefs; basedOn?: string | null }): Promise<{ ok: true; profile: TripProfile; prefs: TripPrefs | null; updatedAt: string | null; conflict: boolean } | { ok: false; message: string }>;
+  /** The guest's plans and profile as they are saved now, for a page that has been open a while. */
+  refresh?(): Promise<{ ok: true; saved: PlannerSaved[]; profile: TripProfile; prefs: TripPrefs | null; updatedAt: string | null } | { ok: false }>;
 };
 
 export type TripPlannerProps = {
@@ -100,6 +107,10 @@ export type TripPlannerProps = {
   itineraries?: PlannerItinerary[];
   /** Absent: the weekend is kept in memory only. */
   actions?: PlannerActions;
+  /** Who the planner plans for. Absent: one adult, nothing known. */
+  profile?: TripProfile;
+  /** When the guest's own answers were last saved, so a later save can tell if another device changed them. */
+  prefs?: { value: TripPrefs | null; updatedAt: string | null };
 };
 
 /** One question and its answer. `waiting`: the answer is being chosen and is not shown yet; once shown it never changes. */
@@ -129,6 +140,13 @@ const BUCKET_LOOK: Record<string, { hint: string; icon: IconName }> = {
 };
 const MOST_STARTERS = 6;
 const NO_ITINERARIES: PlannerItinerary[] = [];
+const PLAIN_PROFILE = profileOf(null, null);
+const PREFS_SAVED = 'Saved. New ideas will fit this.';
+const PREFS_ELSEWHERE = 'These were changed somewhere else a moment ago, so we kept those.';
+const PREFS_NOT_CLEARED = 'We could not clear that just now. Please try again in a moment.';
+const PREFS_FAILED = 'We could not save that just now. Your answers still apply on this page.';
+/** A page brought back into view asks again for the saved plans, at most this often. */
+const FRESH_MS = 15_000;
 
 /**
  * The starters: one for each of the couple's own itineraries a guest can use (each sends a request
@@ -159,7 +177,6 @@ const PART_ICON: Record<Part, IconName> = { morning: 'sunrise', afternoon: 'sun'
 const MATCH_WAIT_MS = 1200;
 /** How long an answer waits for the search of the neighbourhood before it is shown without it. */
 const SEARCH_WAIT_MS = 4500;
-const NO_PREFS: Prefs = { diet: [], meal: null, asked: false };
 const DIET_LABEL: Record<Diet, string> = { vegetarian: 'Vegetarian', vegan: 'Vegan', 'gluten-free': 'Gluten-free', halal: 'Halal', kosher: 'Kosher' };
 const MEAL_LABEL: Record<Meal, string> = { quick: 'Quick and casual', 'sit-down': 'A sit-down meal', special: 'Something special' };
 /** Answers that are facts, not a choice of places: nothing to rank. */
@@ -212,13 +229,26 @@ async function matchScores(request: string, places: PlannerPlace[], signal: Abor
   return new Map(places.map((p, i) => [p.id, vectors[i]!.reduce((sum, v, k) => sum + v * (query[k] ?? 0), 0)]));
 }
 
-export function TripPlanner({ places, saved: initialSaved, bookings, events, hotel, stay, itineraries = NO_ITINERARIES, actions }: TripPlannerProps) {
+export function TripPlanner({ places, saved: initialSaved, bookings, events, hotel, stay, itineraries = NO_ITINERARIES, actions, profile: initialProfile = PLAIN_PROFILE, prefs: initialPrefs }: TripPlannerProps) {
   const byId = useMemo(() => new Map(places.map((p) => [p.id, p])), [places]);
   const block = useMemo(() => stay ?? stayFacts(), [stay]);
-  const starters = useMemo(() => startersFor(itineraries, new Set(byId.keys())), [itineraries, byId]);
+  const baseStarters = useMemo(() => startersFor(itineraries, new Set(byId.keys())), [itineraries, byId]);
   const [saved, setSaved] = useState<PlannerSaved[]>(() => initialSaved.filter((s) => byId.has(s.id) || s.name));
   // The weekend as of the last change, for handlers that run between renders; every write updates both.
   const savedRef = useRef(saved);
+  // Who the planner plans for. The ref is the same value for handlers that run between renders.
+  const [who, setWho] = useState(initialProfile);
+  const whoRef = useRef(who);
+  const prefsAt = useRef<string | null>(initialPrefs?.updatedAt ?? null);
+  // One save of the guest's answers at a time, each starting from where the last one ended: two in
+  // quick succession from this page must not read as a change made somewhere else.
+  const prefsQueue = useRef<Promise<unknown>>(Promise.resolve());
+  const [editing, setEditing] = useState(false);
+  const editingRef = useRef(false);
+  const [whoBusy, setWhoBusy] = useState(false);
+  const [whoProblem, setWhoProblem] = useState<string | null>(null);
+  /** Tells this guest's other tabs that something was saved. */
+  const channel = useRef<BroadcastChannel | null>(null);
   const [turns, setTurns] = useState<Turn[]>([]);
   const [tab, setTab] = useState<TabKey>('plans');
   // The time the guest is finding something for ("Find ideas" on a part of a day): places they add go there.
@@ -340,8 +370,136 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
   );
   // What the guest has said about themselves this visit (what they eat, the kind of meal), and the
   // last meal they asked about, so "Change what I eat" can answer it again.
-  const prefs = useRef<Prefs>(NO_PREFS);
   const lastMeal = useRef<string | null>(null);
+
+  const setProfile = useCallback((next: TripProfile) => {
+    whoRef.current = next;
+    setWho(next);
+  }, []);
+  const openEditor = useCallback((open: boolean) => {
+    editingRef.current = open;
+    setEditing(open);
+    if (!open) setWhoProblem(null);
+  }, []);
+  /**
+   * Saves the guest's answers about themselves. They apply on this page at once; the save follows.
+   * `quiet`: said in passing (an answer to a question in the thread), so no note is shown for it.
+   */
+  const savePrefs = useCallback(
+    async (next: TripPrefs, quiet = false) => {
+      setProfile(withPrefs(whoRef.current, next));
+      setWhoProblem(null);
+      if (!actions?.savePrefs) {
+        if (!quiet) {
+          openEditor(false);
+          say(PREFS_SAVED);
+        }
+        return;
+      }
+      if (!quiet) setWhoBusy(true);
+      const save = actions.savePrefs;
+      const sent = prefsQueue.current.then(async () => {
+        const answer = await save({ prefs: next, basedOn: prefsAt.current }).catch(() => ({ ok: false as const, message: PREFS_FAILED }));
+        if (answer.ok) prefsAt.current = answer.updatedAt;
+        return answer;
+      });
+      prefsQueue.current = sent;
+      const r = await sent;
+      if (!quiet) setWhoBusy(false);
+      if (!r.ok) {
+        // The answers stay as they are on this page; only the save is owed.
+        if (quiet || !editingRef.current) say(r.message || PREFS_FAILED);
+        else setWhoProblem(r.message || PREFS_FAILED);
+        return;
+      }
+      setProfile(r.profile);
+      channel.current?.postMessage('saved');
+      if (r.conflict || !quiet) {
+        openEditor(false);
+        say(r.conflict ? PREFS_ELSEWHERE : PREFS_SAVED);
+      }
+    },
+    [actions, setProfile, openEditor, say],
+  );
+  /** Back to what the invitation and RSVP say. */
+  const clearPrefs = useCallback(async () => {
+    if (!actions?.savePrefs) {
+      setProfile(initialProfile);
+      openEditor(false);
+      return;
+    }
+    setWhoBusy(true);
+    const save = actions.savePrefs;
+    const sent = prefsQueue.current.then(async () => {
+      const answer = await save({ prefs: { diet: null, meal: null, budget: null, stepFree: null, shortWalks: null, interests: [], kids: null, asked: false } }).catch(() => ({ ok: false as const, message: PREFS_FAILED }));
+      if (answer.ok) prefsAt.current = answer.updatedAt;
+      return answer;
+    });
+    prefsQueue.current = sent;
+    const r = await sent;
+    setWhoBusy(false);
+    if (!r.ok) return setWhoProblem(PREFS_NOT_CLEARED);
+    setProfile(r.profile);
+    channel.current?.postMessage('saved');
+    openEditor(false);
+    say('Cleared. The ideas go back to what your invitation says.');
+  }, [actions, initialProfile, setProfile, openEditor, say]);
+
+  /**
+   * The plans and profile as they are saved now. Asked when the page comes back into view, and when
+   * another tab of the guest's says it saved something, so a phone and a laptop agree without a
+   * reload. Nothing is replaced while a change of this page's own is still being saved.
+   */
+  const refresh = useCallback(async () => {
+    if (!actions?.refresh || chains.current.size) return;
+    const r = await actions.refresh().catch(() => null);
+    if (!r?.ok || chains.current.size) return;
+    // A plan of the guest's own made on this page keeps the key this page gave it.
+    const mine = new Map([...ownItems.current].map(([id, item]) => [item, id]));
+    const next = r.saved.filter((x) => byId.has(x.id) || x.name).map((x) => (x.own && x.itemId && mine.has(x.itemId) ? { ...x, id: mine.get(x.itemId)! } : x));
+    const key = (all: readonly PlannerSaved[]) => all.map((x) => `${x.id}|${x.day}|${x.part}|${x.date ?? ''}|${x.name}`).sort().join('\n');
+    if (key(next) !== key(savedRef.current)) {
+      savedRef.current = next;
+      setSaved(next);
+    }
+    if (!editingRef.current && r.updatedAt !== prefsAt.current) {
+      prefsAt.current = r.updatedAt;
+      setProfile(r.profile);
+    }
+  }, [actions, byId, setProfile]);
+  useEffect(() => {
+    if (!actions?.refresh || typeof document === 'undefined') return;
+    let last = Date.now();
+    // Another tab saved while this one was out of view: owed on the way back, however soon that is.
+    let owed = false;
+    const again = (force = false) => {
+      if (document.visibilityState !== 'visible') {
+        owed ||= force;
+        return;
+      }
+      if (!force && !owed && Date.now() - last < FRESH_MS) return;
+      owed = false;
+      last = Date.now();
+      void refresh();
+    };
+    const onShow = () => again();
+    document.addEventListener('visibilitychange', onShow);
+    window.addEventListener('focus', onShow);
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel('wedding-trip-planner');
+      bc.onmessage = () => again(true);
+    } catch {
+      // No channel in this browser: the next return to the page catches up instead.
+    }
+    channel.current = bc;
+    return () => {
+      document.removeEventListener('visibilitychange', onShow);
+      window.removeEventListener('focus', onShow);
+      bc?.close();
+      channel.current = null;
+    };
+  }, [actions, refresh]);
 
   const send = useCallback(
     (raw: string, opts: { as?: string } = {}) => {
@@ -351,7 +509,9 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
       const ac = new AbortController();
       ctl.current = ac;
       const id = nextId.current++;
-      const about = { request, places, saved: savedRef.current, itineraries, events, prefs: prefs.current, ...(lastMeal.current ? { lastMeal: lastMeal.current } : {}) };
+      const me = whoRef.current;
+      const prefs: Prefs = { diet: me.diet, meal: me.meal, asked: me.asked };
+      const about = { request, places, saved: savedRef.current, itineraries, events, prefs, profile: me, ...(lastMeal.current ? { lastMeal: lastMeal.current } : {}) };
       const first = draftPlan(about);
       if (first.shape === 'clarify' && first.clarify) lastMeal.current = first.clarify.request;
       const matcher = getLocalModels().matcher.state;
@@ -384,12 +544,13 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
   /** The guest's answer to what was asked before a meal: remembered for the visit, and the meal is answered with it. */
   const answerClarify = useCallback(
     (request: string, diet: Diet[], meal: Meal | null) => {
-      prefs.current = { diet, meal, asked: true };
+      // Kept with the guest's other answers, so they are not asked again on another visit or device.
+      void savePrefs(ownAnswers(whoRef.current, { ...answersOf(whoRef.current), diet, meal }), true);
       lastMeal.current = request;
       const said = [...diet.map((d) => DIET_LABEL[d]), ...(meal ? [MEAL_LABEL[meal]] : [])];
       send(request, { as: said.length ? said.join(', ') : 'No preference' });
     },
-    [send],
+    [send, savePrefs],
   );
 
   const startOver = useCallback(() => {
@@ -398,7 +559,6 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
     setTurns([]);
     setTarget(null);
     setDraft('');
-    prefs.current = NO_PREFS;
     lastMeal.current = null;
     closeToast();
     // Back at the suggestions, at the planner's start (the long thread under the guest is gone).
@@ -450,7 +610,10 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
       if (!actions) return Promise.resolve(true);
       const step = async () => {
         const r = await send().catch(() => ({ ok: false, message: undefined }));
-        if (r.ok) return true;
+        if (r.ok) {
+          channel.current?.postMessage('saved');
+          return true;
+        }
         update((all) => {
           const now = all.find((s) => s.id === id) ?? null;
           const same = now && after ? savedDate(now) === savedDate(after) && now.part === after.part : now === after;
@@ -673,12 +836,23 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
     }
   };
 
+  // Ideas that fit this guest come first, in place of as many of the general ones.
+  const starters = useMemo(() => {
+    const own: Starter[] = profileStarters(who)
+      .filter((label) => !baseStarters.some((b) => b.request === label))
+      .map((label) => ({ label, hint: 'For you', request: label, icon: 'compass' as IconName }));
+    if (!own.length) return baseStarters;
+    // One idea for the children is enough: the general one gives way to theirs.
+    const kids = own.some((o) => /\bkids\b/i.test(o.request));
+    const rest = baseStarters.slice(0, -1).filter((b) => !(kids && /\bkids\b/i.test(b.request)));
+    return [...own, ...rest.slice(0, Math.max(0, MOST_STARTERS - 1 - own.length)), baseStarters[baseStarters.length - 1]!];
+  }, [who, baseStarters]);
   const savedItems: SavedItem[] = saved;
   const listening = speech === 'listening';
   const openPlans = tab === 'plans' ? undefined : () => (show('plans'), closeToast());
 
   return (
-    <TripPlannerProvider places={byId} saved={savedItems} target={target} calendar={liveCalendar} hotel={hotel} stay={block} onAction={onAction}>
+    <TripPlannerProvider places={byId} saved={savedItems} target={target} calendar={liveCalendar} hotel={hotel} stay={block} profile={who} onAction={onAction}>
       <div ref={rootRef} className="trip-planner" onPointerDownCapture={(e) => (lastPress.current = (e.target as Element).closest?.('button')?.getBoundingClientRect() ?? null)}>
         <div ref={tabsRef} className="trip-tabs" role="tablist" aria-label="Planner">
           {/* My plans first, and open first: what the guest has planned is what they come back for. */}
@@ -699,6 +873,7 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
         </div>
 
         <div id="trip-panel-things" role="tabpanel" aria-labelledby="trip-tab-things" hidden={tab !== 'things'} className="trip-panel trip-panel--things">
+          <TripProfileBar profile={who} open={editing} busy={whoBusy} problem={whoProblem} onOpen={() => openEditor(true)} onClose={() => openEditor(false)} onSave={(next) => void savePrefs(next)} {...(who.saved ? { onClear: () => void clearPrefs() } : {})} />
           {turns.length === 0 ? (
             <div className="trip-open">
               <p className="trip-text trip-text--md">Ask for an idea, or start with one of these. Anything you like can go straight into your plans.</p>
@@ -1201,9 +1376,13 @@ function Board({
     const place = byId.get(s.id);
     const name = place?.name ?? s.name;
     const stop = at.get(s.id);
-    const when = stop && stop.start !== null && stop.end !== null ? `Around ${clockSpan(stop.start, stop.end)}` : null;
+    // Known to be shut at the time it is planned for: said on the plan itself, where it can be moved,
+    // and in place of a time of day that cannot happen.
+    const shut = place ? knowBeforeYouGo(place, { date: savedDate(s), part: s.part }).shut : null;
+    const when = !shut && stop && stop.start !== null && stop.end !== null ? `Around ${clockSpan(stop.start, stop.end)}` : null;
     const howLong = place ? aboutHowLong(stopMinutes(place).minutes) : null;
     const way = wayTo(s, order);
+
     const isPicked = picked === s.id;
     return (
       <article key={s.id} data-saved-id={s.id} className={`trip-saved${s.own ? ' trip-saved--own' : ''}${dragging === s.id ? ' is-dragging' : ''}${isPicked ? ' is-picked' : ''}`}>
@@ -1227,8 +1406,14 @@ function Board({
             <Icon name="trash" className="trip-icon" />
           </button>
         </div>
-        {when || howLong || way ? (
+        {when || howLong || way || shut ? (
           <div className="trip-saved__facts">
+            {shut ? (
+              <p className="trip-saved__fact trip-saved__fact--shut">
+                <Icon name="alert" className="trip-icon trip-icon--sm" />
+                {`${shut} Move it to another time.`}
+              </p>
+            ) : null}
             {when || howLong ? (
               <p className="trip-saved__fact">
                 <Icon name="clock" className="trip-icon trip-icon--sm trip-icon--accent" />

@@ -3,6 +3,39 @@
  * request into a `Plan`, and `compose` turns a plan into the OpenUI Lang program the page renders.
  */
 
+export const PRICE_LEVELS = [1, 2, 3, 4] as const;
+export type PriceLevel = (typeof PRICE_LEVELS)[number];
+export const RESERVATIONS = ['required', 'recommended', 'walk-in', 'tickets'] as const;
+export type Reservations = (typeof RESERVATIONS)[number];
+export const SETTINGS = ['indoors', 'outdoors', 'both'] as const;
+export type Setting = (typeof SETTINGS)[number];
+
+/**
+ * What a guest weighs before going to a place: each one read from the place's own pages and kept
+ * with the recommendation (/admin/content). A fact that is absent is not known, and the planner
+ * says nothing about it rather than guessing.
+ */
+export type PlaceFacts = {
+  /** Food and drink: what one person typically spends. 1 under $15, 2 $15 to $40, 3 $40 to $100, 4 over $100. */
+  priceLevel?: PriceLevel;
+  /** What a ticket costs, in the couple's words ("Adults about $32"), or "Free". */
+  cost?: string;
+  /** Regular hours in OpenStreetMap's `opening_hours` syntax, which `hours.ts` reads. */
+  hours?: string;
+  /** A caveat on the hours ("Shorter hours in winter"). */
+  hoursNote?: string;
+  reservations?: Reservations;
+  /** Diets the place's own menu marks options for. */
+  diets?: Diet[];
+  /** The place says it has a step-free way in (false: it says it does not). */
+  stepFree?: boolean;
+  /** The place's own words about getting in and around. */
+  access?: string;
+  setting?: Setting;
+  /** The youngest age let in, when the place sets one. */
+  minAge?: number;
+};
+
 /** One of the couple's recommendations, as the planner reads it. Every field comes from the site's own records. */
 export type PlannerPlace = {
   id: string;
@@ -15,6 +48,8 @@ export type PlannerPlace = {
   /** The couple's own rough guide, never a promise. */
   minutes?: number;
   kidFriendly?: boolean;
+  /** Price, hours, booking, diet options and access, where the couple's records hold them. */
+  facts?: PlaceFacts;
   address?: string;
   lat?: number;
   lng?: number;
@@ -209,12 +244,32 @@ export type Intent = {
   access: boolean;
   /** They asked when a place opens or shuts. */
   asksHours: boolean;
+  /** The day of the week (Monday is 0) a question about a place's hours is for, when it names one. */
+  hoursDay?: number | null;
   /** The day and time asked about, so places known to be shut then are left out. */
   at: { weekday: number; from: number; to: number } | null;
+  /** The day and time the request names, whether or not it reads as a question about one place's hours; and the part of the day a clock time in it falls in. */
+  when?: { weekday: number; from: number; to: number } | null;
+  whenPart?: Part | null;
   /** A day outside the wedding weekend that the request is about ("Thursday"). */
   otherDay: string | null;
   /** A plan of their own at several times, each day with its own part ("Friday afternoon and Sunday morning"). */
   ownSlots?: [Day, Part][];
+  /** The most they said one person should spend ("under $20", "cheap"), as a price level. */
+  budget?: PriceLevel | null;
+  /** They said this one is for the grown-ups ("date night", "without the kids"). */
+  grownUps?: boolean;
+  /** Nothing is booked and they want to walk in ("where can we just turn up"). */
+  walkIn?: boolean;
+  /** A first-time visitor's question: the few things not to miss. */
+  mustSee?: boolean;
+  /**
+   * Who the answer is for, from the guest's profile, where the request itself did not say: folded in
+   * by `draftPlan`, never read from the request's words.
+   */
+  who?: { stepFree: boolean; kidsAlong: boolean; interests: Theme[]; allergy?: string | null };
+  /** What they eat, from this request or what they told us before, for a meal: a menu we have read that does not mark it is passed over. */
+  eats?: Diet[];
 };
 
 /**

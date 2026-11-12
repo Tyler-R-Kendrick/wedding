@@ -1,6 +1,6 @@
 import { askedTime, weekdayIn } from './hours';
 import { normalize } from './normalize';
-import type { Day, Diet, Intent, Meal, Part, Theme } from './types';
+import type { Day, Diet, Intent, Meal, Part, PriceLevel, Theme } from './types';
 
 /**
  * Reads a guest's request with plain rules: which day and part of the day, how long, who is coming,
@@ -188,7 +188,7 @@ const TYPOS: [RegExp, string][] = [
  */
 const NEGATED = /\b(?:not|no|never|isn'?t|aren'?t|(?:don'?t|doesn'?t|won'?t|can'?t|do not|does not) (?:want|need|drink|like|do|eat|care for)|other than|besides|instead of|except|anything but|rather than|tired of|sick of|done with|(?:(?:we|i)(?:'ve| have)? )?(?:already )?(?:did|done|saw|seen|visited|been to|went to))\s+((?:(?:a|an|the|any|more|another|our|that|too|much)\s+)*[a-z-]+(?:\s+(?:or|and|nor)\s+[a-z-]+)*(?:\s+[a-z-]+)?)/g;
 /** A meal as a time of day ("after dinner", "before lunch"), not a request for one. */
-const AROUND_MEAL = /\b(after|before|following|post|pre|until|till|by)[- ](dinner|supper|lunch|brunch|breakfast)\b/g;
+const AROUND_MEAL = /\b(after|before|following|post|pre|until|till|by)[- ](?:(?:an?|the|our|my|early|late|quick|big|long)[- ]){0,3}(dinner|supper|lunch|brunch|breakfast)\b/g;
 
 /** A plain question about what there is to do, which wins over a mention of a flight or a check-in time. */
 const DOING = /\b(what (can|could|should|might) (we|i|you|one) do|what is there to do|what'?s there to do|(some|any)thing (\w+ ){0,2}to do|things to do|kill (some )?time|in between)\b/;
@@ -208,8 +208,40 @@ const CLOSE = /\b(closer|closest|nearest|very close|not (too |very )?far|nothing
 const ALLERGY = /\b(shellfish|seafood|fish|peanut|tree nut|nut|dairy|lactose|egg|soy|sesame)s?\b[^.?!]{0,24}\ballerg\w*|\ballerg\w*\b[^.?!]{0,24}\b(shellfish|seafood|fish|peanut|tree nut|nut|dairy|lactose|egg|soy|sesame)s?\b|\ballerg(y|ic|ies)\b/;
 const ACCESS = /\b(wheelchair|accessib\w*|step[- ]free|stairs|elevator|ramp)\b/;
 /** When a place of ours opens or shuts: something we hold no record of. */
-const ASKS_HOURS = /\b(what time|when) (does|do|is|are|will) [^?.!]{0,60}\b(open|close|shut)s?\b|\b(opening|closing) (hours|times?)\b/;
+const ASKS_HOURS = /\b(what time|when) (does|do|is|are|will) [^?.!]{0,60}\b(open|close|shut)s?\b|\b(opening|closing) (hours|times?)\b|\b(is|are|will)\b[^?.!]{0,40}\b(open|closed|shut)\b/;
 const FREE = /\b(free|no cost|costs? nothing|without spending)\b/;
+/** A journey named only as when ("before we head to the airport"): the request is about what comes before it. */
+const AROUND_TRAVEL = /\b(before|after|until|till|on (the|our) way to)\b[^.?!]{0,40}\b(airports?|flights?|fly\w*|o['’]?hare|midway|trains?|drive (home|back)|head (out|home|off|back))\b/g;
+/** What a first-time visitor asks: the few things not to miss. */
+const MUST_SEE = /\b(not (to )?miss|can'?t miss|must[- ]sees?|must[- ]dos?|highlights?|top (things|sights|spots)|best of|first time (in|to|visiting)|never been to|what'?s good|bucket list|essentials?)\b/;
+/** Nothing is booked and they want to walk in. */
+const WALK_IN = /\b(no reservations?|without (a )?(booking|reservation)|walk[- ]?ins?|just (turn|show|rock) up|turn up and|(have|did)n'?t (booked|book|reserved?)|not booked|nothing booked|last[- ]minute|spur of the moment)\b/;
+/** A sum of money named as a limit ("under $20", "30 dollars each"), and the words that mean "not much". */
+const DOLLARS = /\$\s?(\d{1,3}(?:,\d{3})+|\d+)(?!\d)|\b(\d{1,3}(?:,\d{3})+|\d+)\s?(?:dollars|bucks)\b/;
+/** A sum for the whole table ("dinner for two under $60"), unless it is said to be each. */
+const SHARED = /\b(?:for|between) (?:the )?(two|2|three|3|four|4|five|5|six|6)\b(?! (?:hours?|minutes?|nights?|days?|[ap]\.?m\b|o'?clock))|\b(?:for both of us|between us)\b/;
+const EACH = /\b(each|per (person|head)|a head|apiece|pp)\b/;
+const HOW_MANY: Record<string, number> = { two: 2, three: 3, four: 4, five: 5, six: 6 };
+const CHEAP = /\b(cheap\w*|inexpensive|affordable|on a budget|budget|low[- ]cost|won'?t break the bank|not (too |very |so )?(pricey|expensive))\b/;
+/** No limit at all, said in so many words: it undoes "budget" wherever that word appears beside it. */
+const NO_LIMIT = /\b(forget (the|our|my|about the) budget|money (is )?no object|no (budget|limit)|sky'?s the limit|spare no expense|blow[- ]?out|whatever it costs|price (is )?no (object|issue))\b/;
+/** This one is for the grown-ups, whoever else is on the trip. */
+const GROWN_UPS = /\b((grandma|grandpa|granny|nana|gran|grandparents|mum|mom|sitter|babysitter|nanny|auntie?|uncle|sister|brother|\w+ parents) (has|have|is taking|are taking|is watching|are watching|is minding|will have|'?s got) the (kids|children|little ones?|baby|babies)|(kids|children|little ones?) (are |will be |'?re )?(with|at|staying with|asleep|in bed|tucked up|back at)\b|date night|without (the |our )?(kids|children|little ones?)|just (the two of us|us two|us adults|adults|the adults|the grown[- ]?ups)|adults?[- ]only|grown[- ]?ups?|kid[- ]free|child[- ]free|romantic|no kids|(baby)?sitter)\b/;
+/**
+ * A question about opening that names no place of ours ("where is open for coffee at 6am on
+ * Saturday?") is a search for what is open then, not a question about one place's hours.
+ */
+export function asSearch(i: Intent): Intent {
+  return { ...i, asksHours: false, hoursDay: null, at: i.when ?? null, parts: i.whenPart ? [i.whenPart] : i.parts };
+}
+/**
+ * What a limit per person is, as the price levels places carry ($: under $15, $$: $15 to $40,
+ * $$$: $40 to $100, $$$$: more). A level is within a limit only when most of its range is: "under
+ * $16" is not a $15 to $40 place, and "under $50" is not a $40 to $100 one.
+ */
+export function priceLevelFor(dollars: number): PriceLevel {
+  return dollars < 25 ? 1 : dollars < 60 ? 2 : dollars < 150 ? 3 : 4;
+}
 const NOT_THAT_FREE = /\b(gluten|dairy|nut|step|sugar|meat)[- ]free\b|\bfree (morning|afternoon|evening|night|time|day|hours?|friday|saturday|sunday)\b|\b(am|are|is) (i|we|he|she) free\b|\bfree to\b/g;
 /** Chains a guest asks for by name, as a search of the neighbourhood spells them. */
 const BRANDS: [string, RegExp][] = [
@@ -230,8 +262,8 @@ const BRANDS: [string, RegExp][] = [
 const OTHER_DAY = ['Monday', 'Tuesday', 'Wednesday', 'Thursday'];
 const PAIR = /\b(fri(?:day)?|sat(?:urday)?|sun(?:day)?)\s+(morning|afternoon|evening|night)\b/g;
 
-const KIDS = /\b(kids?|child(ren)?|toddlers?|twins|triplets|infants?|newborns?|bab(y|ies)|famil(y|ies)|little ones?|strollers?|sons?|daughters?|niece|nephew|grandkids?|grandchild(ren)?|teen(ager)?s?|(\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)[- ]year[- ]olds?)\b/;
-const INDOORS = /\b(rain\w*|pouring|indoors?|inside|wet|storm\w*|snow\w*|cold|freezing|bad weather|too hot|heat ?wave|sweltering|humid|\d{2,3} degrees|air[- ]?condition\w*)\b/;
+const KIDS = /\b(\d{1,2} ?(yrs?|yo|y\/o)( ?olds?)?|kids?|child(ren)?|toddlers?|twins|triplets|infants?|newborns?|bab(y|ies)|famil(y|ies)|little ones?|strollers?|sons?|daughters?|niece|nephew|grandkids?|grandchild(ren)?|teen(ager)?s?|(\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)[- ]year[- ]olds?)\b/;
+const INDOORS = /\b(rain\w*|pouring|chucking it down|bucketing|tipping (it )?down|drizzl\w*|downpours?|soak(ed|ing)|indoors?|inside|wet|storm\w*|snow\w*|cold|freezing|bad weather|too hot|heat ?wave|sweltering|humid|\d{2,3} degrees|air[- ]?condition\w*)\b/;
 const ON_FOOT = /\b(on foot|walk\w*|nearby|close by|near (the|our) hotel|around the hotel|no car|without a car)\b/;
 
 export function words(text: string): string[] {
@@ -247,7 +279,8 @@ export function understand(request: string): Intent {
   let text = ` ${normalize(request)} `;
   for (const [slip, right] of TYPOS) text = text.replace(slip, right);
   const days = daysIn(text);
-  const parts = partsIn(text);
+  // "A late lunch" is a lunch and "an early dinner" a dinner: the word before the meal is not a time of day.
+  const parts = partsIn(text.replace(/\b(early|late|earlyish|lateish)[- ](dinner|supper|lunch|brunch|breakfast)\b/g, '$2'));
   // "After dinner" is the evening; it does not ask for dinner.
   for (const m of text.matchAll(AROUND_MEAL)) {
     const part: Part = m[2] === 'dinner' || m[2] === 'supper' ? (m[1] === 'before' || m[1] === 'pre' || m[1] === 'until' || m[1] === 'till' || m[1] === 'by' ? 'afternoon' : 'evening') : m[2] === 'lunch' ? 'afternoon' : 'morning';
@@ -262,7 +295,9 @@ export function understand(request: string): Intent {
   const wanted = ` ${text.replace(AROUND_MEAL, ' ').replace(NOT_FANCY, ' ').replace(NO_DIET, ' ').replace(NEGATED, ' ')} `;
   // "A five minute walk" is how far, not how long they have.
   const minutes = minutesIn(text.replace(/\b\d+[- ]?(minutes?|mins?)[- ](walk|away|from|drive|ride)\b/g, ' '));
-  const kids = KIDS.test(text);
+  // "Without the kids" names them to leave them out.
+  const grownUps = GROWN_UPS.test(text);
+  const kids = KIDS.test(text) && !grownUps;
   const indoors = INDOORS.test(text.replace(HOTEL_AS_PLACE, ' '));
   const onFoot = ON_FOOT.test(text);
   const themes = THEMES.filter(([, re]) => re.test(wanted)).map(([t]) => t);
@@ -271,7 +306,8 @@ export function understand(request: string): Intent {
   const avoid = THEMES.filter(([, re]) => re.test(` ${ruledOut} `)).map(([t]) => t).filter((t) => !themes.includes(t));
   const diet = DIET_WORDS.filter(([, re]) => re.test(text)).map(([d]) => d);
   const cuisine = [...new Set(CUISINE_WORDS.filter(([, re]) => re.test(wanted)).flatMap(([c]) => c))];
-  const meal = plainMeal ? 'quick' : (MEAL_WORDS.find(([, re]) => re.test(wanted))?.[0] ?? null);
+  // "Forget the budget" names a budget only to drop it: a splurge, never a cheap bite.
+  const meal = NO_LIMIT.test(text) ? 'special' : plainMeal ? 'quick' : (MEAL_WORDS.find(([, re]) => re.test(wanted))?.[0] ?? null);
   const named = BRANDS.filter(([, re]) => re.test(text)).map(([n]) => n);
   const allergen = ALLERGY.exec(text);
   const allergy = allergen ? (allergen[1] ?? allergen[2] ?? 'food') : null;
@@ -279,6 +315,12 @@ export function understand(request: string): Intent {
   // A cuisine, a diet or a chain by name is a request for somewhere to eat, whether or not it says "eat".
   if ((cuisine.length || diet.length || named.length) && !themes.some((t) => t === 'dinner' || t === 'food' || t === 'breakfast' || t === 'coffee')) themes.push('food');
   const free = FREE.test(text.replace(NOT_THAT_FREE, ' '));
+  // A sum named is the limit; "cheap" with no sum is anything up to a moderate bill.
+  const sum = DOLLARS.exec(text);
+  const noLimit = NO_LIMIT.test(text);
+  const shared = EACH.test(text) ? null : SHARED.exec(text);
+  const heads = shared ? (HOW_MANY[shared[1] ?? ''] ?? (Number(shared[1]) || 2)) : 1;
+  const budget: PriceLevel | null = noLimit ? null : sum ? priceLevelFor(Number((sum[1] ?? sum[2])!.replace(/,/g, '')) / heads) : CHEAP.test(wanted) ? 2 : null;
   const within = VERY_CLOSE.test(text) ? 400 : CLOSE.test(text) ? 900 : null;
   const pairs = [...text.matchAll(PAIR)].map((m) => [m[1]!.slice(0, 3) as Day, (m[2] === 'night' ? 'evening' : m[2]) as Part] as [Day, Part]);
   const weekday = weekdayIn(text);
@@ -299,28 +341,45 @@ export function understand(request: string): Intent {
   // A meal asked for by name ("where should we eat before our flight") is about the meal.
   const aMeal = themes.some((t) => t === 'dinner' || t === 'food' || t === 'breakfast') && /\b(eat|dinner|supper|lunch|brunch|breakfast|restaurants?|food)\b/.test(wanted);
 
+  // A coffee "before we head to the airport" is about the coffee.
+  const refreshment = themes.some((t) => t === 'coffee' || t === 'drinks' || t === 'food' || t === 'dinner' || t === 'breakfast');
+  const gettingHere = /\b(how (do|can|should|would) (i|we) get|where (do|can|should|could) (i|we) park|parking|valet|which airport|from the airport|to the airport)\b/.test(text);
+  const journey = refreshment && !gettingHere ? ' ' : themes.length ? text.replace(AROUND_TRAVEL, ' ') : text;
+
   let kind: Intent['kind'] = 'places';
-  if (CALENDAR.test(text)) kind = 'calendar';
+  // Somewhere for a drink or a bite is asked about places, whatever else its words brush against.
+  const seeking = themes.some((t) => t === 'coffee' || t === 'drinks' || t === 'food' || t === 'dinner' || t === 'breakfast') && /\b(where|anywhere|somewhere|any ?place)\b/.test(text);
+  if (CALENDAR.test(text) && !seeking) kind = 'calendar';
   else if (own) kind = 'own';
   else if (WEEKEND.test(text)) kind = 'weekend';
   else if (ofTheDay && onlyTheDay) kind = 'schedule';
   else if (ERRAND.test(text) && !doing) kind = 'errand';
   else if (ROOM.test(text)) kind = 'stay';
-  else if (ARRIVE.test(text.replace(ARRIVE_WEAK, ' ')) && !doing && !aMeal) kind = 'arrive';
-  else if (ARRIVE_WEAK.test(text) && !doing && !themes.length && !days.length) kind = 'arrive';
+  else if (ARRIVE.test(journey.replace(ARRIVE_WEAK, ' ')) && !doing && !aMeal) kind = 'arrive';
+  else if (ARRIVE_WEAK.test(journey) && !doing && !themes.length && !days.length) kind = 'arrive';
   else if (STAY.test(asStay) && !doing && !themes.some((t) => t !== 'hotel' && t !== 'quiet')) kind = 'stay';
-  else if (loose) kind = 'schedule';
+  else if (loose && !MUST_SEE.test(text)) kind = 'schedule';
   else if (!themes.length && !days.length && !parts.length && minutes === null && !kids && !indoors && !onFoot) kind = 'open';
 
   // Saturday afternoon or evening named at all, even beside another day ("Saturday or Sunday evening").
   const weddingTime = days.includes('sat') && parts.some((p) => p !== 'morning');
   const asks = kind === 'schedule' ? { time: ASKS_TIME.test(text), dress: ASKS_DRESS.test(text) } : { time: false, dress: false };
+  // "Is the Aviary open on Monday?" names no kind of thing and no day of the weekend, and is a question about a place all the same.
+  if (kind === 'open' && ASKS_HOURS.test(text)) kind = 'places';
   const asksHours = kind === 'places' && ASKS_HOURS.test(text);
   // The time asked about, for a search to leave out what is known to be shut then. A question about one place's hours is not that.
-  const at = asksHours ? null : askedTime(text, parts[0]);
+  const when = askedTime(text, parts[0]);
+  const at = asksHours ? null : when;
+  // A time by the clock says which part of the day, whatever else the words suggest ("after an early
+  // dinner, about 7pm"). "1am on Friday night" is the end of Friday's evening, not a morning.
+  const partAt = (t: typeof when): Part | null =>
+    t && t.to - t.from === 30 && !/\bmidnight\b/.test(text) && days.length > 0 ? (t.from < 5 * 60 && t.weekday !== weekday ? 'evening' : t.from < 12 * 60 ? 'morning' : t.from < 17 * 60 ? 'afternoon' : 'evening') : null;
+  const clockPart = partAt(at);
   return {
-    kind, days, parts, minutes, kids, indoors, onFoot, themes, words: words(text), weddingTime, asks, diet, meal, cuisine, avoid, noDiet,
-    named, allergy, avoidCuisine, free, within, access: ACCESS.test(text), asksHours, at, otherDay,
+    // "Grandma has the kids" names them only to say they are not coming: the word is not a wish.
+    kind, days, parts: clockPart ? [clockPart] : parts, minutes, kids, indoors, onFoot, themes, words: grownUps ? words(text).filter((w) => !/^(kids?|child|children|baby|babies)$/.test(w)) : words(text), weddingTime, asks, diet, meal, cuisine, avoid, noDiet,
+    named, allergy, avoidCuisine, free, within, access: ACCESS.test(text), asksHours, at, when, whenPart: partAt(when), otherDay,
+    budget, grownUps, hoursDay: asksHours ? weekday : null, walkIn: WALK_IN.test(text), mustSee: MUST_SEE.test(text),
     ...(pairs.length >= 2 ? { ownSlots: pairs } : {}),
     ...(kind === 'own' && own ? { own } : {}),
   };

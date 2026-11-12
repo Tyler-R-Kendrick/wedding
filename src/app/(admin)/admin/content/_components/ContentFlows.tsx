@@ -9,6 +9,8 @@ import { callCapability, newIdempotencyKey, type CapabilityResponse } from '@/co
 import type { ContentRecordData } from '@/capabilities/get_content_record';
 // Types only: the module itself is server code (drizzle, the database schema).
 import type { FieldSpec, SubFieldSpec } from '@/domain/content/admin';
+// Plain functions, no server code: the same check the server makes, so a slip is caught on its own step.
+import { HOURS_EXAMPLE, hoursAreReadable, hoursWords } from '@/domain/content/place-facts';
 import { withArticle, type ContentEditor, type RefOption } from './types';
 import './content-flows.css';
 import { formatStamp } from '@/components/admin/flow/dates';
@@ -18,8 +20,9 @@ import { formatStamp } from '@/components/admin/flow/dates';
  *
  * It stays generic: one field spec per table (`TABLE_SPECS` in domain/content/admin.ts) drives the
  * steps, the controls and the conversion. The spec's own fields come first ("What it says", split
- * in two when a table has many), then the provenance every record carries (ADR-0011), then the
- * whole record read back.
+ * in two when a table has many), then any fields the spec keeps together on a step of their own
+ * (`step`: a place's price, hours and booking), then the provenance every record carries
+ * (ADR-0011), then the whole record read back.
  *
  * The admin never types an id. A slug or key is left to the server, which makes it from the title
  * (`derive`); it can be changed under "Technical details". A list position is set by Up and Down on
@@ -103,6 +106,7 @@ function jsonToFlow(f: FieldSpec, v: unknown): unknown {
     case 'tags':
       return Array.isArray(v) ? v.map(String).join('\n') : '';
     case 'refs':
+    case 'choices':
       return Array.isArray(v) ? v.map(String) : [];
     case 'rows':
       return Array.isArray(v) ? v.map(strings) : [];
@@ -114,7 +118,7 @@ function jsonToFlow(f: FieldSpec, v: unknown): unknown {
 }
 
 function emptyJson(f: FieldSpec): unknown {
-  return f.editor === 'refs' || f.editor === 'rows' ? [] : f.editor === 'object' ? {} : '';
+  return f.editor === 'refs' || f.editor === 'choices' || f.editor === 'rows' ? [] : f.editor === 'object' ? {} : '';
 }
 
 /** A stored record → the flow's values. */
@@ -193,6 +197,14 @@ function convertJson(f: FieldSpec, raw: unknown): Converted {
       if (!ids.length && f.required) return { error: need(f) };
       return { value: ids };
     }
+    case 'choices': {
+      // Saved in the list's own order, whatever order they were ticked in.
+      const ticked = Array.isArray(raw) ? raw.map(String) : [];
+      const known = (f.options ?? []).filter((o) => ticked.includes(o));
+      const picked = [...known, ...ticked.filter((v) => !known.includes(v))];
+      if (!picked.length && f.required) return { error: need(f) };
+      return { value: picked };
+    }
     case 'rows': {
       const items = f.items ?? [];
       const rows = (Array.isArray(raw) ? raw : []) as Row[];
@@ -237,8 +249,15 @@ function convert(f: FieldSpec, raw: unknown, orig: Record<string, string> | unde
   switch (f.type) {
     case 'number': {
       const n = Number(v);
-      return Number.isInteger(n) ? { value: n } : { error: `Enter the ${lower(f.label)} as a whole number, like 45.` };
+      if (!Number.isInteger(n)) return { error: `Enter the ${lower(f.label)} as a whole number, like 45.` };
+      if ((f.min !== undefined && n < f.min) || (f.max !== undefined && n > f.max)) {
+        return { error: f.min !== undefined && f.max !== undefined ? `Enter a whole number from ${f.min} to ${f.max}.` : f.min !== undefined ? `Enter ${f.min} or more.` : `Enter ${f.max} or less.` };
+      }
+      return { value: n };
     }
+    case 'select':
+      // A numeric select stores the number its option names ("2" here, 2 in the record).
+      return { value: f.numeric ? Number(v) : v };
     case 'float': {
       const n = Number(v);
       return Number.isFinite(n) ? { value: n } : { error: `Enter the ${lower(f.label)} as a number, like 41.8819.` };
@@ -252,6 +271,7 @@ function convert(f: FieldSpec, raw: unknown, orig: Record<string, string> | unde
       return Number.isNaN(d.getTime()) ? { error: `Enter a date and time for “${f.label}”.` } : { value: d.toISOString() };
     }
     default:
+      if (f.format === 'opening-hours' && !hoursAreReadable(v)) return { error: `Write the hours like this: ${HOURS_EXAMPLE}` };
       return { value: v };
   }
 }
@@ -295,6 +315,7 @@ function shown(f: FieldSpec, raw: unknown, editor: ContentEditor): string {
     }
     if (v.length === 0) return '';
     if (f.editor === 'refs') return v.map((id) => refLabel(editor.refs[f.ref ?? ''], id)).join(' · ');
+    if (f.editor === 'choices') return v.map((x) => f.optionLabels?.[String(x)] ?? String(x)).join(' · ');
     if (f.editor === 'rows') return `${v.length} ${lower(f.itemLabel ?? 'row')}${v.length === 1 ? '' : 's'}`;
     return clip(v.map(String).join(' · '));
   }
@@ -305,6 +326,8 @@ function shown(f: FieldSpec, raw: unknown, editor: ContentEditor): string {
   if (f.type === 'select') return f.optionLabels?.[v] ?? v;
   if (f.ref) return refLabel(editor.refs[f.ref], v);
   if (f.type === 'datetime') return formatStamp(v);
+  // Opening hours are read back as a guest will read them, a line for each run of days.
+  if (f.format === 'opening-hours' && hoursAreReadable(v)) return hoursWords(v).join('\n');
   return clip(v);
 }
 
@@ -528,9 +551,16 @@ function Field({ ctx, field: f, editor, isNew }: { ctx: FlowContext<Values>; fie
         const hint = choices.length ? f.help : <>{f.help} Nothing to choose from yet.</>;
         return <CheckGroupField ctx={ctx} name={f.name} legend={optional ? `${f.label} (optional)` : f.label} choices={choices} hint={hint} />;
       }
+      if (f.editor === 'choices') {
+        // A few fixed values ticked from a list (the diets a menu marks); one stored before and since
+        // dropped from the list stays, by its own name, so saving does not lose it silently.
+        const picked = Array.isArray(ctx.values[f.name]) ? (ctx.values[f.name] as string[]) : [];
+        const choices = [...opts(f.options), ...picked.filter((v) => !(f.options ?? []).includes(v)).map((v) => ({ value: v, label: v }))];
+        return <CheckGroupField ctx={ctx} name={f.name} legend={optional ? `${f.label} (optional)` : f.label} choices={choices} hint={f.help} />;
+      }
       return <TextField ctx={ctx} name={f.name} label={f.label} hint={f.help} optional={optional} multiline rows={f.editor ? 5 : 6} spellCheck={f.editor === 'lines'} />;
     case 'number':
-      return <TextField ctx={ctx} name={f.name} label={f.label} hint={f.help} optional={optional} type="number" />;
+      return <TextField ctx={ctx} name={f.name} label={f.label} hint={f.help} optional={optional} type="number" min={f.min} max={f.max} />;
     case 'float':
       // Not type="number": the kit's number input steps by whole numbers, and a latitude is not one.
       return <TextField ctx={ctx} name={f.name} label={f.label} hint={f.help} optional={optional} inputMode="decimal" spellCheck={false} />;
@@ -540,8 +570,25 @@ function Field({ ctx, field: f, editor, isNew }: { ctx: FlowContext<Values>; fie
       return <TextField ctx={ctx} name={f.name} label={f.label} hint={f.help} optional={optional} type="date" />;
     case 'datetime':
       return <TextField ctx={ctx} name={f.name} label={f.label} hint={f.help} optional={optional} type="datetime-local" />;
-    default:
-      return <TextField ctx={ctx} name={f.name} label={f.label} hint={f.help} optional={optional} />;
+    default: {
+      if (f.format !== 'opening-hours') return <TextField ctx={ctx} name={f.name} label={f.label} hint={f.help} optional={optional} />;
+      // Once what is typed can be read, the same words a guest will see sit under the field.
+      const reads = hoursWords(text(ctx.values[f.name]));
+      const hint = (
+        <>
+          {f.help}
+          {reads.length ? (
+            <span className="cf-reads">
+              <span className="cf-reads__lead">Guests will read:</span>
+              {reads.map((line) => (
+                <span key={line}>{line}</span>
+              ))}
+            </span>
+          ) : null}
+        </>
+      );
+      return <TextField ctx={ctx} name={f.name} label={f.label} hint={hint} optional={optional} spellCheck={false} />;
+    }
   }
 }
 
@@ -635,8 +682,14 @@ export function ContentRecordFlow({ editor, record, label, variant = 'primary', 
   // A list position is never asked for: Up and Down on the table's page set it, and a new record goes last.
   const asked = fields.filter((f) => f.derive !== 'position');
   const own = asked.filter((f) => !PROVENANCE.has(f.name));
-  const ownMain = own.filter((f) => !f.technical);
+  const ownMain = own.filter((f) => !f.technical && !f.step);
   const ownTechnical = own.filter((f) => f.technical);
+  // Fields the spec keeps together (a place's facts) get a step of their own, after the record's words.
+  const together = own.filter((f) => !f.technical && f.step);
+  const sharedSteps = [...new Set(together.map((f) => f.step!.title))].map((title) => {
+    const members = together.filter((f) => f.step!.title === title);
+    return fieldStep(title, members[0]!.step!.lede, members, [], fields, editor, isNew);
+  });
   const provenance = asked.filter((f) => PROVENANCE.has(f.name));
   const half = Math.ceil(ownMain.length / 2);
   const split = ownMain.length > PER_STEP;
@@ -652,6 +705,7 @@ export function ContentRecordFlow({ editor, record, label, variant = 'primary', 
 
   const steps: FlowStep<Values>[] = [
     ...ownSteps,
+    ...sharedSteps,
     fieldStep(
       'Where it comes from',
       'Where the facts come from, when they were last checked, and who can see them.',

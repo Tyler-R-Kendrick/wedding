@@ -82,12 +82,17 @@ const WEEKDAY: [RegExp, number][] = [
 ];
 const PART_SPAN: Record<string, [number, number]> = { morning: [8 * 60, 12 * 60], afternoon: [12 * 60, 17 * 60], evening: [18 * 60, 22 * 60] };
 
-/** The first day of the week a request names, Monday as 0, or null. */
+/**
+ * The day of the week a request is about, Monday as 0, or null: the first one it names, passing
+ * over a day that only bounds the stay ("staying till Wednesday") when another is named.
+ */
 export function weekdayIn(text: string): number | null {
-  let best: { at: number; day: number } | null = null;
+  let best: { at: number; day: number; bound: boolean } | null = null;
   for (const [re, day] of WEEKDAY) {
     const m = re.exec(text);
-    if (m && (!best || m.index < best.at)) best = { at: m.index, day };
+    if (!m) continue;
+    const bound = /\b(till|until|through|thru|before|leav(e|ing)( on)?|fly(ing)? (home|out|back)( on)?)\s+$/.test(text.slice(0, m.index));
+    if (!best || (best.bound && !bound) || (best.bound === bound && m.index < best.at)) best = { at: m.index, day, bound };
   }
   return best ? best.day : null;
 }
@@ -99,7 +104,9 @@ export function weekdayIn(text: string): number | null {
 export function askedTime(text: string, part: string | undefined): AskedTime | null {
   const weekday = weekdayIn(text);
   if (weekday === null) return null;
-  const clock = /\b(\d{1,2})(?::(\d\d))?\s*([ap])\.?m\b/.exec(text);
+  // "Around midnight" is the time asked about, whatever other time the request mentions (a flight landing).
+  if (/\bmidnight\b/.test(text)) return { weekday: (weekday + 1) % 7, from: 0, to: 30 };
+  const clock = /\b(\d{1,2})(?:[:.](\d\d))?\s*(?:ish\s*)?([ap])\.?m\b/.exec(text);
   if (clock) {
     const h = (Number(clock[1]) % 12) + (clock[3] === 'p' ? 12 : 0);
     const at = h * 60 + Number(clock[2] ?? 0);
@@ -107,9 +114,34 @@ export function askedTime(text: string, part: string | undefined): AskedTime | n
     const small = h < 5 && /\b(night|late|tonight|after the bars?)\b/.test(text);
     return { weekday: small ? (weekday + 1) % 7 : weekday, from: at, to: at + 30 };
   }
-  if (/\bmidnight\b/.test(text)) return { weekday: (weekday + 1) % 7, from: 0, to: 30 };
   if (/\b(late[- ]night|late at night)\b/.test(text)) return { weekday, from: 22 * 60, to: 24 * 60 };
   if (/\bnight\b/.test(text) && part === 'evening') return { weekday, from: 19 * 60, to: 23 * 60 };
   const span = part ? PART_SPAN[part] : undefined;
   return span ? { weekday, from: span[0], to: span[1] } : { weekday, from: 9 * 60, to: 21 * 60 };
+}
+
+/** A part of a day as a span of the clock, for asking whether a place is open then. */
+export function partTime(weekday: number, part: string): AskedTime {
+  const [from, to] = PART_SPAN[part] ?? [9 * 60, 21 * 60];
+  return { weekday, from, to };
+}
+
+/** The day of the week a calendar date falls on, Monday as 0. */
+export function weekdayOfDate(dateIso: string): number {
+  return (new Date(`${dateIso}T12:00:00Z`).getUTCDay() + 6) % 7;
+}
+
+/**
+ * Whether a place is open in a part of a day: true or false when its hours are understood, null
+ * when they are not held (which is never read as shut).
+ */
+export function openIn(hours: string | undefined, weekday: number, part: string): boolean | null {
+  if (!parseHours(hours)) return null;
+  return mayBeOpen(hours, partTime(weekday, part));
+}
+
+/** Whether a place opens at all on a day of the week; null when its hours are not held. */
+export function openOnDay(hours: string | undefined, weekday: number): boolean | null {
+  const week = parseHours(hours);
+  return week ? week[weekday]!.length > 0 : null;
 }

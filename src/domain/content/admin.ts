@@ -10,11 +10,14 @@ import { SOURCE_TYPES, TRUST_CLASSES, type Freshness } from '@/contracts/provena
 import { err, ok, type Result } from '@/contracts/result';
 import type { Db } from '@/db/client';
 import {
-  CONTENT_TABLES, CONTENT_VISIBILITIES, FAQ_CATEGORIES, ITINERARY_BUCKETS, OPERATIONAL_KINDS, PLACE_KINDS, RECOMMENDATION_CATEGORIES, SEASONS, STORY_CHAPTERS, TIMES_OF_DAY, VENUE_FACT_CATEGORIES,
+  CONTENT_TABLES, CONTENT_VISIBILITIES, FAQ_CATEGORIES, ITINERARY_BUCKETS, OPERATIONAL_KINDS, PLACE_KINDS, PLACE_SETTINGS, PRICE_LEVELS, RECOMMENDATION_CATEGORIES, RESERVATION_POLICIES, SEASONS,
+  STORY_CHAPTERS, TIMES_OF_DAY, VENUE_FACT_CATEGORIES,
   contentRevisions, contentSources, type ContentTableName,
 } from '@/db/schema';
 import { projectKnowledge } from '@/domain/knowledge/projection';
+import { DIETS } from '@/domain/trip-planner/types';
 import { computeFreshness, daysSinceVerified } from './freshness';
+import { HOURS_EXAMPLE, hoursAreReadable } from './place-facts';
 
 /**
  * Spec-driven admin editing. One field spec per table drives the zod validation, the
@@ -52,6 +55,13 @@ export interface FieldSpec {
   options?: readonly string[];
   /** The stored `options` in words, for the flow and the record page. Filled in for every select. */
   optionLabels?: Record<string, string>;
+  /** `select`: the stored value is a whole number, and `options` are its digits ("1" to "4" for a price). */
+  numeric?: boolean;
+  /** `number`: the smallest and largest value that makes sense (an age from 1 to 21). */
+  min?: number;
+  max?: number;
+  /** `text`: a format the value has to follow. `opening-hours`: OpenStreetMap's, as `hoursAreReadable` reads it. */
+  format?: 'opening-hours';
   required?: boolean;
   help?: string;
   /** What to say when a required field is empty: a sentence naming what to enter. */
@@ -73,14 +83,19 @@ export interface FieldSpec {
   pick?: ContentPickList;
   /**
    * How a `json` field is edited: `lines` (a string array, one per line), `tags` (lowercase words,
-   * one per line), `refs` (records ticked from `ref`), `rows` (an array of objects, one row each),
-   * `object` (one object, a field per key).
+   * one per line), `refs` (records ticked from `ref`), `choices` (values ticked from `options`),
+   * `rows` (an array of objects, one row each), `object` (one object, a field per key).
    */
-  editor?: 'lines' | 'tags' | 'refs' | 'rows' | 'object';
+  editor?: 'lines' | 'tags' | 'refs' | 'choices' | 'rows' | 'object';
   /** The columns of a `rows` or `object` editor. */
   items?: SubFieldSpec[];
   /** One row of a `rows` editor, in words: "Photo", "Stop". */
   itemLabel?: string;
+  /**
+   * A step of the add/edit flow that this field shares with the others naming the same title (a
+   * place's facts), rather than sitting with the record's own words. `lede` is the line under it.
+   */
+  step?: { title: string; lede: string };
 }
 
 /** The lists a `pick` field chooses from (`FieldSpec.pick`). */
@@ -176,6 +191,56 @@ const media: FieldSpec = {
     { name: 'src', label: 'Image address', type: 'text', startsWith: '/', help: 'Starts with /, like /photos/starved-rock.jpg.' },
   ],
 };
+
+/** What the admin is told when the opening hours cannot be read: the format, by example. */
+export const HOURS_HELP = `Write the hours like this: ${HOURS_EXAMPLE}`;
+
+/**
+ * What a guest weighs before going to a recommended place. Each one is optional: left empty it is
+ * "not known", and the site says nothing about it rather than guessing. They are asked together,
+ * on a step of their own.
+ */
+const PLACE_FACTS_STEP = { title: 'Good to know before going', lede: 'Price, hours, booking and getting in. Leave anything you have not checked empty: the site says nothing about it rather than guessing.' };
+const PLACE_FACT_FIELDS: FieldSpec[] = ([
+  {
+    name: 'priceLevel',
+    label: 'Price',
+    type: 'select',
+    numeric: true,
+    options: PRICE_LEVELS.map(String),
+    optionLabels: { 1: '$ (under $15 each)', 2: '$$ ($15 to $40)', 3: '$$$ ($40 to $100)', 4: '$$$$ (over $100)' },
+    help: 'For food and drink: what one person usually spends. For a museum or a tour, leave this empty and put the ticket price under Cost.',
+  },
+  {
+    name: 'hours',
+    label: 'Opening hours',
+    type: 'text',
+    format: 'opening-hours',
+    help: `The usual week, written like this: ${HOURS_EXAMPLE}. Days are Mo, Tu, We, Th, Fr, Sa and Su. Times use the 24-hour clock, so 6 in the evening is 18:00. “off” means closed that day.`,
+  },
+  { name: 'hoursNote', label: 'Note about the hours', type: 'text', help: 'Anything the hours cannot say, like “Shorter hours in winter”.' },
+  {
+    name: 'reservations',
+    label: 'Booking',
+    type: 'select',
+    options: RESERVATION_POLICIES,
+    optionLabels: { required: 'Book ahead (required)', recommended: 'Booking a good idea', 'walk-in': 'Just walk in', tickets: 'Timed tickets' },
+  },
+  {
+    name: 'diets',
+    label: 'Menu marks options for',
+    type: 'json',
+    editor: 'choices',
+    options: DIETS,
+    optionLabels: { vegetarian: 'Vegetarian', vegan: 'Vegan', 'gluten-free': 'Gluten-free', halal: 'Halal', kosher: 'Kosher' },
+    help: 'Tick only what the place’s own menu marks.',
+  },
+  { name: 'stepFree', label: 'Step-free way in', type: 'tristate', help: 'Yes or No only when the place itself says so.' },
+  { name: 'setting', label: 'Indoors or outdoors', type: 'select', options: PLACE_SETTINGS, optionLabels: { indoors: 'Indoors', outdoors: 'Outdoors', both: 'Both' } },
+  { name: 'minAge', label: 'Youngest age let in', type: 'number', min: 1, max: 21, help: 'Only when the place sets one, like 21 for a bar.' },
+  lines('factSources', 'Where these facts were checked', 'Links to the pages you read the price, hours and booking from. Each one starts with https://.'),
+  { name: 'factsCheckedAt', label: 'Facts last checked', type: 'date', help: 'The day you last read those pages.' },
+] satisfies FieldSpec[]).map((f) => ({ ...f, step: PLACE_FACTS_STEP }));
 
 const SPECS: Record<ContentTableName, TableSpec> = {
   story_sections: {
@@ -277,6 +342,7 @@ const SPECS: Record<ContentTableName, TableSpec> = {
       { name: 'distanceFromCaa', label: 'Distance from the CAA', type: 'text', help: 'In words, like “a 5-minute walk”.' },
       { name: 'cost', label: 'Cost', type: 'text' },
       { name: 'accessibility', label: 'Accessibility', type: 'textarea' },
+      ...PLACE_FACT_FIELDS,
       { name: 'bookingUrl', label: 'Booking link', type: 'url', help: 'Only sites on the approved list open from the page.' },
       { name: 'experienceId', label: 'Our Adventures memory', type: 'text', ref: 'adventure_memories', help: 'The memory this recommendation comes from, if any.' },
       { name: 'whyWeShareThis', label: 'Why we are sharing this', type: 'textarea' },
@@ -412,6 +478,8 @@ const JSON_FIELD_SCHEMAS: Record<string, z.ZodType> = {
   lookForThis: stringArray,
   media: z.array(z.object({ assetId: z.string().optional(), alt: z.string().min(3), caption: z.string().optional(), src: z.string().startsWith('/').optional() })),
   stops: z.array(z.object({ recommendationId: z.string().min(1), minutes: z.number().int().positive().optional(), note: z.string().optional() })),
+  diets: z.array(z.enum(DIETS)),
+  factSources: z.array(z.url({ protocol: /^https$/, error: 'Enter the whole address of each page, starting with https://.' })),
   capacities: z.object({ ceremony: z.number().int().positive().nullable(), dinnerDance: z.number().int().positive().nullable(), reception: z.number().int().positive().nullable(), note: z.string().min(3) }),
 };
 
@@ -420,14 +488,22 @@ const isoInstant = z.iso.datetime({ offset: true });
 function fieldSchema(f: FieldSpec): z.ZodType {
   const nullable = <T extends z.ZodType>(s: T) => (f.required ? s : s.nullable());
   switch (f.type) {
-    case 'text':
-      return f.required ? z.string().trim().min(1).max(2000) : z.string().trim().max(2000).nullable();
+    case 'text': {
+      const s = f.required ? z.string().trim().min(1).max(2000) : z.string().trim().max(2000);
+      const checked = f.format === 'opening-hours' ? s.refine(hoursAreReadable, HOURS_HELP) : s;
+      return f.required ? checked : checked.nullable();
+    }
     case 'textarea':
       return f.required ? z.string().trim().min(1).max(20_000) : z.string().trim().max(20_000).nullable();
     case 'url':
       return nullable(z.url({ protocol: /^https$/ }));
-    case 'number':
-      return nullable(z.number().int());
+    case 'number': {
+      const range = `Enter a whole number from ${f.min} to ${f.max}.`;
+      let n = z.number().int();
+      if (f.min !== undefined) n = n.min(f.min, f.max !== undefined ? range : `Enter ${f.min} or more.`);
+      if (f.max !== undefined) n = n.max(f.max, f.min !== undefined ? range : `Enter ${f.max} or less.`);
+      return nullable(n);
+    }
     case 'float':
       return nullable(z.number());
     case 'boolean':
@@ -435,6 +511,8 @@ function fieldSchema(f: FieldSpec): z.ZodType {
     case 'tristate':
       return z.boolean().nullable();
     case 'select':
+      // A numeric select stores the number its option names ("2" in the form, 2 in the row).
+      if (f.numeric) return nullable(z.number().int().refine((n) => (f.options ?? []).includes(String(n)), 'Choose one from the list.'));
       return nullable(z.enum(f.options as [string, ...string[]]));
     case 'date':
       return nullable(z.iso.date());
@@ -522,6 +600,14 @@ export function coerceFormValues(table: ContentTableName, raw: Record<string, st
         break;
       case 'datetime':
         out[f.name] = empty ? null : toIso(v!);
+        break;
+      case 'select':
+        if (empty) out[f.name] = null;
+        else if (f.numeric) {
+          const n = Number(v);
+          if (!Number.isFinite(n)) issues.push({ path: f.name, message: 'must be one of the choices' });
+          out[f.name] = n;
+        } else out[f.name] = v!.trim();
         break;
       default:
         out[f.name] = empty ? null : v!.trim();
@@ -614,11 +700,15 @@ export function rowToEditable(table: ContentTableName, row: Record<string, unkno
   return out;
 }
 
+/** The `json` editors whose value is a list. Their columns are NOT NULL: no items is `[]`, never null. */
+const LIST_EDITORS: ReadonlySet<string> = new Set(['lines', 'tags', 'refs', 'choices', 'rows']);
+
 function toRowValues(table: ContentTableName, data: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const f of TABLE_SPECS[table].fields) {
     const v = data[f.name];
     if (f.type === 'datetime') out[f.name] = v ? new Date(v as string) : null;
+    else if ((v === undefined || v === null) && f.type === 'json' && f.editor && LIST_EDITORS.has(f.editor)) out[f.name] = [];
     else if (v === undefined) out[f.name] = null;
     else out[f.name] = v;
   }

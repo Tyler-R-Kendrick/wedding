@@ -1,9 +1,11 @@
 import { z } from 'zod';
 import { SOURCE_TYPES, TRUST_CLASSES } from '@/contracts/provenance';
 import {
-  CONTENT_VISIBILITIES, FAQ_CATEGORIES, ITINERARY_BUCKETS, OPERATIONAL_KINDS, PLACE_KINDS, RECOMMENDATION_CATEGORIES,
+  CONTENT_VISIBILITIES, FAQ_CATEGORIES, ITINERARY_BUCKETS, OPERATIONAL_KINDS, PLACE_KINDS, PLACE_SETTINGS, RECOMMENDATION_CATEGORIES, RESERVATION_POLICIES,
   SEASONS, STORY_CHAPTERS, TIMES_OF_DAY, VENUE_FACT_CATEGORIES,
 } from '@/db/schema/content';
+import { HOURS_EXAMPLE, hoursAreReadable } from '@/domain/content/place-facts';
+import { DIETS } from '@/domain/trip-planner/types';
 import { SOURCE_KEYS } from './sources';
 
 /** The marker that turns a sentence into a typed placeholder. Never renders as a plain fact. */
@@ -135,9 +137,29 @@ export const recommendationSeedSchema = provenanceSeedSchema
     experienceSlug: slug.optional(),
     whyWeShareThis: z.string().optional(),
     kidFriendly: z.boolean().optional(),
+    // What a guest weighs before going, each checked against the place's own pages (`factSources`).
+    // Absent means not known: the site says nothing about it rather than guessing.
+    /** Food and drink, per person: 1 under $15, 2 $15 to $40, 3 $40 to $100, 4 over $100. */
+    priceLevel: z.number().int().min(1).max(4).optional(),
+    /** OpenStreetMap's `opening_hours` syntax, as far as `parseHours` reads it. */
+    hours: z.string().refine(hoursAreReadable, `opening hours the site can read, like "${HOURS_EXAMPLE}"`).optional(),
+    hoursNote: z.string().min(2).max(200).optional(),
+    reservations: z.enum(RESERVATION_POLICIES).optional(),
+    diets: z.array(z.enum(DIETS)).default([]),
+    stepFree: z.boolean().optional(),
+    setting: z.enum(PLACE_SETTINGS).optional(),
+    minAge: z.number().int().min(1).max(21).optional(),
+    factSources: z.array(httpsUrl).default([]),
+    factsCheckedAt: isoDate.optional(),
     draft: z.boolean().default(true),
   })
-  .superRefine(placeholderInvariant);
+  .superRefine(placeholderInvariant)
+  // A fact carries the day it was read: that day is how a deploy knows a place it has already
+  // given these facts to, and so never brings back one the couple has since taken out.
+  .superRefine((r, ctx) => {
+    const facts = [r.priceLevel, r.hours, r.hoursNote, r.reservations, r.stepFree, r.setting, r.minAge].some((v) => v !== undefined) || r.diets.length > 0 || r.factSources.length > 0;
+    if (facts && !r.factsCheckedAt) ctx.addIssue({ code: 'custom', message: 'facts need the day they were checked', path: ['factsCheckedAt'] });
+  });
 
 export const itineraryStopSeedSchema = z.object({
   recommendationSlug: slug,

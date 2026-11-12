@@ -121,6 +121,50 @@ export const guestTravelProfiles = pgTable(
   (t) => [index('guest_travel_profiles_household_idx').on(t.householdId)],
 );
 
+/**
+ * What a guest told the trip planner about how they like to travel (what they eat, what they would
+ * spend, how far they walk, what they enjoy), so it follows them from one device to the next. Only
+ * what the guest set themselves: nothing here is looked up or guessed about them. One row per
+ * guest; clearing their preferences deletes it.
+ */
+export interface StoredTripPrefs {
+  /** What they do not eat ("vegetarian"), in the planner's own words for it. Null: not said; empty: nothing. */
+  diet?: string[] | null;
+  /** The kind of meal they usually want: quick, sit-down or special. */
+  meal?: string | null;
+  /** The most one person wants to spend at a meal, as a price level (1 to 4). Null: no limit. */
+  budget?: number | null;
+  /** Only places with a step-free way in. Null: not said. */
+  stepFree?: boolean | null;
+  /** Keep outings close to the hotel. Null: not said. */
+  shortWalks?: boolean | null;
+  /** Kinds of thing they enjoy ("architecture", "coffee"). */
+  interests?: string[];
+  /** Whether children come along on outings. Unset: as the household's own records say. */
+  kids?: boolean | null;
+  /** They have answered the planner's questions about meals, so it does not ask again. */
+  asked?: boolean;
+}
+
+export const guestTripPreferences = pgTable(
+  'guest_trip_preferences',
+  {
+    guestId: text('guest_id')
+      .$type<GuestId>()
+      .primaryKey()
+      .references(() => guests.id, { onDelete: 'cascade' }),
+    householdId: text('household_id')
+      .$type<HouseholdId>()
+      .notNull()
+      .references(() => households.id, { onDelete: 'cascade' }),
+    prefs: jsonb('prefs').$type<StoredTripPrefs>().notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => [index('guest_trip_preferences_household_idx').on(t.householdId)],
+);
+export type GuestTripPreferencesRow = typeof guestTripPreferences.$inferSelect;
+
 /** The trip bridge: what a guest recorded or confirmed (flights, hotel, other). */
 export const guestItineraryItems = pgTable(
   'guest_itinerary_items',

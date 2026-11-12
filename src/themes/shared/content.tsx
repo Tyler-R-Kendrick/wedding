@@ -90,7 +90,7 @@ export const CONTENT_COPY = {
     conciergeTag: 'In your own words',
     conciergeTagOff: 'Soon',
   },
-  flags: { draft: 'Draft — not yet curated', placeholder: 'Details to come' },
+  flags: { draft: 'Draft, not yet curated', placeholder: 'Details to come' },
   why: { summary: 'Why we’re sharing this', read: 'Read the memory' },
 } as const;
 

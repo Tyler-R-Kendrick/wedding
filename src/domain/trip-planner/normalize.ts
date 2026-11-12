@@ -20,6 +20,7 @@ const EMOJI: [RegExp, string][] = [
 
 /** Spanish and French, word for word: enough for where, when, what kind of meal and what they eat. */
 const FOREIGN: Record<string, string> = {
+  copa: 'cocktail', copas: 'cocktails', trago: 'drink', tragos: 'drinks', cóctel: 'cocktail', coctel: 'cocktail', cócteles: 'cocktails', cocteles: 'cocktails', bebida: 'drink', bebidas: 'drinks', tomar: 'have', beber: 'drink', bar: 'bar', verre: 'drink', boire: 'drink',
   dónde: 'where', donde: 'where', podemos: 'can we', puedo: 'can i', cenar: 'eat dinner', cena: 'dinner', comer: 'eat', almorzar: 'eat lunch', almuerzo: 'lunch',
   desayuno: 'breakfast', desayunar: 'eat breakfast', viernes: 'friday', sábado: 'saturday', sabado: 'saturday', domingo: 'sunday', noche: 'night', mañana: 'morning',
   tarde: 'afternoon', vegetarianos: 'vegetarian', vegetariano: 'vegetarian', vegetariana: 'vegetarian', vegetarianas: 'vegetarian', veganos: 'vegan', vegano: 'vegan',

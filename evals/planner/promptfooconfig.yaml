@@ -7,7 +7,8 @@
 #
 #   cases/dev.yaml        written with the planner, tuned against
 #   cases/challenge*.yaml written by independent testers who never saw the planner's code; tuned against
-#   cases/holdout*.yaml   scored on every run, never read while tuning (holdout2 is the independent tester's)
+#   cases/profile.yaml    written with the planner, for place facts and guest profiles; tuned against
+#   cases/holdout*.yaml   scored on every run, never read while tuning (holdout2 and holdout3 are the independent testers')
 description: Your Trip planner, response quality
 prompts:
   - '{{request}}'
@@ -22,6 +23,10 @@ tests:
   - file://cases/dev.yaml
   - file://cases/challenge.yaml
   - file://cases/challenge2.yaml
+  - file://cases/profile.yaml
+  - file://cases/challenge3.yaml
+  - file://cases/challenge4.yaml
   - file://cases/holdout.yaml
   - file://cases/holdout2.yaml
+  - file://cases/holdout3.yaml
 outputPath: .results/latest.json

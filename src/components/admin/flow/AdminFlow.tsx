@@ -312,7 +312,13 @@ export function AdminFlow<V extends Record<string, unknown>>({ id, title, trigge
   const focusFirstError = (errs: FieldErrors) => {
     const first = Object.keys(errs)[0];
     if (!first) return;
-    window.requestAnimationFrame(() => document.getElementById(`${uid}-${first}`)?.focus());
+    window.requestAnimationFrame(() => {
+      document.getElementById(`${uid}-${first}`)?.focus();
+      // Focus brings the input into view, not the sentence under it that says what is wrong: on a
+      // phone, a field with a long hint left that sentence below the sheet's footer, and only the
+      // red border showed. (`scrollIntoView` is absent in jsdom.)
+      document.getElementById(`${uid}-${first}-error`)?.scrollIntoView?.({ block: 'nearest' });
+    });
   };
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {

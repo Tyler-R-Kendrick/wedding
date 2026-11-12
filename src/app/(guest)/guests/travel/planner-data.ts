@@ -2,14 +2,16 @@ import 'server-only';
 import { findAdventures } from '@/capabilities/find_adventures';
 import { listItineraries } from '@/capabilities/list_itineraries';
 import { listMyEvents } from '@/capabilities/rsvp';
-import { getMyTrip } from '@/capabilities/travel';
+import { getMyTrip, getMyTripProfile } from '@/capabilities/travel';
 import type { Principal } from '@/contracts/principal';
 import { withoutPlaceholders } from '@/domain/content/text';
 import type { ItineraryView, RecommendationCard } from '@/domain/content/views';
 import { placePhoto } from '@/domain/media/place-photos';
 import { VENUE_SPACES } from '@/domain/seating/plans';
 import { VENUE } from '@/domain/travel/facts';
-import type { Day, Part, PlannerItinerary, PlannerPlace, TripItemInput, WeddingEventInput } from '@/domain/trip-planner';
+import type { TripItem } from '@/domain/travel/types';
+import type { Day, Part, PlaceFacts, PlannerItinerary, PlannerPlace, TripItemInput, WeddingEventInput } from '@/domain/trip-planner';
+import { profileOf, type TripPrefs, type TripProfile } from '@/domain/trip-planner/profile';
 import type { MyEvents } from '@/capabilities/rsvp/list_my_events';
 import type { TripHotel } from '@/components/trip/openui';
 import type { PlannerSaved } from '@/components/trip/TripPlanner';
@@ -31,16 +33,36 @@ export type PlannerData = {
   itineraries: PlannerItinerary[];
   /** Whether the weekend can be saved as the guest's trip items (a signed-in guest, not a preview). */
   persist: boolean;
+  /**
+   * Who the planner plans for: the guest's party as their invitation and RSVP have it, with what
+   * they set for themselves. Someone who is not a guest (an administrator looking in) gets the
+   * plain profile of one adult.
+   */
+  profile: TripProfile;
+  /** What the guest saved for themselves, and when, so a later save can tell if another device changed it. */
+  prefs: { value: TripPrefs | null; updatedAt: string | null };
 };
 
 const DAYS: readonly Day[] = ['fri', 'sat', 'sun'];
 const PARTS: readonly Part[] = ['morning', 'afternoon', 'evening'];
 const text = (block: { text: string; placeholder: boolean } | undefined) => (block && !block.placeholder && block.text.trim() ? block.text.trim() : undefined);
 
+/**
+ * What the couple's record says a guest weighs before going: the card's own facts, plus its cost
+ * and access notes once they are settled text. `undefined` when the record holds none.
+ */
+function plannerFacts(card: RecommendationCard): PlaceFacts | undefined {
+  const cost = text(card.cost);
+  const access = text(card.accessibility);
+  const facts: PlaceFacts = { ...card.facts, ...(cost ? { cost } : {}), ...(access ? { access } : {}) };
+  return Object.keys(facts).length ? facts : undefined;
+}
+
 /** One of our recommendations as the planner reads it. Drafts and unfinished ones are not offered. */
 export function toPlannerPlace(card: RecommendationCard): PlannerPlace | null {
   const what = text(card.what);
   if (card.draft || card.placeholder || !what) return null;
+  const facts = plannerFacts(card);
   const why = text(card.why?.text);
   const address = text(card.place?.address);
   const at = card.place?.coordinates;
@@ -57,6 +79,7 @@ export function toPlannerPlace(card: RecommendationCard): PlannerPlace | null {
     ...(why ? { why } : {}),
     ...(card.durationMinutes ? { minutes: card.durationMinutes } : {}),
     ...(typeof card.kidFriendly === 'boolean' ? { kidFriendly: card.kidFriendly } : {}),
+    ...(facts ? { facts } : {}),
     ...(address ? { address } : {}),
     ...(at ? { lat: at.lat, lng: at.lng } : {}),
     href: card.href,
@@ -133,25 +156,11 @@ export function toWeddingEvent(e: MyEvents['events'][number]): WeddingEventInput
   };
 }
 
-export async function loadPlanner(principal: Principal): Promise<PlannerData> {
-  const isGuest = principal.kind === 'guest';
-  // Read beside the others, not after them.
-  const itinerariesRead = runAsUi(listItineraries, {});
-  const [all, trip, myEvents] = await Promise.all([
-    runAsUi(findAdventures, {}),
-    isGuest ? runAsUi(getMyTrip, {}) : Promise.resolve(null),
-    isGuest ? runAsUi(listMyEvents, {}) : Promise.resolve(null),
-  ]);
-  const plans = await itinerariesRead;
-  const cards = all.ok ? all.value.data.items : [];
-  const places = cards.map(toPlannerPlace).filter((p): p is PlannerPlace => !!p);
-  // The hotel on the map is the place our own records put the wedding venue at.
-  // (The seed marks the hotel itself as the `venue` place; places inside it carry `insideVenue`.)
-  const venue = cards.find((c) => (c.place?.insideVenue || c.place?.kind === 'venue') && c.place.coordinates)?.place?.coordinates;
-  const items = trip?.ok ? trip.value.data.items : [];
+/** The guest's plans as the planner shows them: their trip items that the planner itself saved. */
+function savedOf(items: readonly TripItem[]): PlannerSaved[] {
   // One card per place: a place saved twice over (before saves were keyed on the place) shows once.
   const seen = new Set<string>();
-  const saved: PlannerSaved[] = items.flatMap((i) => {
+  return items.flatMap((i) => {
     const d = i.details;
     if (i.provider !== 'planner' || i.status === 'cancelled' || !d.day || !d.part) return [];
     if (!DAYS.includes(d.day) || !PARTS.includes(d.part)) return [];
@@ -163,6 +172,32 @@ export async function loadPlanner(principal: Principal): Promise<PlannerData> {
     seen.add(d.placeId);
     return [{ id: d.placeId, day: d.day, part: d.part, ...(date ? { date } : {}), name: i.title, itemId: i.id }];
   });
+}
+
+/** The guest's plans as they are saved right now, for a page that has been open a while. Null when they cannot be read. */
+export async function loadPlannerSaved(): Promise<PlannerSaved[] | null> {
+  const trip = await runAsUi(getMyTrip, {});
+  return trip.ok ? savedOf(trip.value.data.items) : null;
+}
+
+export async function loadPlanner(principal: Principal): Promise<PlannerData> {
+  const isGuest = principal.kind === 'guest';
+  // Read beside the others, not after them.
+  const itinerariesRead = runAsUi(listItineraries, {});
+  const [all, trip, myEvents, mine] = await Promise.all([
+    runAsUi(findAdventures, {}),
+    isGuest ? runAsUi(getMyTrip, {}) : Promise.resolve(null),
+    isGuest ? runAsUi(listMyEvents, {}) : Promise.resolve(null),
+    isGuest ? runAsUi(getMyTripProfile, {}) : Promise.resolve(null),
+  ]);
+  const plans = await itinerariesRead;
+  const cards = all.ok ? all.value.data.items : [];
+  const places = cards.map(toPlannerPlace).filter((p): p is PlannerPlace => !!p);
+  // The hotel on the map is the place our own records put the wedding venue at.
+  // (The seed marks the hotel itself as the `venue` place; places inside it carry `insideVenue`.)
+  const venue = cards.find((c) => (c.place?.insideVenue || c.place?.kind === 'venue') && c.place.coordinates)?.place?.coordinates;
+  const items = trip?.ok ? trip.value.data.items : [];
+  const saved = savedOf(items);
   const bookings: TripItemInput[] = items
     .filter((i) => i.provider !== 'planner' && i.status !== 'cancelled' && (i.kind === 'flight' || i.kind === 'hotel'))
     .map((i) => ({ id: i.id, kind: i.kind, status: i.status, title: i.title, startAt: i.startAt, endAt: i.endAt, provider: i.provider, providerRef: i.providerRef, hotelName: i.details.hotelName ?? null }));
@@ -175,5 +210,8 @@ export async function loadPlanner(principal: Principal): Promise<PlannerData> {
     hotel: venue ? { name: VENUE.name, lat: venue.lat, lng: venue.lng } : null,
     itineraries: plans.ok ? plans.value.data.itineraries.flatMap((v) => toPlannerItinerary(v, new Set(places.map((p) => p.id))) ?? []) : [],
     persist: isGuest && !principal.viewedBy?.readOnly,
+    // A read that fails leaves the plain profile: the planner still answers, only less personally.
+    profile: mine?.ok ? mine.value.data.profile : profileOf(null, null),
+    prefs: mine?.ok ? { value: mine.value.data.prefs, updatedAt: mine.value.data.updatedAt } : { value: null, updatedAt: null },
   };
 }

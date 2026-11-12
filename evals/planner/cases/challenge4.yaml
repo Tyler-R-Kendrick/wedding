@@ -1,0 +1,624 @@
+# Challenge cases, fourth batch: the facts each place carries (price, hours, booking, diets,
+# step-free access, ticket cost) and what the planner knows about the guest (invitation, RSVP, saved answers).
+# Written by an independent tester from the catalogue of 28 live places alone, without sight of the
+# planner's code, its tests or the other case files, and not tuned to what the planner outputs.
+# A fact the catalogue lacks is unknown: never held against a place, never made up. "DEBATABLE" marks a rule one could argue with.
+
+# ---------- opening hours, by day and part of day ----------
+# The Aviary's hours are "Su,Mo off". Game Room and Drawing Room are both open until 9 pm on Sunday.
+- description: 'hours: drinks on Sunday night, asked in Spanish, never offers the cocktail bar that is shut on Sundays'
+  vars:
+    category: hours
+    reads: all
+    request: '¿Dónde podemos tomar una copa el domingo por la noche? Somos cuatro.'
+    expect:
+      clarifies: false
+      ours: { min: 1, excludes: [the-aviary], anyOf: [game-room, drawing-room], open: true }
+      slot: { day: sun, part: evening }
+- description: 'hours: asked whether a named bar is open on Sunday, says it is closed and gives it no Sunday opening time'
+  vars:
+    category: hours
+    reads: all
+    request: is the aviary open sunday? thinking one last cocktail before we fly home
+    expect:
+      clarifies: false
+      text: { includes: ['closed|shut|not open|isn.t open|doesn.t open'] }
+      cards: { excludes: ['The Aviary:[^\n]*Open \d'] }
+# DEBATABLE: Thursday is outside the weekend the planner plans. The Art Institute's hours are
+# "Th 11:00-20:00", the one late night of its week, so the true answer is "yes, until 8 pm"; a
+# planner that only knows Friday to Sunday would say 5 pm, which is wrong for this guest.
+- description: 'hours: the Thursday before the wedding the Art Institute is open late, and the answer says until 8 pm rather than calling it shut by 5'
+  vars:
+    category: hours
+    reads: all
+    request: "We get in Thursday the 15th around 4pm. Is there time to see the Art Institute that evening or is it shut by then?"
+    expect:
+      ours: { includes: [art-institute] }
+      text:
+        includes: ['8\s?(pm|p\.m\.)|20:00']
+        excludes: ['clos\w+ (at|by) 5', 'closed on thursdays?']
+# DEBATABLE: 7 am is before the planner's "morning" (8 to 12), so a planner that thinks in parts
+# will offer anything open at some point in the morning. For this guest a cafe that opens at 8 is
+# no use. Open at 7 on Saturday: Drawing Room (07:00) and Metric (07:00). Not yet open: Sawada
+# (08:00), Starbucks Reserve (08:00), Intelligentsia (Sa 08:00). Dollop and Blue Bottle have no
+# recorded hours, so they may be offered but never with an opening time.
+- description: 'hours: coffee at 7 am on the wedding morning never sends the guest to a cafe that opens at 8, and gives no hours to a cafe that has none'
+  vars:
+    category: hours
+    reads: all
+    request: "coffee near-ish at 7am saturday?? hair and makeup starts 7:45 😭"
+    expect:
+      clarifies: false
+      ours:
+        min: 1
+        anyOf: [drawing-room, metric-fulton, dollop-dearborn, blue-bottle-grand]
+        excludes: [sawada-coffee, starbucks-reserve-roastery, intelligentsia-monadnock]
+      cards: { excludes: ['(Dollop Coffee|Blue Bottle Coffee):[^\n]*Open \d'] }
+# DEBATABLE: midnight is after the planner's "evening" (18 to 22). On Friday only the Game Room
+# and The Aviary are open past midnight (both to 01:00); the steakhouse shuts at 22:00, Esmé at
+# 21:00, Starbucks Reserve at 21:30, the Museum of Ice Cream and Maggie Daley Park at 21:00, Hexe
+# at 20:00, Intelligentsia at 18:00.
+- description: 'hours: a drink around midnight on Friday is one of the two places open past midnight, and nothing that shut hours earlier'
+  vars:
+    category: hours
+    reads: all
+    request: our flight lands 10.40pm friday. anywhere still serving a drink around midnight or is everything dead by then
+    expect:
+      clarifies: false
+      ours:
+        min: 1
+        anyOf: [game-room, the-aviary]
+        excludes: [michael-jordans-steakhouse, esme, starbucks-reserve-roastery, museum-of-ice-cream, maggie-daley-park, hexe-coffee, intelligentsia-monadnock]
+# Esmé and The Aviary open at 17:00 on Friday, which is when the afternoon ends, so neither is
+# open for a 2 pm lunch. Alinea has no hours but its note says evening seatings only. Michael
+# Jordan's is left out of the rule on purpose: its hours are the dining room's (from 17:00) while
+# its note says lunch is served in the bar. The guest ruled out fast food in so many words.
+- description: 'hours: a sit-down lunch at 2 on Friday is never a place that opens at 5, and never the burger counter the guest ruled out'
+  vars:
+    category: hours
+    reads: all
+    request: late lunch fri, sit down not fast food, 2ish, 6 of us
+    prefs: { diet: [], meal: sit-down, asked: true }
+    expect:
+      clarifies: false
+      ours: { min: 1, excludes: [esme, the-aviary, alinea, shake-shack], open: true }
+      slot: { day: fri, part: afternoon }
+# Booking: Alinea and Esmé are `required`; Game Room and Shake Shack are `walk-in`. The steakhouse
+# and The Aviary are only `recommended`, so they are not ruled out, but no card in a walk-in answer
+# may tell the guest to book ahead or buy timed tickets.
+- description: 'hours: with nothing booked, dinner on Friday is somewhere to walk into, never a place that must be booked'
+  vars:
+    category: hours
+    reads: all
+    request: "didnt book a thing 🙈 where can 2 of us just walk in for dinner friday"
+    prefs: { diet: [], meal: null, asked: true }
+    expect:
+      clarifies: false
+      ours: { min: 1, excludes: [alinea, esme], anyOf: [game-room, shake-shack], open: true }
+      slot: { day: fri, part: evening }
+      cards: { excludes: ['[:|] Book ahead', 'Timed tickets'] }
+
+# ---------- price limits and splurges ----------
+# DEBATABLE: budget 1 is "under $15 each". Only three coffee bars are known to be level 1; every
+# sit-down place in the hotel is level 2. The rule is the saved limit as written: nothing known to
+# cost more is offered. Places with no price (the Chicago classics, Dollop, Metric) may be.
+- description: 'price: a saved limit of under $15 each is kept for lunch, and no card shows two dollar signs or more'
+  vars:
+    category: price
+    reads: all
+    request: lunch friday? nothing fancy
+    profile: { adults: 2, prefs: { budget: 1, diet: [], meal: quick, asked: true } }
+    expect:
+      clarifies: false
+      ours: { maxPrice: 1, excludes: [michael-jordans-steakhouse, alinea, esme, the-aviary] }
+      cards: { excludes: ['\$\$'] }
+# The request overrides the saved budget and the saved "quick". Alinea and Esmé are the two
+# tasting menus (level 4, booking required); Esmé is open Friday 17:00 to 21:00.
+- description: 'price: a splurge asked for in so many words beats a saved rock-bottom budget, and gets a tasting menu that says to book'
+  vars:
+    category: price
+    reads: all
+    request: "ok forget the budget for one night. friday is also our 10th anniversary and we want the full tasting menu blowout, money no object. where?"
+    profile: { adults: 2, prefs: { budget: 1, meal: quick, diet: [], asked: true } }
+    expect:
+      clarifies: false
+      ours: { min: 1, anyOf: [alinea, esme], excludes: [shake-shack] }
+      cards: { includes: ['\$\$\$\$', '[:|] Book ahead'] }
+      slot: { day: fri, part: evening }
+# The other way round: saved answers say special and over $100, the request says under $40.
+# Level 2 is $15 to $40; the level 2 places that serve dinner are Game Room, Drawing Room and
+# Shake Shack.
+- description: 'price: "under $40 a head" in the request beats a saved top budget and a saved taste for special dinners'
+  vars:
+    category: price
+    reads: all
+    request: "tbh after the flights we're skint. somewhere under $40 a head for dinner fri, a drink included ideally"
+    profile: { adults: 2, prefs: { budget: 4, meal: special, diet: [], interests: [food, drinks], asked: true } }
+    expect:
+      clarifies: false
+      ours:
+        min: 1
+        maxPrice: 2
+        anyOf: [game-room, drawing-room, shake-shack]
+        excludes: [alinea, esme, michael-jordans-steakhouse, the-aviary]
+      cards: { excludes: ['\$\$\$'] }
+      slot: { day: fri, part: evening }
+# Known free: the Riverwalk, Grant Park, Lincoln Park Zoo. Known to charge: everything in
+# `excludes`. Maggie Daley Park, the hotel tour and the walking tours have no cost recorded, so
+# they may be offered but never labelled free.
+- description: 'price: free things to do on Sunday are places the catalogue says are free, never one with a ticket price, and "Free" is never put on a place with no cost recorded'
+  vars:
+    category: price
+    reads: all
+    request: free things to do sunday?? we spent all our money getting here lol
+    expect:
+      clarifies: false
+      ours:
+        min: 1
+        anyOf: [chicago-riverwalk, grant-park, lincoln-park-zoo]
+        excludes: [art-institute, shedd-aquarium, griffin-msi, museum-of-ice-cream, chicago-citypass, architecture-river-cruise, chicago-botanic-garden, alinea, esme, michael-jordans-steakhouse, the-aviary]
+        open: true
+      cards:
+        includes: ['[:|] Free\b']
+        excludes: ['(Maggie Daley Park|Explore Chicago Athletic Association|Chicago Architecture Center Walking Tours):[^\n]*[:|] Free\b']
+# Shedd: "Adults about $40, children 3 to 11 about $30; less when booked ahead." Nothing in the
+# catalogue says any age gets in free.
+- description: 'price: asked what a named aquarium costs a family of four, gives the adult and the child price it holds, says booking ahead is cheaper, and invents no free entry'
+  vars:
+    category: price
+    reads: all
+    request: "How much is the Shedd aquarium for 2 adults and our two kids (5 and 9)? And do we just buy tickets on the door"
+    profile: { adults: 2, children: 2 }
+    expect:
+      ours: { includes: [shedd-aquarium] }
+      text:
+        includes: ['\$\s?40', '\$\s?30', 'ahead|advance|online|book']
+        excludes: ['under (2|3|two|three)[^.\n]*free']
+      cards: { excludes: ['Shedd Aquarium:[^\n]*[:|] Free\b'] }
+# Starbucks Reserve has no price level. Unknown is not expensive: the guest named it, so it is
+# offered, and its card carries no dollar signs. It opens at 08:00 on Friday.
+- description: 'price: a place with no recorded price is not dropped for a guest on the tightest budget, and is not given a price'
+  vars:
+    category: price
+    reads: all
+    request: I want to see the big Starbucks roastery friday morning - is that going to blow my budget?
+    profile: { adults: 1, prefs: { budget: 1, asked: true } }
+    expect:
+      ours: { includes: [starbucks-reserve-roastery] }
+      slot: { day: fri, part: morning }
+      cards: { excludes: ['Starbucks Reserve Roastery:[^\n]*\$'] }
+
+# ---------- step-free access and staying near the hotel ----------
+# No place in the catalogue says it has no step-free way in, so that claim on any card is made up.
+# Thirteen places say they have one; the places named in the last pattern do not say either way.
+- description: 'access: a wheelchair user from the RSVP is shown confirmed step-free places, and a place that does not say is never labelled step-free or stepped'
+  vars:
+    category: access
+    reads: all
+    request: what can we see friday afternoon
+    profile: { adults: 2, accessibility: 'I use a power wheelchair - cannot do any steps at all' }
+    expect:
+      clarifies: false
+      ours: { min: 2, stepFree: true, open: true }
+      slot: { day: fri, part: afternoon }
+      cards:
+        includes: ['(?<!No )Step-free way in']
+        excludes:
+          - 'No step-free way in'
+          - '(Grant Park|Chicago Architecture Center Walking Tours|Chicago Architecture River Cruise|Chicago CityPASS|Michael Jordan.s Steakhouse|The Aviary|Alinea|Esm.|Blue Bottle Coffee|Dollop Coffee|Sawada Coffee|Hexe Coffee Co\.):[^\n]*Step-free way in'
+# Voice-dictated, no profile, the need is only in the request. All three places inside the hotel
+# record a step-free way in, so "call ahead" on any of them would hide a fact the catalogue holds.
+# The Drawing Room is the hotel's quiet lounge and is open 07:00 to 24:00 on Friday.
+- description: 'access: a grandmother who cannot manage stairs and wants tea inside the hotel gets the hotel lounge, marked step-free, and nothing outside the building'
+  vars:
+    category: access
+    reads: all
+    request: hello this is margaret I am the grooms grandmother I have a bad hip and cannot manage stairs is there somewhere nice inside the hotel to sit with a cup of tea on friday afternoon thank you
+    expect:
+      clarifies: false
+      ours: { min: 1, inHotel: true, anyOf: [drawing-room], stepFree: true, open: true }
+      outside: { max: 0 }
+      cards:
+        includes: ['(?<!No )Step-free way in']
+        excludes: ['No step-free way in', '(Drawing Room|Game Room|Shake Shack):[^\n]*Call ahead about access']
+# The Aviary records nothing about its entrance. The honest card is "Call ahead about access".
+- description: 'access: asked whether a wheelchair gets into a named bar that does not say, tells the guest to call ahead and claims neither yes nor no'
+  vars:
+    category: access
+    reads: all
+    request: "Can I get into The Aviary in my chair? We'd like cocktails there Friday night"
+    profile: { adults: 2, accessibility: 'wheelchair user', prefs: { stepFree: true, asked: true } }
+    expect:
+      ours: { includes: [the-aviary] }
+      cards:
+        includes: ['The Aviary:[^\n]*Call ahead about access']
+        excludes: ['The Aviary:[^\n]*Step-free way in']
+      text: { excludes: ['aviary (is|has) (fully |completely )?(step.free|accessible|wheelchair)', 'aviary (is not|isn.t) (step.free|accessible)'] }
+# The RSVP boxes were filled in, but with "no". Words in the box are not a need.
+- description: 'access: an RSVP that answers the accessibility question with "no, none" is not treated as needing step-free access'
+  vars:
+    category: access
+    reads: all
+    request: whats worth seeing friday afternoon
+    profile: { adults: 2, dietary: 'n/a', accessibility: 'No, none - all good thanks!' }
+    expect:
+      clarifies: false
+      ours: { min: 2, open: true }
+      slot: { day: fri, part: afternoon }
+      cards: { excludes: ['Call ahead about access', 'No step-free way in'] }
+# DEBATABLE: the profile holds one field. Intelligentsia is shut on Sundays; Hexe is "on Diversey
+# Parkway, on the North Side"; Dollop is "an easy Loop walk from the hotel" and has no hours, so a
+# planner that treats unknown hours as closed would drop the nearest cafe. The Drawing Room is in
+# the building. Whether Sawada, Metric or the Roastery ("a little under a mile") count as a short
+# walk is left open.
+- description: 'access: with only "short walks" saved, Sunday coffee is the cafe a short walk away or the hotel lounge, never the one shut on Sundays or the one across the city'
+  vars:
+    category: access
+    reads: all
+    request: coffee sunday morning before checkout
+    profile: { prefs: { shortWalks: true } }
+    expect:
+      clarifies: false
+      ours:
+        min: 1
+        anyOf: [dollop-dearborn, drawing-room]
+        excludes: [intelligentsia-monadnock, hexe-coffee, chicago-botanic-garden]
+        open: true
+      slot: { day: sun, part: morning }
+      cards: { excludes: ['Dollop Coffee:[^\n]*(Open \d|Closed|\$)'] }
+
+# ---------- children on the invitation, and nights without them ----------
+- description: 'kids: two children on the invitation, but the request says they are with grandma, so Friday night is a bar and nothing from the family list'
+  vars:
+    category: kids
+    reads: all
+    request: grandma has the kids friday night!!! where do two tired parents go for a proper cocktail
+    profile: { adults: 2, children: 2, prefs: { interests: [play], asked: true } }
+    expect:
+      clarifies: false
+      ours:
+        min: 1
+        anyOf: [the-aviary, game-room, drawing-room]
+        excludes: [museum-of-ice-cream, maggie-daley-park, shake-shack, lincoln-park-zoo, shedd-aquarium, griffin-msi]
+        open: true
+      slot: { day: fri, part: evening }
+# DEBATABLE: `kids: false` is read as "the child on the invitation is not coming along", which
+# with "special" and the top budget makes this a grown-up dinner. A planner could argue the
+# invitation still counts. Esmé is open Friday evening; Alinea's days are not recorded.
+- description: 'kids: a saved "the children are not coming along" turns a bare "dinner friday" into a special dinner, not the burger counter or the playground'
+  vars:
+    category: kids
+    reads: all
+    request: dinner friday
+    profile: { adults: 2, children: 1, prefs: { kids: false, meal: special, budget: 4, diet: [], asked: true } }
+    expect:
+      clarifies: false
+      ours:
+        min: 1
+        anyOf: [alinea, esme, michael-jordans-steakhouse]
+        excludes: [shake-shack, museum-of-ice-cream, maggie-daley-park]
+      slot: { day: fri, part: evening }
+# The other way round: nobody under 18 on the invitation, and saved answers about drinks and
+# special dinners, but the request brings a six-year-old. Nothing in `excludes` is open on a
+# Sunday morning anyway.
+- description: 'kids: no children on the invitation, but a niece named in the request gets family places for Sunday morning, not bars and tasting menus'
+  vars:
+    category: kids
+    reads: all
+    request: "plot twist we've got my niece (6) with us sunday morning. what do we do with her"
+    profile: { adults: 2, children: 0, prefs: { interests: [drinks, food], meal: special, asked: true } }
+    expect:
+      clarifies: false
+      ours:
+        min: 1
+        allAges: true
+        anyOf: [maggie-daley-park, shedd-aquarium, lincoln-park-zoo, museum-of-ice-cream, griffin-msi, art-institute]
+        excludes: [the-aviary, alinea, esme, michael-jordans-steakhouse]
+        open: true
+      slot: { day: sun, part: morning }
+# Friday at 7 pm: the zoo and the Shedd shut at 17:00, the science museum at 16:00, and the Art
+# Institute at 17:00 (its late night is Thursday). The Museum of Ice Cream and Maggie Daley Park
+# are open until 21:00; the river cruise has no recorded times.
+- description: 'kids: something for the children at 7 pm on Friday is a family place still open then, never one that shut at 4 or 5'
+  vars:
+    category: kids
+    reads: all
+    request: anything for the kids after an early dinner friday, like 7pm? they wont sleep anyway (jet lag)
+    profile: { adults: 2, children: 3 }
+    expect:
+      clarifies: false
+      ours:
+        min: 1
+        kidFriendly: true
+        allAges: true
+        anyOf: [museum-of-ice-cream, maggie-daley-park, architecture-river-cruise]
+        excludes: [lincoln-park-zoo, shedd-aquarium, griffin-msi, art-institute]
+        open: true
+      slot: { day: fri, part: evening }
+# The three places whose setting is "outdoors" are the Riverwalk, Grant Park and Maggie Daley
+# Park. Indoors, marked for children and open on Sunday morning: the Shedd (09:00), the science
+# museum (09:30), the Museum of Ice Cream (10:00), the Art Institute (11:00).
+- description: 'kids: a wet Sunday morning with a three-year-old is indoors and marked for children, never a park or the riverside'
+  vars:
+    category: kids
+    reads: all
+    request: its chucking it down and the 3 yr old is feral. sunday morning. HELP
+    profile: { adults: 2, children: 1, dietary: 'none' }
+    expect:
+      clarifies: false
+      ours:
+        min: 1
+        kidFriendly: true
+        allAges: true
+        anyOf: [shedd-aquarium, museum-of-ice-cream, griffin-msi, art-institute]
+        excludes: [maggie-daley-park, chicago-riverwalk, grant-park]
+        open: true
+      slot: { day: sun, part: morning }
+# DEBATABLE: Tuesday the 20th is after the weekend the planner plans. Both the Art Institute and
+# the Museum of Ice Cream are "Tu off" (and so is Esmé); a planner that falls back to weekend hours
+# would send a family to two locked doors. The Shedd, the zoo, Maggie Daley Park and the science
+# museum are open every day.
+- description: 'kids: staying on to Tuesday, the family is sent to places open on Tuesdays, never the two museums that are shut that day'
+  vars:
+    category: kids
+    reads: all
+    request: "We're staying on till Wednesday. What can we do with the kids on Tuesday the 20th?"
+    profile: { adults: 2, children: 2 }
+    expect:
+      ours:
+        min: 1
+        anyOf: [shedd-aquarium, lincoln-park-zoo, maggie-daley-park, griffin-msi]
+        excludes: [art-institute, museum-of-ice-cream, esme]
+      cards: { excludes: ['(The Art Institute of Chicago|Museum of Ice Cream):[^\n]*Open \d'] }
+
+# ---------- diets: from the RSVP, from saved answers, from the request ----------
+# DEBATABLE (the `clarifies` rule only): this guest has saved nothing on the planner, but told the
+# couple what they eat at RSVP and says "quick" in the request, so asking either question again is
+# a failure from where they sit. The diet is misspelt. Menus that mark vegetarian dishes and serve
+# lunch: Shake Shack, Game Room (from 11:00 on Friday), Drawing Room. The steakhouse's menu marks
+# gluten-free only; The Aviary and the Chicago classics record no diets at all.
+- description: 'diet: "vegitarian" in the RSVP is read as vegetarian without asking again, and a quick lunch is a place whose menu marks it, never the steakhouse'
+  vars:
+    category: diet
+    reads: all
+    request: quick lunch friday near the hotel
+    profile: { adults: 2, dietary: 'vegitarian (both of us)' }
+    expect:
+      clarifies: false
+      ours: { min: 1, anyOf: [shake-shack, game-room, drawing-room], excludes: [michael-jordans-steakhouse], open: true }
+      slot: { day: fri }
+      cards:
+        includes: ['Vegetarian options']
+        excludes: ['(Michael Jordan.s Steakhouse|The Aviary|Try Chicago.s classics):[^\n]*Vegetarian options on the menu']
+      outside: { notNamed: ['steak', 'chop ?house', 'bbq|barbecue|smokehouse'] }
+# Saved answers say "nothing I do not eat"; the request brings a vegan. Only the Museum of Ice
+# Cream marks vegan, so no restaurant card may claim vegan dishes, and the guest must read
+# something about vegan food (places found for it, or a plain statement that ours do not say).
+- description: 'diet: a vegan named in the request beats a saved "I eat everything", and no restaurant of ours is credited with vegan dishes its menu does not mark'
+  vars:
+    category: diet
+    reads: all
+    request: "change of plan, my sister is joining us for lunch on friday and she's a strict vegan. where can all 3 of us eat"
+    profile: { adults: 2, prefs: { diet: [], meal: sit-down, asked: true } }
+    expect:
+      clarifies: false
+      ours: { excludes: [michael-jordans-steakhouse] }
+      text: { includes: ['vegan'] }
+      cards: { excludes: ['(Shake Shack|Game Room|Drawing Room|Michael Jordan.s Steakhouse|The Aviary|Alinea|Esm.|Try Chicago.s classics):[^\n]*Vegan (options|dishes|choices|menu)'] }
+      outside: { notNamed: ['steak', 'chop ?house', 'bbq|barbecue|smokehouse'] }
+# The RSVP never says "gluten-free": it says "coeliac" (British spelling) and "no gluten". Six
+# places mark gluten-free; The Aviary and the Chicago classics record no diets.
+- description: 'diet: "coeliac, strictly no gluten" in the RSVP is read as gluten-free, and a sit-down Friday dinner shows which menus mark it'
+  vars:
+    category: diet
+    reads: all
+    request: nice sit down dinner friday night, happy to book
+    profile: { adults: 2, dietary: 'Coeliac disease (me) so strictly no gluten please, husband eats everything', prefs: { meal: sit-down, asked: true } }
+    expect:
+      clarifies: false
+      ours: { min: 1, anyOf: [michael-jordans-steakhouse, esme, alinea, drawing-room, game-room], open: true }
+      slot: { day: fri, part: evening }
+      cards:
+        includes: ['gluten.?free']
+        excludes: ['(The Aviary|Try Chicago.s classics):[^\n]*Gluten.?free (options|dishes|choices|menu)']
+# No place in the catalogue marks kosher. The answer must say something about kosher (outside
+# places tagged for it, or that ours do not say) rather than pass over it, and no card may claim
+# it. The Aviary and Intelligentsia are shut on Sundays.
+- description: 'diet: a saved kosher diet is spoken to honestly for Sunday brunch: no card of ours claims kosher food, and nothing shut on Sundays is offered'
+  vars:
+    category: diet
+    reads: all
+    request: sunday brunch before we head to ohare?
+    profile: { adults: 2, prefs: { diet: [kosher], asked: true } }
+    expect:
+      clarifies: false
+      ours: { excludes: [the-aviary, intelligentsia-monadnock], open: true }
+      slot: { day: sun }
+      text: { includes: ['kosher'] }
+      cards: { excludes: ['[:|] Kosher (options|dishes|choices|menu|kitchen)', 'kosher.certified'] }
+# Two diets in one party, in the guest's own shorthand. The three places inside the hotel mark
+# both and are all level 2; the steakhouse marks gluten-free only.
+- description: 'diet: one coeliac and one "veggie" in the same RSVP get a hotel dinner within budget whose menu marks both diets'
+  vars:
+    category: diet
+    reads: all
+    request: "easy dinner friday, in the hotel pls, we'll be wrecked from travelling"
+    profile: { adults: 2, dietary: 'me = gluten free (celiac), my partner = veggie. sorry to be a pain!', prefs: { budget: 2, asked: true } }
+    expect:
+      clarifies: false
+      ours:
+        min: 1
+        inHotel: true
+        maxPrice: 2
+        anyOf: [game-room, drawing-room, shake-shack]
+        excludes: [michael-jordans-steakhouse]
+        open: true
+      slot: { day: fri, part: evening }
+      cards: { includes: ['gluten.?free', 'vegetarian'] }
+# The RSVP contains the word "vegetarian" only to deny it. The request asks for steak, and the
+# catalogue has one steakhouse, open Friday 17:00 to 22:00.
+- description: 'diet: "NOT vegetarian any more" in the RSVP is not read as vegetarian, and a request for steak gets the steakhouse'
+  vars:
+    category: diet
+    reads: all
+    request: "where's good for a steak friday night"
+    profile: { adults: 1, dietary: 'NOT vegetarian any more!! (I was when you last saw me haha) - I eat meat now', prefs: { meal: sit-down, budget: 3, asked: true } }
+    expect:
+      clarifies: false
+      ours: { includes: [michael-jordans-steakhouse], open: true }
+      slot: { day: fri, part: evening }
+      outside: { notNamed: ['vegan|vegetarian|veggie|plant.?based'] }
+
+# ---------- who the planner is planning for ----------
+# Every field set. Vegetarian twice over, quick, at most $40 each, step-free, short walks,
+# children along. Ruled out: the steakhouse (price, and no vegetarian mark), the two tasting menus
+# and The Aviary (price), the garden in Glencoe, the museum in Hyde Park and the cafe on the North
+# Side (short walks). Shake Shack and Maggie Daley Park are marked for children and step-free.
+- description: 'profile: a guest with every answer saved asks for an afternoon and an early dinner in one breath, and both halves keep the budget, the diet, the short walks and the children'
+  vars:
+    category: profile
+    reads: all
+    request: ok so friday afternoon, what do we do with everyone and then where do we eat after, early, like 5.30
+    profile:
+      adults: 2
+      children: 2
+      dietary: 'Vegetarian - me and my daughter. No mushrooms for her!'
+      accessibility: 'Double stroller, and my mum walks with a cane so lifts not stairs please'
+      prefs: { diet: [vegetarian], meal: quick, budget: 2, stepFree: true, shortWalks: true, interests: [play, outdoors], kids: true, asked: true }
+    expect:
+      clarifies: false
+      ours:
+        min: 2
+        maxPrice: 2
+        stepFree: true
+        allAges: true
+        anyOf: [shake-shack, maggie-daley-park]
+        excludes: [michael-jordans-steakhouse, alinea, esme, the-aviary, chicago-botanic-garden, griffin-msi, hexe-coffee]
+        open: true
+      slot: { day: fri }
+      cards: { excludes: ['No step-free way in', '\$\$\$'] }
+# DEBATABLE: the profile holds one saved interest and nothing else, and the request names no
+# subject at all. A good answer leans on the one thing it knows; a planner could fairly give a
+# general spread instead. Nothing was said about access, so no card should raise it.
+- description: 'profile: a guest known only for liking architecture, asking for anything on Sunday morning, gets at least one of the architecture picks'
+  vars:
+    category: profile
+    reads: all
+    request: bored. sunday morning. go
+    profile: { prefs: { interests: [architecture] } }
+    expect:
+      clarifies: false
+      ours:
+        min: 1
+        anyOf: [caa-explore, architecture-river-cruise, architecture-walking-tours]
+        excludes: [the-aviary, intelligentsia-monadnock, esme, michael-jordans-steakhouse]
+        open: true
+      slot: { day: sun, part: morning }
+      cards: { excludes: ['Call ahead about access'] }
+# The guest is vegan in the RSVP and in the saved answers, and is booking for someone else. The
+# request wins. The steakhouse is `recommended` for booking and marks no vegan or vegetarian dishes.
+- description: 'profile: a vegan guest booking a steakhouse for their parents gets the steakhouse, told that booking is a good idea, with no vegan claim on it'
+  vars:
+    category: profile
+    reads: all
+    request: "Not for me - my dad (not vegan, very much a steak man) wants me to book him and mum a steakhouse for Friday night. Which one?"
+    profile: { adults: 2, dietary: 'vegan', prefs: { diet: [vegan], budget: 3, asked: true } }
+    expect:
+      clarifies: false
+      ours: { includes: [michael-jordans-steakhouse] }
+      slot: { day: fri, part: evening }
+      cards:
+        includes: ['Michael Jordan.s Steakhouse:[^\n]*Booking is a good idea']
+        excludes: ['Michael Jordan.s Steakhouse:[^\n]*(Vegan|Vegetarian) (options|dishes|choices)']
+# No profile at all, and not a meal: answered at once, with nothing assumed about the guest.
+- description: 'profile: a guest nobody knows, asking what not to miss, is answered at once with a spread, and no card raises an access need they never mentioned'
+  vars:
+    category: profile
+    reads: all
+    request: hi! first time in chicago for us, here for the wedding. what should we absolutely not miss?
+    expect:
+      clarifies: false
+      ours: { min: 2 }
+      cards: { excludes: ['Call ahead about access', 'No step-free way in'] }
+# No profile, and a plain meal: the planner knows neither what they eat nor what kind of meal, so
+# it asks once before answering, and offers nothing until it has.
+- description: 'profile: a guest nobody knows, asking only where to eat on Friday night, is asked what they eat and what kind of meal before any place is offered'
+  vars:
+    category: profile
+    reads: all
+    request: where should we eat friday night
+    expect:
+      clarifies: true
+      asksAbout: [diet, meal]
+      ours: { max: 0 }
+      outside: { max: 0 }
+
+# ---------- honesty: nothing the catalogue does not hold ----------
+# DEBATABLE: the park is free in life, but its entry in the catalogue records no cost (Grant Park's
+# says "Free"; this one says nothing), and the rule is that an absent fact is never supplied. The
+# fix belongs in the catalogue. What it does record is `walk-in`, so "no tickets" is fair to say.
+- description: 'honesty: asked whether a named park is free, does not put "Free" or a price on a place whose cost the catalogue does not hold'
+  vars:
+    category: honesty
+    reads: all
+    request: is maggie daley park free to get into or do we need tickets
+    profile: { adults: 2, children: 2 }
+    expect:
+      ours: { includes: [maggie-daley-park] }
+      cards: { excludes: ['Maggie Daley Park:[^\n]*[:|] Free\b', 'Maggie Daley Park:[^\n]*\$\s?\d', 'Maggie Daley Park:[^\n]*tickets'] }
+      text: { excludes: ['maggie daley( park)?( is|.s) (completely |totally )?free\b'] }
+# Dollop records neither hours nor a price level: two questions, and the honest answer to both is
+# that the planner does not know.
+- description: 'honesty: asked a named cafe''s latte price and Sunday opening time, neither of which the catalogue holds, invents neither'
+  vars:
+    category: honesty
+    reads: all
+    request: whats a latte cost at dollop and what time do they open sunday
+    expect:
+      ours: { includes: [dollop-dearborn] }
+      cards: { excludes: ['Dollop Coffee:[^\n]*(\$|Open \d|Closed)'] }
+      text: { excludes: ['dollop[^.\n]*open(s|ing)? (at|from) \d', 'latte[^.\n]*\$\s?\d', '\$\s?\d[^.\n]*latte'] }
+# The Game Room records no age rule and is not marked for children either way. Any age limit, or
+# any promise that children are welcome, is made up.
+- description: 'honesty: asked whether a 12-year-old may go into the hotel games bar, states no age limit and no welcome the catalogue does not hold'
+  vars:
+    category: honesty
+    reads: all
+    request: Does the Game Room let kids in? Our son is 12 and loves pool
+    profile: { adults: 2, children: 1 }
+    expect:
+      ours: { includes: [game-room] }
+      text:
+        excludes:
+          - '\b(18|21)\s?\+'
+          - '\b(18|21) (and|or) (over|older|up)'
+          - 'over.?(18|21)s?\b'
+          - 'adults.only'
+          - 'game room[^.\n]*(is all.ages|welcomes (kids|children|families)|is (kid|family|child).friendly)'
+# Alinea has no hours: "Evening seatings only. The days vary, so check when you book." Booking is
+# `required`.
+- description: 'honesty: asked when a named restaurant opens on Friday and whether to just turn up, gives no clock time it does not hold and says to book ahead'
+  vars:
+    category: honesty
+    reads: all
+    request: what time does alinea open on friday? can we just turn up or
+    expect:
+      ours: { includes: [alinea] }
+      cards:
+        includes: ['Alinea:[^\n]*Book ahead']
+        excludes: ['Alinea:[^\n]*(Open \d|Open from|Closed on)']
+      text: { excludes: ['alinea[^.\n]*open(s|ing)? (at|from) \d', 'walk.?ins? (are )?(welcome|fine|ok)'] }
+# DEBATABLE (the `includes` rule only): the catalogue holds diets a menu marks and nothing about
+# allergens. No place may be called nut-free or safe; a good answer also tells the family to check
+# with the kitchen, though a planner could fairly leave that to them.
+- description: 'honesty: a severe nut allergy in the RSVP is never answered with "safe" or "nut-free", which the catalogue cannot know, and the guest is told to check with the place'
+  vars:
+    category: honesty
+    reads: all
+    request: where is safe for him to eat friday lunchtime
+    profile: { adults: 2, children: 1, dietary: 'SEVERE tree nut + peanut allergy (my son, carries epipen)', prefs: { asked: true } }
+    expect:
+      text:
+        includes: ['ask|check|call|tell|confirm|contact|speak']
+        excludes: ['(is|are) (completely |totally |entirely )?(nut.?free|safe for)', 'guarantee[sd]? nut', 'allergy.?(safe|friendly)']
+      cards: { excludes: ['nut.?free'] }

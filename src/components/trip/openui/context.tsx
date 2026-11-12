@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import { arrivalFacts, stayFacts, type ArrivalFacts, type CalendarDayModel, type Day, type Diet, type Meal, type Part, type PlannerPlace, type SavedItem, type StayFacts } from '@/domain/trip-planner';
+import type { TripProfile } from '@/domain/trip-planner/profile';
 
 /**
  * What the page hands the planner's components: the couple's places, the guest's saved weekend,
@@ -37,6 +38,8 @@ export type TripPlannerValue = {
   hotel: TripHotel | null;
   stay: StayFacts;
   arrival: ArrivalFacts;
+  /** Who the planner plans for, so a place can say what matters to them. Null: nothing is known. */
+  profile: TripProfile | null;
   onAction: (action: TripAction) => void;
 };
 
@@ -53,14 +56,15 @@ export type TripPlannerProviderProps = {
   stay?: StayFacts;
   /** Airports and parking (defaults to the travel domain's facts). */
   arrival?: ArrivalFacts;
+  profile?: TripProfile | null;
   onAction: (action: TripAction) => void;
   children: ReactNode;
 };
 
-export function TripPlannerProvider({ places, saved, target = null, calendar = null, hotel = null, stay, arrival, onAction, children }: TripPlannerProviderProps) {
+export function TripPlannerProvider({ places, saved, target = null, calendar = null, hotel = null, stay, arrival, profile = null, onAction, children }: TripPlannerProviderProps) {
   const value = useMemo<TripPlannerValue>(
-    () => ({ places, saved, target, calendar, hotel, stay: stay ?? stayFacts(), arrival: arrival ?? arrivalFacts(), onAction }),
-    [places, saved, target, calendar, hotel, stay, arrival, onAction],
+    () => ({ places, saved, target, calendar, hotel, stay: stay ?? stayFacts(), arrival: arrival ?? arrivalFacts(), profile, onAction }),
+    [places, saved, target, calendar, hotel, stay, arrival, profile, onAction],
   );
   return <TripPlannerContext.Provider value={value}>{children}</TripPlannerContext.Provider>;
 }

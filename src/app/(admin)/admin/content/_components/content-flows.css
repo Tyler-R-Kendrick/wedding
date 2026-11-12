@@ -32,3 +32,15 @@
   gap: var(--spacing-sm);
   align-items: center;
 }
+
+/* Under the opening-hours field: the hours as a guest will read them, a line for each run of days. */
+.cf-reads {
+  display: grid;
+  gap: var(--spacing-xs);
+  margin-block-start: var(--spacing-sm);
+  color: var(--color-on-surface);
+}
+
+.cf-reads__lead {
+  font-weight: 500;
+}

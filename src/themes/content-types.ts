@@ -157,8 +157,11 @@ export interface ContentKit {
   Chips: (p: { items: ChipItem[]; label: string }) => ReactNode;
   /** "Draft — not yet curated" / "Details to come". Renders nothing when neither applies. */
   StatusFlags: (p: { draft?: boolean; placeholder?: boolean }) => ReactNode;
-  /** Label/value facts as a definition list. */
-  MetaList: (p: { items: { label: string; value: ReactNode }[] }) => ReactNode;
+  /**
+   * Label/value facts as a definition list. `stack`: a value that runs to several lines (a week of
+   * opening hours, a paragraph) sits under its label on a phone, where a column beside it is too narrow.
+   */
+  MetaList: (p: { items: { label: string; value: ReactNode; stack?: boolean }[] }) => ReactNode;
   /** Our Adventures archive entries (`article[data-adventure]`). */
   /**
    * `onMap`: the ids the page's atlas has pinned. When given, rows are numbered to match their pins,

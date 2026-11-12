@@ -670,6 +670,55 @@
   gap: 0 var(--spacing-md);
 }
 
+/* Good to know before going: price, the day's hours, booking. Set under the facts above, on their
+   text column. Side by side with a middle dot between where the row is wide; one to a line, with
+   no dots, where it is not, so no line ever ends in a dot or holds a lone price. */
+.trip-place__know {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  padding-inline-start: calc(1.25rem + var(--spacing-sm));
+  list-style: none;
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  color: var(--color-on-surface);
+}
+
+@container (inline-size >= 34rem) {
+  .trip-place__know {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--spacing-sm);
+  }
+
+  .trip-place__know > li:not(:last-child)::after {
+    margin-inline-start: var(--spacing-sm);
+    color: var(--color-gold-deep);
+    content: "\00b7";
+  }
+}
+
+/* Not open at the time it would go in the plans: the one warning on a card. First, in ink and set
+   strong, with its own mark, so it is not taken for a time or a link. */
+.trip-place__shut,
+.trip-saved__fact.trip-saved__fact--shut {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-xs);
+  margin: 0;
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  font-weight: 600;
+  line-height: var(--type-body-sm-line);
+  color: var(--color-on-surface);
+}
+
+.trip-place__shut > .trip-icon {
+  block-size: 1lh;
+}
+
 .trip-place__in {
   display: inline-flex;
   flex-basis: 100%;
@@ -1428,6 +1477,10 @@
   --trip-tabs: 3.25rem;
 
   display: grid;
+
+  /* One column as wide as the page gives it, never as wide as its widest row would like: with the
+     text size doubled on a narrow phone the tabs would otherwise push the ask box off the screen. */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--spacing-lg);
   min-inline-size: 0;
 }
@@ -1473,7 +1526,10 @@
   z-index: 6;
   inset-block-start: var(--trip-top);
   display: flex;
-  gap: var(--spacing-sm);
+
+  /* Side by side wherever both names fit; one above the other before either would be cut short. */
+  flex-wrap: wrap;
+  gap: 0 var(--spacing-sm);
   border-block-end: 1px solid var(--color-outline);
 }
 
@@ -1481,6 +1537,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-sm);
+  min-inline-size: 0;
   min-block-size: 3.25rem;
   padding: var(--spacing-xs) var(--spacing-md);
   margin-block-end: -1px;
@@ -1496,6 +1553,13 @@
   /* A pinned tab sits inside the room the page keeps clear above anything it scrolls to (base.css);
      focusing it must not nudge the page to "bring it into view". */
   scroll-margin-block-start: calc(var(--trip-clear) * -1);
+}
+
+/* The narrowest phones: a little less room beside each name keeps the two on one line. */
+@media (width < 360px) {
+  .trip-tab {
+    padding-inline: var(--spacing-sm);
+  }
 }
 
 .trip-tab:hover {
@@ -1528,6 +1592,105 @@
   font-size: var(--type-body-sm-size);
   line-height: var(--type-body-sm-line);
   font-variant-numeric: tabular-nums;
+}
+
+/* ---------- who the planner plans for ---------- */
+
+/* One line above the ideas: who they are for, in the guest's own facts, and one way to change it.
+   A hairline under it sets it apart from the ideas without boxing it. */
+.trip-who {
+  display: grid;
+  gap: var(--spacing-md);
+  min-inline-size: 0;
+  padding-block-end: var(--spacing-md);
+  border-block-end: 1px solid var(--color-outline);
+
+  /* Brought back into view after its form closes: under the pinned tabs, like a question. */
+  scroll-margin-block-start: calc(var(--trip-top) + var(--trip-tabs) + var(--spacing-md) - var(--trip-clear));
+}
+
+.trip-who__line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--spacing-xs) var(--spacing-lg);
+}
+
+.trip-who__for {
+  flex: 1 1 16rem;
+  min-inline-size: 0;
+  margin: 0;
+  font-family: var(--font-text);
+  font-size: var(--type-body-md-size);
+  line-height: var(--type-body-md-line);
+  color: var(--color-on-surface);
+}
+
+.trip-who__label {
+  color: var(--color-on-surface-muted);
+}
+
+/* The party is the one part set strong; the rest of the sentence is said plainly. */
+.trip-who__party {
+  font-weight: 600;
+}
+
+.trip-who__from {
+  color: var(--color-on-surface-muted);
+}
+
+.trip-who__change {
+  flex: none;
+  font-size: var(--type-body-md-size);
+  line-height: var(--type-body-md-line);
+}
+
+/* One of several, drawn as a chip: a ring that fills when it is the one chosen. */
+.trip-radio {
+  cursor: pointer;
+}
+
+.trip-radio__dot {
+  flex: none;
+  inline-size: 0.75rem;
+  block-size: 0.75rem;
+  border: 1.5px solid currentcolor;
+  border-radius: var(--rounded-pill);
+}
+
+.trip-radio.is-picked .trip-radio__dot {
+  background: currentcolor;
+  box-shadow: inset 0 0 0 2px var(--color-secondary);
+}
+
+.trip-radio:has(:focus-visible) {
+  border-color: var(--color-gold-deep);
+  box-shadow: var(--focus-ring);
+}
+
+.trip-radio:has(:disabled) {
+  cursor: default;
+  opacity: 0.72;
+}
+
+.trip-who__form {
+  display: grid;
+  gap: var(--spacing-lg);
+  min-inline-size: 0;
+}
+
+.trip-who__problem {
+  color: var(--color-error);
+}
+
+.trip-who__go [aria-disabled="true"] {
+  cursor: default;
+  opacity: 0.72;
+}
+
+.trip-who__clear {
+  margin-inline-start: auto;
 }
 
 /* ---------- starters ---------- */

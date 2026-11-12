@@ -3,7 +3,7 @@
 import { defineAction, defineComponent, useIsStreaming, useTriggerAction, type ActionPlan } from '@openuidev/react-lang';
 import { useEffect, useRef, useState } from 'react';
 import { z } from 'zod/v4';
-import { aboutHowLong, blockDateLines, DIETS, MEALS, safeSlot, savedDate, slotName, stopMinutes, TIME_TBA, weekendDate, type Day, type Diet, type Meal, type Part, type PlannerPlace } from '@/domain/trip-planner';
+import { aboutHowLong, blockDateLines, DIETS, knowBeforeYouGo, MEALS, safeSlot, savedDate, slotName, stopMinutes, TIME_TBA, weekendDate, type Day, type Diet, type Meal, type Part, type PlannerPlace } from '@/domain/trip-planner';
 import { Icon, type IconName } from '@/themes/shared/icons';
 import { useTripPlanner } from './context';
 
@@ -96,6 +96,9 @@ function PlaceView({ id, note, day: dayProp, part: partProp, inRoute = false }: 
   const add = () => void trigger(`Add ${place.name} to my plans`, undefined, custom(AddToWeekend.name, { id: place.id, day: slot.day, part: slot.part }));
   const remove = () => void trigger(`Take ${place.name} out of my plans`, undefined, custom(RemoveFromWeekend.name, { id: place.id }));
   const howLong = inRoute ? null : aboutHowLong(stopMinutes(place).minutes);
+  // What to know before going, for the time this place is in the plans for, or would be added to.
+  const when = mine ? { date: savedDate(mine), part: mine.part } : ctx.target ? ctx.target : { date: weekendDate(slot.day), part: slot.part };
+  const know = knowBeforeYouGo(place, when, ctx.profile ?? undefined);
   const credit = place.image?.credit;
   return (
     <article className={`trip-place${inRoute ? ' trip-place--route' : ''}${mine ? ' is-saved' : ''}`}>
@@ -116,6 +119,19 @@ function PlaceView({ id, note, day: dayProp, part: partProp, inRoute = false }: 
           {howLong ? <Fact icon="clock">{howLong}</Fact> : null}
           {place.address ? <Fact icon="pin">{place.address}</Fact> : null}
         </ul>
+        {know.shut ? (
+          <p className="trip-place__shut">
+            <Icon name="alert" className="trip-icon trip-icon--sm" />
+            {know.shut}
+          </p>
+        ) : null}
+        {know.items.length ? (
+          <ul className="trip-place__know" aria-label="Good to know">
+            {know.items.map((k) => (
+              <li key={k.key}>{k.text}</li>
+            ))}
+          </ul>
+        ) : null}
         <div className="trip-place__actions">
           {mine ? (
             <>

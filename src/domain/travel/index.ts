@@ -14,3 +14,4 @@ export * from './nearest-airports';
 export * from './party';
 export * from './prefill';
 export * from './invitation-location';
+export * from './trip-preferences';
