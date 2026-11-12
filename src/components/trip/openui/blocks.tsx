@@ -119,27 +119,18 @@ function PlaceView({ id, note, day: dayProp, part: partProp, inRoute = false }: 
           {howLong ? <Fact icon="clock">{howLong}</Fact> : null}
           {place.address ? <Fact icon="pin">{place.address}</Fact> : null}
         </ul>
-        {know.items.length ? (
-          <ul className="trip-summary trip-place__know" aria-label="Good to know">
-            {know.items.map((k) => (
-              <li key={k.key}>
-                {k.say ? (
-                  <>
-                    <span aria-hidden="true">{k.text}</span>
-                    <span className="sr-only">{k.say}</span>
-                  </>
-                ) : (
-                  k.text
-                )}
-              </li>
-            ))}
-          </ul>
-        ) : null}
         {know.shut ? (
           <p className="trip-place__shut">
-            <Icon name="clock" className="trip-icon trip-icon--sm" />
+            <Icon name="alert" className="trip-icon trip-icon--sm" />
             {know.shut}
           </p>
+        ) : null}
+        {know.items.length ? (
+          <ul className="trip-place__know" aria-label="Good to know">
+            {know.items.map((k) => (
+              <li key={k.key}>{k.text}</li>
+            ))}
+          </ul>
         ) : null}
         <div className="trip-place__actions">
           {mine ? (

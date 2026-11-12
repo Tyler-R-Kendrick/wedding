@@ -161,13 +161,15 @@ export function scorePlaces(intent: Intent, places: readonly PlannerPlace[], sco
       else if (who?.kidsAlong) kw *= place.kidFriendly === false || ADULT.test(t) ? 0.5 : isKid(place) ? 1.25 : 1;
     }
     // A modest bill, or a quick bite, makes a meal of the places a plain "dinner" would pass over.
-    const modest = intent.meal === 'quick' || (intent.budget ?? 4) <= 2;
+    const modest = intent.meal === 'quick' || (intent.budget ?? 4) <= 2 || intent.walkIn === true;
     if (modest && kw === 0 && isFood(place) && !isCoffee(place) && intent.themes.some((x) => x === 'dinner' || x === 'food') && !ADULT.test(t)) kw = 1.5;
     if (intent.budget && isFood(place) && f?.priceLevel) kw = f.priceLevel > intent.budget ? 0 : kw * 1.15;
     // A menu we have read: one that marks what they eat comes first, and one that does not is passed over while another does.
     if (eats.length && someMark && isFood(place) && f?.diets?.length) kw = eats.every((d) => f.diets!.includes(d)) ? kw * 1.3 : 0;
     // Nothing booked: not the places that only take bookings.
-    if (intent.walkIn) kw *= f?.reservations === 'required' ? 0 : f?.reservations === 'walk-in' ? 1.2 : 1;
+    if (intent.walkIn) kw *= f?.reservations === 'required' || f?.reservations === 'tickets' ? 0 : f?.reservations === 'walk-in' ? 1.2 : 1;
+    // A tasting menu at over $100 each is an evening, not a lunch.
+    if (f?.priceLevel === 4 && intent.meal !== 'special' && intent.parts.length > 0 && !intent.parts.includes('evening')) kw = 0;
     if (who?.interests.length && who.interests.some((i) => themeScore(i, place) >= 2)) kw *= 1.15;
     if (intent.indoors && f?.setting === 'outdoors') kw *= 0.2;
     // Known to be shut for the whole of the time asked about.
@@ -577,7 +579,8 @@ export function draftPlan(args: {
   const standing = (prefs?.diet ?? []).filter((d) => !(meaty && (d === 'vegetarian' || d === 'vegan')));
   const diet: Diet[] = said.noDiet ? [] : [...new Set([...said.diet, ...standing])];
   const meal: Meal | null = said.meal ?? prefs?.meal ?? null;
-  const intent: Intent = eating ? { ...said, meal, allergy: said.allergy ?? args.profile?.allergy ?? null, eats: diet } : said;
+  // A whole weekend has meals in it: what they eat counts there too.
+  const intent: Intent = eating ? { ...said, meal, allergy: said.allergy ?? args.profile?.allergy ?? null, eats: diet } : said.kind === 'weekend' && diet.length ? { ...said, eats: diet } : said;
   let found = basePlan(args, intent);
   let mind = because;
   // Staying near the hotel is their standing wish, not this request's: when nothing of ours for it is
@@ -599,8 +602,17 @@ export function draftPlan(args: {
     }
   }
   // A question about one place's hours is answered with its hours, and nothing about who is asking.
-  const plan = inMind(notes(found, intent, new Map(args.places.map((p) => [p.id, p]))), asked.asksHours ? [] : mind);
-  return eating ? forTheTable(finish(plan, intent, diet, meal), diet, meal, args.places) : finish(plan, intent, [], null);
+  // A place they named that is shut at the time they asked for is not dropped without a word.
+  const shutOut = intent.at && !asked.asksHours ? namedIn(args.request, args.places).filter((p) => !found.picks.some((x) => x.id === p.id) && !mayBeOpen(p.facts?.hours, intent.at)).map((p) => shutSentence(p, intent.at!)) : [];
+  const plan = inMind(notes(found, intent, new Map(args.places.map((p) => [p.id, p])), shutOut), asked.asksHours ? [] : mind);
+  // Asked about access in so many words by a guest whose profile does not carry it: each place says
+  // what it says about the way in, on its own card.
+  const byId = new Map(args.places.map((p) => [p.id, p]));
+  const marked: Plan =
+    asked.access && !args.profile?.stepFree && ANSWERED.has(plan.shape)
+      ? { ...plan, picks: plan.picks.map((x) => (x.note ? x : { ...x, note: byId.get(x.id)?.facts?.stepFree === true ? 'Step-free way in' : byId.get(x.id)?.facts?.stepFree === false ? 'No step-free way in' : 'Call ahead about access' })) }
+      : plan;
+  return eating ? forTheTable(finish(marked, intent, diet, meal), diet, meal, args.places) : finish(marked, intent, [], null);
 }
 
 const CHANGE_PREFS = /^\s*(change|update|edit) (what i eat|what we eat|my (food|diet|dietary|meal)\b.*)\s*[.!]?\s*$/i;
@@ -622,11 +634,11 @@ function forGuest(asked: Intent, who: TripProfile | undefined, places: readonly 
   const kidsAlong = who.kids && !asked.kids && !asked.grownUps && !asked.themes.includes('drinks') && asked.meal !== 'special';
   // Said where it shapes the choice; a cup of coffee is the same cup with children along.
   if (kidsAlong && !(asked.themes.length > 0 && asked.themes.every((t) => t === 'coffee'))) because.push('the children');
-  if (who.stepFree && !asked.access) because.push('step-free access');
   // A sum they named, or a splurge they asked for, is the answer to what a meal should cost.
-  if (who.budget && who.budget < 4 && asked.budget == null && asked.meal !== 'special' && isMeal(asked) && places.some((p) => isFood(p) && !isCoffee(p) && p.facts?.priceLevel && p.facts.priceLevel <= who.budget!)) {
+  if (who.budget && who.budget < 4 && asked.budget == null && asked.meal !== 'special' && (isMeal(asked) || asked.kind === 'weekend')) {
     said = { ...said, budget: who.budget };
-    because.push(`meals ${BUDGET_LABEL[who.budget].toLowerCase()}`);
+    if (places.some((p) => isFood(p) && !isCoffee(p) && p.facts?.priceLevel && p.facts.priceLevel <= who.budget!)) because.push(`meals ${BUDGET_LABEL[who.budget].toLowerCase()}`);
+    else if (isMeal(asked)) because.push(OVER_BUDGET);
   }
   if (who.shortWalks && asked.within === null && !asked.themes.includes('day-trip') && !asked.themes.includes('hotel')) {
     said = { ...said, within: 900 };
@@ -634,10 +646,20 @@ function forGuest(asked: Intent, who: TripProfile | undefined, places: readonly 
   }
   // What they enjoy shapes an answer only where they did not say what they are after.
   const interests = asked.themes.length ? [] : who.interests;
-  return { said: { ...said, who: { stepFree: who.stepFree, kidsAlong, interests } }, because };
+  return { said: { ...said, who: { stepFree: who.stepFree, kidsAlong, interests, allergy: who.allergy } }, because };
 }
 
 const MEAT = /\b(steak\w*|bbq|barbecue|ribs|brisket|wings|burgers?|bacon|fried chicken|lobster|oysters?|sushi|hot dogs?|italian beef)\b/i;
+/** Why a place they named is not in the answer: shut that day, or open that day but not then. */
+function shutSentence(p: PlannerPlace, at: { weekday: number; from: number }): string {
+  const day = WEEKDAY_NAME[at.weekday]!;
+  const open = openOn(p.facts?.hours, (at.weekday + 1) % 7);
+  if (open?.open) return `${p.name} is open ${open.text} on ${day}s, so not at that time.`;
+  return `${p.name} is closed on ${day}s.`;
+}
+
+/** What a choice between the hotel and going out says of itself; dropped when the answer has more to say, since its two buttons say it. */
+const SWITCH_INTRO = 'Choose whether to stay in the hotel or go out.';
 const OVER_BUDGET = '!budget';
 const NEAR = 'a short walk from the hotel';
 const FAR = '!far';
@@ -658,7 +680,9 @@ function inMind(plan: Plan, because: readonly string[]): Plan {
     ...(far ? ['Nothing on our own list for this is a short walk from the hotel, so these are a ride away.'] : []),
     ...(list ? [`Chosen with ${list} in mind.`] : []),
   ];
-  return { ...plan, intro: [plan.intro, ...lines].filter(Boolean).join(' '), fixed: [...new Set([...(plan.fixed ?? []), 'intro' as const])] };
+  // "Choose whether to stay in the hotel or go out" is what the two buttons under it already say.
+  const base = plan.intro.replace(SWITCH_INTRO, '').trim();
+  return { ...plan, intro: [base, ...lines].filter(Boolean).join(' '), fixed: [...new Set([...(plan.fixed ?? []), 'intro' as const])] };
 }
 
 /**
@@ -667,10 +691,13 @@ function inMind(plan: Plan, because: readonly string[]): Plan {
  * that turns on one says which, instead of leaving the guest to assume. No kitchen is vouched for
  * on an allergy.
  */
-function notes(plan: Plan, intent: Intent, places: ReadonlyMap<string, PlannerPlace>): Plan {
-  if (plan.shape !== 'picks' && plan.shape !== 'route' && plan.shape !== 'switch' && plan.shape !== 'budget') return plan;
+function notes(plan: Plan, intent: Intent, places: ReadonlyMap<string, PlannerPlace>, shutOut?: readonly string[]): Plan {
+  const allergy = intent.allergy ?? (plan.picks.some((x) => places.get(x.id) && isFood(places.get(x.id)!)) || isMeal(intent) ? (intent.who?.allergy ?? null) : null);
+  const warning = allergy ? `We cannot vouch for any kitchen on ${allergy === 'food' ? 'an allergy' : `a ${allergy} allergy`}: tell the restaurant when you book, and check again before you order.` : null;
+  // Nothing found is still an answer to someone with an allergy: what to do is said either way.
+  if (!ANSWERED.has(plan.shape)) return warning && plan.shape === 'ask' ? { ...plan, intro: [plan.intro, warning].filter(Boolean).join(' '), fixed: [...new Set([...(plan.fixed ?? []), 'intro' as const])] } : plan;
   const picked = plan.picks.flatMap((x) => places.get(x.id) ?? []);
-  const lines: string[] = [];
+  const lines: string[] = [...(shutOut ?? [])];
   if (intent.asksHours) {
     // Asked about one day, the first place (the one they named) is answered for that day, in words.
     const first = picked[0];
@@ -681,21 +708,24 @@ function notes(plan: Plan, intent: Intent, places: ReadonlyMap<string, PlannerPl
       lines.push(
         picked.some((p) => p.facts?.hours)
           ? 'The hours we have are on each place below. They change, so check with the place before you go.'
-          : 'We do not hold opening hours for these, so check with the place before you go.',
+          : `We have not checked the hours ${picked.length === 1 ? 'here' : 'at these'}, so check with the place before you go.`,
       );
     }
   }
   if (intent.access || intent.who?.stepFree) {
+    // Said for what the places themselves say, never more: checked, partly checked, or not checked.
     const known = picked.filter((p) => p.facts?.stepFree === true).length;
-    if (!known) lines.push('We do not hold wheelchair or step-free details for these, so call ahead to check.');
-    // Asked in so many words, it is answered in words; otherwise each place says it for itself.
-    else if (known < picked.length && intent.access) lines.push('A step-free way in is marked on the places that say they have one. Call ahead for the others.');
+    if (!known) lines.push(`We have not checked the way in ${picked.length === 1 ? 'here' : 'at these'}, so call ahead.`);
+    else if (known < picked.length) lines.push('A step-free way in is marked where the place says it has one. Call ahead for the others.');
+    else lines.push(picked.length === 1 ? 'It says it has a step-free way in.' : 'Each of these says it has a step-free way in.');
   }
-  if (intent.allergy) lines.push(`We cannot vouch for any kitchen on ${intent.allergy === 'food' ? 'an allergy' : `a ${intent.allergy} allergy`}: tell the restaurant when you book, and check again before you order.`);
+  if (warning) lines.push(warning);
   if (!lines.length) return plan;
   // A question about hours is not answered with a day of stops and our own rough times for them.
   const base: Plan = intent.asksHours && plan.shape === 'route' ? { ...plan, shape: 'picks', route: undefined, intro: '' } : plan;
-  return { ...base, intro: [base.intro, ...lines].filter(Boolean).join(' '), fixed: [...new Set([...(base.fixed ?? []), 'intro' as const])] };
+  // What the two buttons of a choice already say is not said again before these.
+  const lead = base.intro.replace(SWITCH_INTRO, '').trim();
+  return { ...base, intro: [lead, ...lines].filter(Boolean).join(' '), fixed: [...new Set([...(base.fixed ?? []), 'intro' as const])] };
 }
 
 /** A request for a meal (not only a coffee or a drink). */
@@ -737,7 +767,7 @@ function clarifyPlan(request: string): Plan {
     clarify: {
       request,
       groups: [
-        { id: 'diet', label: 'Anything you do not eat?', multi: true, options: DIET_OPTIONS },
+        { id: 'diet', label: 'Any of these at your table?', multi: true, options: DIET_OPTIONS },
         { id: 'meal', label: 'What kind of meal?', multi: false, options: MEAL_OPTIONS },
       ],
     },
@@ -857,17 +887,30 @@ function basePlan(
   }
   if (intent.kind === 'weekend') return weekendPlan(intent, places, saved, scores);
 
-  // A place of ours asked about by name ("is the Monadnock one open on Friday?") is the answer, first.
-  const about = intent.asksHours ? namedIn(request, places) : [];
-  if (about.length && intent.kind === 'places' && intent.asksHours) {
+  // A place of ours asked about by name ("is the Monadnock one open on Friday?", "does the Game Room
+  // let kids in?") is the answer. Not when it is only a landmark or somewhere already done, and not
+  // when it is shut at the time asked for: then the answer is what is open, and says why.
+  const about = intent.kind === 'places' ? subjectsOf(request, places).filter((p) => mayBeOpen(p.facts?.hours, intent.at)) : [];
+  if (about.length && (intent.asksHours || /\?/.test(request))) {
+    const first = about[0]!;
+    // Asked whether children may come: what the place says, or that we have not checked.
+    const forKids = !intent.kids ? '' : (first.facts?.minAge ?? 0) > 0 ? `Ages ${first.facts!.minAge} and over only.` : first.kidFriendly === true ? 'It is good with children.' : 'We have not checked whether children are welcome here, so ask before you go.';
     return {
       shape: 'picks',
-      title: about.length === 1 ? about[0]!.name : 'From our list',
-      intro: '',
+      title: about.length === 1 ? first.name : 'From our list',
+      intro: forKids,
       picks: about.slice(0, 3).map((p) => ({ id: p.id, ...slotFor(p, intent) })),
       next: nextFor(intent, saved, 'picks'),
       fixed: ['title', 'intro'],
     };
+  }
+  // A first visit, and what not to miss: one of each kind of thing from our list, so it is a spread.
+  if (intent.mustSee && !intent.themes.length && (intent.kind === 'places' || intent.kind === 'open')) {
+    const kinds = ['architecture', 'culture', 'outdoors', 'with-kids', 'food-drink', 'stay-inside-caa'];
+    const spread = kinds.flatMap((c) => places.find((p) => p.category === c && !ruledOut(p, intent) && scorePlaces(intent, [p])[0]!.keyword > 0) ?? []).slice(0, MOST_PICKS);
+    if (spread.length >= 2) {
+      return { shape: 'picks', title: 'Not to be missed', intro: 'One of each kind of thing from our own list.', picks: spread.map((p) => ({ id: p.id, ...slotFor(p, intent) })), next: nextFor(intent, saved, 'picks'), fixed: ['title', 'intro'] };
+    }
   }
 
   let ranked = byMeal(scorePlaces(intent, places, scores), intent.meal).filter((r) => !ruledOut(r.place, intent));
@@ -901,7 +944,7 @@ function basePlan(
 }
 
 /** Words in a place's name that do not single it out. */
-const PLAIN_NAME = new Set(['the', 'of', 'and', 'a', 'our', 'try', 'explore', 'chicago', 'chicagos', 'coffee', 'museum', 'park', 'garden', 'room', 'center', 'centre', 'tours', 'tour', 'walking', 'cruise', 'river', 'architecture', 'classics', 'reserve', 'co', 'association', 'athletic', 'science', 'industry', 'institute', 'art', 'house', 'steakhouse', 'steak', 'ice', 'cream', 'blue', 'game', 'drawing', 'grant', 'lincoln']);
+const PLAIN_NAME = new Set(['the', 'of', 'and', 'a', 'our', 'try', 'explore', 'chicago', 'chicagos', 'coffee', 'museum', 'park', 'garden', 'room', 'center', 'centre', 'tours', 'tour', 'walking', 'cruise', 'river', 'architecture', 'classics', 'reserve', 'co', 'association', 'athletic', 'science', 'industry', 'institute', 'art', 'house', 'steakhouse', 'steak', 'ice', 'cream', 'blue', 'game', 'drawing', 'grant', 'lincoln', 'hotel', 'cafe', 'bar', 'restaurant', 'lounge', 'rooftop', 'building', 'state', 'walk', 'counter', 'burger', 'pizza', 'place', 'tasting', 'kitchen', 'grill', 'market', 'street', 'north', 'south', 'east', 'west', 'city', 'lake', 'lakeside']);
 const plainWords = (text: string) =>
   text
     .toLowerCase()
@@ -916,6 +959,19 @@ const plainWords = (text: string) =>
  * "blue bottle"), or by a word of the name that belongs to no other place and is not a plain word
  * ("intelligentsia", "shedd"). A plain word never names a place: "a museum" is not the Art Institute.
  */
+/** Named only as somewhere to be near, or as somewhere already done: not what the request is about. */
+const ASIDE = /\b(near|nearby|by|beside|next to|around|from|close to|opposite|across from|after|before|besides|other than|instead of|not|skip|skipping|did|done|seen|been to|went to|visited|already|except|apart from)\s+(the\s+|our\s+)?$/;
+
+/** The places of ours a request is about: named, and not only as a landmark or as somewhere they have been. */
+export function subjectsOf(request: string, places: readonly PlannerPlace[]): PlannerPlace[] {
+  const said = plainWords(request);
+  return namedIn(request, places).filter((p) => {
+    const words = plainWords(p.name).split(' ').filter((w) => w !== 'the');
+    const at = [words.join(' '), words.slice(0, 2).join(' '), ...words.filter((w) => w.length >= 5 && !PLAIN_NAME.has(w))].map((w) => said.indexOf(w)).filter((i) => i >= 0);
+    return at.length > 0 && !at.every((i) => ASIDE.test(said.slice(0, i)));
+  });
+}
+
 export function namedIn(request: string, places: readonly PlannerPlace[]): PlannerPlace[] {
   const said = ` ${plainWords(request)} `;
   const names = places.map((p) => ({ p, words: plainWords(p.name).split(' ').filter(Boolean) }));
@@ -953,10 +1009,13 @@ function ruledOut(p: PlannerPlace, intent: Intent): boolean {
 function byMeal(ranked: Scored[], meal: Meal | null): Scored[] {
   if (!meal) return ranked;
   const opposite: Meal | null = meal === 'special' ? 'quick' : meal === 'quick' ? 'special' : null;
+  // A sit-down meal is not a counter or a coffee bar: with two places of ours to sit down at, those are left out.
+  const tables = ranked.filter((r) => r.score > 0 && isFood(r.place) && !isCoffee(r.place) && mealOf(r.place) !== 'quick').length;
   return ranked
     .map((r) => {
       if (r.score <= 0 || !isFood(r.place)) return r;
       const is = mealOf(r.place);
+      if (meal === 'sit-down' && (is === 'quick' || isCoffee(r.place))) return { ...r, score: tables >= 2 ? 0 : r.score * 0.2 };
       return { ...r, score: is === meal ? r.score * 2 : is === opposite ? 0 : r.score };
     })
     .sort((a, b) => b.score - a.score);

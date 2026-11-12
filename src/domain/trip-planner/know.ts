@@ -8,7 +8,7 @@ import type { Diet, Part, PlannerPlace } from './types';
  * way in, what they eat). Only what the place's own record holds: a fact that is absent is left
  * out, never guessed. `shut` is the one thing said as a warning: the place is not open at that time.
  */
-export type Know = { items: { key: string; text: string; say?: string }[]; shut: string | null };
+export type Know = { items: { key: string; text: string }[]; shut: string | null };
 
 const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const PART_WORDS: Record<Part, string> = { morning: 'morning', afternoon: 'afternoon', evening: 'evening' };
@@ -18,7 +18,8 @@ export function knowBeforeYouGo(place: PlannerPlace, when: { date: string; part:
   const items: Know['items'] = [];
   let shut: string | null = null;
   const price = priceWords(f.priceLevel);
-  if (price) items.push({ key: 'price', text: price.symbol, say: `${price.label}, ${price.range}` });
+  // The symbols guests know from elsewhere, with what they mean here beside them.
+  if (price) items.push({ key: 'price', text: `${price.symbol}, ${price.range}` });
   // A ticket price runs long; the card carries its first clause and the place's page the rest.
   if (f.cost) items.push({ key: 'cost', text: f.cost.split(';')[0]!.trim().replace(/\.$/, '') });
   if (when && f.hours) {

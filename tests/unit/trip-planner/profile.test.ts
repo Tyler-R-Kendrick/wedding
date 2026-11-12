@@ -14,13 +14,15 @@ const withFacts = (facts: Record<string, PlaceFacts>, more: Record<string, Parti
   PLACES.map((p) => ({ ...p, ...(facts[p.id] ? { facts: facts[p.id] } : {}), ...(more[p.id] ?? {}) }));
 const who = (over: Partial<TripProfile> = {}): TripProfile => ({ ...profileOf({ adults: 2, children: 0, dietary: null, accessibility: null }, null), ...over });
 const ids = (plan: { picks: { id: string }[] }) => plan.picks.map((p) => p.id);
+/** Clock times keep their "pm" on the line with a no-break space; the tests read them as plain words. */
+const plain = <T,>(v: T): T => JSON.parse(JSON.stringify(v).replace(/\u00a0/g, ' ')) as T;
 
 describe('the profile', () => {
   it('starts from the invitation and the RSVP, and says where each part came from', () => {
     const p = profileOf({ adults: 2, children: 2, dietary: 'Both vegan. Sam has a tree nut allergy', accessibility: 'Grandma uses a walker and cannot walk far' }, null);
     expect(p).toMatchObject({ party: { adults: 2, children: 2 }, kids: true, diet: ['vegan'], allergy: 'tree nut', stepFree: true, shortWalks: true, asked: true, saved: false });
-    expect(p.from).toEqual({ diet: 'rsvp', stepFree: 'rsvp', kids: 'rsvp' });
-    expect(profileSummary(p).map((f) => f.text)).toEqual(['2 adults and 2 children', 'Vegan', 'Tree nut allergy', 'Step-free places', 'Close to the hotel']);
+    expect(p.from).toEqual({ diet: 'rsvp', stepFree: 'rsvp', shortWalks: 'rsvp', kids: 'rsvp' });
+    expect(profileSummary(p).map((f) => f.text)).toEqual(['2 adults and 2 children', 'vegan', 'a tree nut allergy', 'step-free places', 'close to the hotel']);
   });
 
   it('knows nothing it was not told: no records, no answers, one adult', () => {
@@ -41,6 +43,25 @@ describe('the profile', () => {
     expect(readNeeds(null, 'Bad knees, short distances only')).toMatchObject({ stepFree: false, shortWalks: true, nothing: false });
   });
 
+  it('never reads a note as the opposite of what it says', () => {
+    for (const note of ['No mobility issues', 'No need for a ramp', 'none', 'No wheelchair needed, thank you', "We don't need any assistance"]) expect(readNeeds(null, note), note).toMatchObject({ stepFree: false, shortWalks: false });
+    for (const note of ['No stairs please', 'She cannot manage steps', 'Wheelchair user', 'Travelling with a double buggy']) expect(readNeeds(null, note).stepFree, note).toBe(true);
+    expect(readNeeds(null, 'Uses a cane')).toMatchObject({ stepFree: false, shortWalks: true });
+    expect(readNeeds(null, 'Cannot walk far')).toMatchObject({ shortWalks: true });
+    expect(readNeeds('Not vegetarian, just no mushrooms', null).diet).toEqual([]);
+    expect(readNeeds('No allergies', null)).toMatchObject({ allergy: null, diet: [] });
+    expect(readNeeds('vegetarian, and my husband is not', null).diet).toEqual(['vegetarian']);
+    expect(readNeeds('No gluten for me', null).diet).toEqual(['gluten-free']);
+    expect(readNeeds("I don't eat meat", null).diet).toEqual(['vegetarian']);
+  });
+
+  it('says where each thing came from, and children nobody is counted for without inventing a number', () => {
+    const cane = profileOf({ adults: 1, children: 0, dietary: null, accessibility: 'Uses a cane' }, null);
+    expect(profileSummary(cane)).toEqual([{ key: 'party', text: 'Just you' }, { key: 'shortWalks', text: 'close to the hotel', from: 'rsvp' }]);
+    expect(profileSummary(profileOf({ adults: 1, children: 0, dietary: null, accessibility: null }, { ...NO_PREFS, kids: true }))[0]).toEqual({ key: 'party', text: 'You, with children' });
+    expect(profileSummary(profileOf(null, { ...NO_PREFS, interests: ['coffee', 'food', 'drinks', 'view'] })).at(-1)!.text).toBe('coffee, good food and 2 more');
+  });
+
   it('once the guest has answered here, their answers stand exactly, "nothing" included', () => {
     const records = { adults: 2, children: 1, dietary: 'vegetarian', accessibility: 'wheelchair' };
     // "Nothing" and "no" are answers and stand; what they have not said still comes from the RSVP.
@@ -49,8 +70,8 @@ describe('the profile', () => {
     expect(profileOf(records, { ...NO_PREFS, budget: 2, asked: true })).toMatchObject({ diet: ['vegetarian'], stepFree: true, budget: 2 });
     const mine = profileOf(records, { ...NO_PREFS, diet: ['kosher'], stepFree: false, kids: false, budget: 2, interests: ['coffee', 'view'], asked: true });
     expect(mine).toMatchObject({ diet: ['kosher'], kids: false, budget: 2, saved: true });
-    expect(mine.from).toEqual({ diet: 'you', stepFree: null, kids: 'you' });
-    expect(profileSummary(mine).map((f) => f.text)).toEqual(['2 adults', 'Kosher', 'Up to $40 each for a meal', 'Coffee, Views']);
+    expect(mine.from).toEqual({ diet: 'you', stepFree: null, shortWalks: null, kids: 'you' });
+    expect(profileSummary(mine).map((f) => f.text)).toEqual(['2 adults', 'kosher', 'meals up to $40 each', 'coffee and views']);
   });
 
   it('a change starts from every answer as it stands, so saving one never drops another', () => {
@@ -149,13 +170,13 @@ describe('what the planner does with a place’s own facts', () => {
     const hours = draftPlan({ request: 'When does the art museum open?', places, saved: [] });
     expect(hours.intro).toMatch(/hours we have are on each place/);
     // Asked about one day, the answer is that day's hours, in a sentence.
-    expect(draftPlan({ request: 'What time does the art museum open on Sunday?', places, saved: [] }).intro).toMatch(/^Art Museum is open 10 am to 5 pm on Sundays\. Hours change/);
+    expect(plain(draftPlan({ request: 'What time does the art museum open on Sunday?', places, saved: [] }).intro)).toMatch(/^Art Museum is open 10 am to 5 pm on Sundays\. Hours change/);
     const shut = withFacts({ 'art-museum': { hours: 'Mo off; Tu-Su 10:00-17:00' } });
     expect(draftPlan({ request: 'What time does the art museum open on Monday?', places: shut, saved: [] }).intro).toMatch(/Art Museum is closed on Mondays\./);
     const none = draftPlan({ request: 'When does the art museum open?', places: PLACES, saved: [] });
-    expect(none.intro).toMatch(/do not hold opening hours/);
+    expect(none.intro).toMatch(/We have not checked the hours here, so check with the place/);
     const access = draftPlan({ request: 'A museum we can visit with a wheelchair', places, saved: [] });
-    expect(access.intro).not.toMatch(/do not hold wheelchair/);
+    expect(access.intro).not.toMatch(/have not checked the way in/);
   });
 
   it('says which picks mark what the guest eats on the menu', () => {
@@ -182,7 +203,9 @@ describe('what the planner does with who it is for', () => {
     const places = withFacts({ aquarium: { stepFree: true }, 'art-museum': { stepFree: false } });
     const plan = draftPlan({ request: 'A museum for Sunday morning', places, saved: [], profile: who({ stepFree: true }) });
     expect(ids(plan)).not.toContain('art-museum');
-    expect(plan.intro).toMatch(/Chosen with step-free access in mind\./);
+    // Said for what the places themselves say, never more.
+    expect(plan.intro).toMatch(/A step-free way in is marked where the place says it has one\. Call ahead for the others\.|Each of these says it has a step-free way in\.|It says it has a step-free way in\./);
+    expect(plan.intro).not.toMatch(/in mind/);
     expect(ids(draftPlan({ request: 'A museum for Sunday morning', places, saved: [] }))).toContain('art-museum');
   });
 
@@ -245,8 +268,8 @@ describe('what a card says before you go', () => {
 
   it('gives the price as symbols with words behind them, the hours for that day, and whether to book', () => {
     const k = knowBeforeYouGo(place({ priceLevel: 3, hours: 'Su,Mo off; Tu-Sa 17:00-22:00', reservations: 'required' }), FRI);
-    expect(k.items).toEqual([
-      { key: 'price', text: '$$$', say: 'Pricey, $40 to $100 each' },
+    expect(plain(k.items)).toEqual([
+      { key: 'price', text: '$$$, $40 to $100 each' },
       { key: 'hours', text: 'Open 5 pm to 10 pm on Friday' },
       { key: 'booking', text: 'Book ahead' },
     ]);
@@ -256,7 +279,7 @@ describe('what a card says before you go', () => {
   it('warns when the place is shut that day, or open that day but not in that part of it', () => {
     const p = place({ hours: 'Su,Mo off; Tu-Sa 17:00-22:00' });
     expect(knowBeforeYouGo(p, { date: '2027-07-18', part: 'evening' }).shut).toBe('Closed on Sundays.');
-    expect(knowBeforeYouGo(p, { date: '2027-07-16', part: 'morning' }).shut).toBe('Open 5 pm to 10 pm on Fridays, so not in the morning.');
+    expect(plain(knowBeforeYouGo(p, { date: '2027-07-16', part: 'morning' }).shut)).toBe('Open 5 pm to 10 pm on Fridays, so not in the morning.');
     expect(knowBeforeYouGo(p, null)).toEqual({ items: [], shut: null });
   });
 
@@ -313,7 +336,7 @@ describe('a place asked about by name, and the other things a request can say', 
     const family = who({ kids: true, party: { adults: 2, children: 2 } });
     const plan = draftPlan({ request: 'Is Corner Roastery open on Friday morning?', places, saved: [], profile: family });
     expect(ids(plan)).toEqual(['corner-roastery']);
-    expect(plan.intro).toBe('Corner Roastery is open 7 am to 6 pm on Fridays. Hours change, so check with the place before you go.');
+    expect(plain(plan.intro)).toBe('Corner Roastery is open 7 am to 6 pm on Fridays. Hours change, so check with the place before you go.');
     expect(draftPlan({ request: 'Is Corner Roastery open on Sunday?', places, saved: [] }).intro).toMatch(/^Corner Roastery is closed on Sundays\./);
   });
 
@@ -356,5 +379,35 @@ describe('a place asked about by name, and the other things a request can say', 
   it('for a special night out with cocktails, a cocktail bar that is not cheap is one of the picks', () => {
     const places = withFacts({ rooftop: { priceLevel: 3 } });
     expect(ids(draftPlan({ request: 'Date night Friday, cocktails somewhere special', places, saved: [], prefs: ASKED }))).toContain('rooftop');
+  });
+});
+
+describe('what the review asked for', () => {
+  it('a planned weekend keeps its meals to what they would spend and to menus that mark what they eat', () => {
+    const places = withFacts({ steakhouse: { priceLevel: 3, diets: ['gluten-free'] }, 'tasting-room': { priceLevel: 4 }, 'pizza-place': { priceLevel: 2, diets: ['vegetarian'] }, 'burger-counter': { priceLevel: 2, diets: ['vegetarian'] } });
+    const plan = draftPlan({ request: 'Plan my whole weekend', places, saved: [], profile: who({ budget: 2, diet: ['vegetarian'], asked: true }), prefs: { diet: ['vegetarian'], meal: null, asked: true } });
+    expect(plan.shape).toBe('weekend');
+    expect(ids(plan)).not.toContain('steakhouse');
+    expect(ids(plan)).not.toContain('tasting-room');
+  });
+
+  it('a place they named that is shut then is not dropped without a word', () => {
+    const places = withFacts({ rooftop: { hours: 'Su,Mo off; Tu-Sa 17:00-23:00' } });
+    const plan = draftPlan({ request: 'Drinks at The Rooftop on Sunday evening', places, saved: [] });
+    expect(ids(plan)).not.toContain('rooftop');
+    expect(plan.intro).toMatch(/^The Rooftop is closed on Sundays\./);
+  });
+
+  it('says only what the places say about the way in: checked, partly checked, or not checked', () => {
+    const need = who({ stepFree: true });
+    const all = withFacts(Object.fromEntries(PLACES.map((p) => [p.id, { stepFree: true }])));
+    expect(draftPlan({ request: 'A museum for Sunday morning', places: all, saved: [], profile: need }).intro).toMatch(/says it has a step-free way in\./);
+    expect(draftPlan({ request: 'A museum for Sunday morning', places: PLACES, saved: [], profile: need }).intro).toMatch(/We have not checked the way in (here|at these), so call ahead\./);
+  });
+
+  it('a choice between the hotel and going out is said by its buttons, not twice', () => {
+    const plan = draftPlan({ request: 'Where should we get dinner on Friday?', places: PLACES, saved: [], prefs: ASKED, profile: who({ kids: true, party: { adults: 2, children: 1 } }) });
+    if (plan.shape === 'switch') expect(plan.intro).not.toMatch(/Choose whether/);
+    expect(plan.intro).toMatch(/Chosen with the children in mind\./);
   });
 });

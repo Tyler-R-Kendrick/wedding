@@ -684,7 +684,7 @@ describe('the Your Trip planner', () => {
     const { saveOwn } = setup({ actions: { ...baseActions(), searchNearby } });
     await ask('Where should we get dinner?');
     expect(await screen.findByRole('heading', { level: 3, name: 'Two things first, so the places fit' })).toBeTruthy();
-    const form = screen.getByText('Anything you do not eat?').closest('form')!;
+    const form = screen.getByText('Any of these at your table?').closest('form')!;
     // Nothing is recommended, and nothing is searched for, until they answer.
     expect(document.querySelector('article.trip-place')).toBeNull();
     expect(searchNearby).not.toHaveBeenCalled();
@@ -724,7 +724,7 @@ describe('the Your Trip planner', () => {
     expect(searchNearby.mock.calls[1]![0]).toMatchObject({ diet: ['vegetarian'] });
     // Clearing the thread clears the questions, not what they told us about themselves.
     await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Clear and start over' })));
-    expect(screen.getByLabelText('Who we are planning for').textContent).toContain('Vegetarian');
+    expect(screen.getByLabelText('Who we are planning for').textContent).toContain('vegetarian');
     await ask('Where should we get dinner?');
     await waitFor(() => expect(searchNearby).toHaveBeenCalledTimes(3));
     expect(screen.queryByRole('heading', { level: 3, name: 'Two things first, so the places fit' })).toBeNull();
@@ -732,7 +732,7 @@ describe('the Your Trip planner', () => {
     await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Clear and start over' })));
     await act(async () => fireEvent.click(within(screen.getByLabelText('Who we are planning for')).getByRole('button', { name: 'Change' })));
     await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Clear my answers' })));
-    expect(screen.getByLabelText('Who we are planning for').textContent).not.toContain('Vegetarian');
+    expect(screen.getByLabelText('Who we are planning for').textContent).not.toContain('vegetarian');
     await ask('Where should we get dinner?');
     expect(await screen.findByRole('heading', { level: 3, name: 'Two things first, so the places fit' })).toBeTruthy();
     await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Skip this' })));
@@ -828,7 +828,9 @@ describe('who the planner plans for', () => {
     setup({ profile: profile() });
     expect(bar().textContent).toContain('Planning for');
     expect(bar().textContent).toContain('2 adults and 1 child');
-    expect(bar().textContent).toContain('Vegetarian (from your RSVP)');
+    // One sentence: who, set strong, then what narrows the ideas, each said where it came from.
+    expect(bar().querySelector('p')!.textContent).toBe('Planning for 2 adults and 1 child, vegetarian (from your RSVP).');
+    expect(bar().querySelector('strong')!.textContent).toBe('2 adults and 1 child');
     const starters = within(screen.getByRole('group', { name: 'Ideas to start with' })).getAllByRole('button').map((b) => b.textContent);
     expect(starters[0]).toContain('A morning out with the kids');
     expect(starters[1]).toContain('Vegetarian dinner near the hotel');
@@ -851,21 +853,22 @@ describe('who the planner plans for', () => {
     const form = bar().querySelector('form')!;
     expect(within(form).getByRole('button', { name: 'Vegetarian' }).getAttribute('aria-pressed')).toBe('true');
     expect(within(form).getByRole('button', { name: 'Children come along' }).getAttribute('aria-pressed')).toBe('true');
-    expect(within(form).getByRole('button', { name: 'No limit' }).getAttribute('aria-pressed')).toBe('true');
+    // What they would spend is one of several: radios, with "No limit" chosen until they say.
+    expect((within(form).getByRole('radio', { name: 'No limit' }) as HTMLInputElement).checked).toBe(true);
+    expect(within(form).getAllByRole('radio')).toHaveLength(4);
     // The first control of the form has the keyboard.
     expect(document.activeElement).toBe(within(form).getByRole('button', { name: 'Vegetarian' }));
-    expect(within(form).getByText(/Your RSVP and your meal at the wedding stay as you left them/)).toBeTruthy();
+    // Said first, for the whole form: nothing here changes the RSVP.
+    expect(form.firstElementChild!.textContent).toBe('These shape the ideas on this page. Your RSVP and your meal at the wedding stay as you left them.');
     await act(async () => fireEvent.click(within(form).getByRole('button', { name: 'Vegetarian' })));
-    await act(async () => fireEvent.click(within(form).getByRole('button', { name: 'Up to $40 each' })));
+    await act(async () => fireEvent.click(within(form).getByRole('radio', { name: 'Up to $40 each' })));
     await act(async () => fireEvent.click(within(form).getByRole('button', { name: 'Step-free places only' })));
     await act(async () => fireEvent.click(within(form).getByRole('button', { name: 'Museums' })));
     await act(async () => fireEvent.click(within(form).getByRole('button', { name: 'Save' })));
     // Unticking what the RSVP said is an answer too: nothing is put back. Children are as the invitation says, so not saved.
     expect(savePrefs).toHaveBeenCalledWith({ prefs: { diet: [], meal: null, budget: 2, stepFree: true, shortWalks: false, interests: ['museum'], kids: null, asked: true }, basedOn: null });
     await waitFor(() => expect(bar().querySelector('form')).toBeNull());
-    expect(bar().textContent).not.toContain('Vegetarian');
-    expect(bar().textContent).toContain('Up to $40 each for a meal');
-    expect(bar().textContent).toContain('Step-free places');
+    expect(bar().querySelector('p')!.textContent).toBe('Planning for 2 adults and 1 child, meals up to $40 each, step-free places, museums.');
     expect(screen.getByText('Saved. New ideas will fit this.')).toBeTruthy();
     // Back on the button that opened it.
     expect(document.activeElement).toBe(within(bar()).getByRole('button', { name: 'Change' }));
@@ -883,7 +886,7 @@ describe('who the planner plans for', () => {
     expect(within(bar()).getByRole('button', { name: 'Vegan' }).getAttribute('aria-pressed')).toBe('false');
     await act(async () => fireEvent.click(within(bar()).getByRole('button', { name: 'Cancel' })));
     expect(savePrefs).not.toHaveBeenCalled();
-    expect(bar().textContent).toContain('Vegetarian (from your RSVP)');
+    expect(bar().textContent).toContain('vegetarian (from your RSVP)');
   });
 
   it('a save that fails says so in the form, keeps the answers on the page, and can be tried again', async () => {
@@ -894,7 +897,9 @@ describe('who the planner plans for', () => {
     await act(async () => fireEvent.click(within(bar()).getByRole('button', { name: 'Save' })));
     expect(await within(bar()).findByRole('alert')).toHaveProperty('textContent', 'We could not save that just now. Your answers still apply on this page.');
     expect(bar().querySelector('form')).toBeTruthy();
-    expect(bar().textContent).toContain('Kosher');
+    expect(bar().textContent).toContain('kosher');
+    // Tried again, and saved: the chips were never locked out by the failure.
+    expect(within(bar()).getByRole('button', { name: 'Save' }).getAttribute('aria-disabled')).toBeNull();
   });
 
   it('answers changed on another device since are shown, not overwritten', async () => {
@@ -904,9 +909,9 @@ describe('who the planner plans for', () => {
     await act(async () => fireEvent.click(within(bar()).getByRole('button', { name: 'Change' })));
     await act(async () => fireEvent.click(within(bar()).getByRole('button', { name: 'Vegan' })));
     await act(async () => fireEvent.click(within(bar()).getByRole('button', { name: 'Save' })));
-    await waitFor(() => expect(bar().textContent).toContain('Halal'));
-    expect(bar().textContent).not.toContain('Vegan');
-    expect(screen.getByText(/You changed this on another device since/)).toBeTruthy();
+    await waitFor(() => expect(bar().textContent).toContain('halal'));
+    expect(bar().textContent).not.toContain('vegan');
+    expect(screen.getByText('These were changed somewhere else a moment ago, so we kept those.')).toBeTruthy();
   });
 
   it('an answer to the meal question is kept with the guest’s other answers, so it is not asked on another visit', async () => {
@@ -917,7 +922,7 @@ describe('who the planner plans for', () => {
     await act(async () => fireEvent.click(within(turn).getByRole('button', { name: 'Gluten-free' })));
     await act(async () => fireEvent.click(within(turn).getByRole('button', { name: 'Show me places' })));
     expect(savePrefs).toHaveBeenCalledWith({ prefs: expect.objectContaining({ diet: ['gluten-free'], asked: true }), basedOn: null });
-    await waitFor(() => expect(bar().textContent).toContain('Gluten-free'));
+    await waitFor(() => expect(bar().textContent).toContain('gluten-free'));
   });
 
   it('a place says what to know before going, for the guest it is shown to', async () => {
@@ -926,14 +931,17 @@ describe('who the planner plans for', () => {
     await ask('Something for the kids on Sunday morning');
     const card = (await screen.findAllByRole('link', { name: 'The Aquarium' }))[0]!.closest('article')!;
     const know = within(card).getByRole('list', { name: 'Good to know' });
-    expect(within(know).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['Adults about $40', 'Open 9 am to 5 pm on Sunday', 'Timed tickets, buy ahead', 'Step-free way in']);
+    expect(within(know).getAllByRole('listitem').map((li) => li.textContent!.replace(/\u00a0/g, ' '))).toEqual(['Adults about $40', 'Open 9 am to 5 pm on Sunday', 'Timed tickets, buy ahead', 'Step-free way in']);
   });
 
   it('a plan for a time the place is shut says so on My plans, where it can be moved', async () => {
     const places = PLACES.map((p) => (p.id === 'steakhouse' ? { ...p, facts: { hours: 'Su,Mo off; Tu-Sa 17:00-22:00' } } : p));
     setup({ places, saved: [{ id: 'steakhouse', day: 'sun', part: 'evening', name: 'The Steakhouse' }] });
     fireEvent.click(screen.getByRole('tab', { name: /My plans/ }));
-    expect(screen.getByText('Closed on Sundays. Move it to another time.')).toBeTruthy();
+    const shut = screen.getByText('Closed on Sundays. Move it to another time.');
+    expect(shut).toBeTruthy();
+    // No time of day is printed for a visit that cannot happen then.
+    expect(within(shut.closest('article')!).queryByText(/^Around /)).toBeNull();
   });
 
   it('coming back to the page brings in what was saved elsewhere, without touching a change still being saved', async () => {
@@ -947,10 +955,42 @@ describe('who the planner plans for', () => {
       vi.setSystemTime(Date.now() + 20_000);
       await act(async () => window.dispatchEvent(new Event('focus')));
       expect(refresh).toHaveBeenCalledTimes(1);
-      await waitFor(() => expect(bar().textContent).toContain('Up to $40 each for a meal'));
+      await waitFor(() => expect(bar().textContent).toContain('meals up to $40 each'));
       expect(screen.getByRole('tab', { name: /My plans/ }).textContent).toContain('1');
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe('who the planner plans for: the states around it', () => {
+  const bar = () => screen.getByLabelText('Who we are planning for');
+  it('a guest who saves with nothing ticked is invited again, not offered a change of nothing', async () => {
+    setup();
+    await act(async () => fireEvent.click(within(bar()).getByRole('button', { name: 'Make the ideas fit you' })));
+    await act(async () => fireEvent.click(within(bar()).getByRole('button', { name: 'Save' })));
+    expect(bar().querySelector('p')!.textContent).toBe('Planning for Just you.');
+    expect(within(bar()).getByRole('button', { name: 'Make the ideas fit you' })).toBeTruthy();
+  });
+
+  it('one adult who says children come along is not called "just you"', async () => {
+    setup();
+    await act(async () => fireEvent.click(within(bar()).getByRole('button', { name: 'Make the ideas fit you' })));
+    await act(async () => fireEvent.click(within(bar()).getByRole('button', { name: 'Children come along' })));
+    await act(async () => fireEvent.click(within(bar()).getByRole('button', { name: 'Save' })));
+    expect(bar().querySelector('p')!.textContent).toBe('Planning for You, with children.');
+  });
+
+  it('while a save is on its way the answers cannot be changed under it, and a clear that fails says so', async () => {
+    let finish: (v: { ok: false; message: string }) => void = () => undefined;
+    const savePrefs = vi.fn(() => new Promise<{ ok: false; message: string }>((r) => (finish = r)));
+    setup({ profile: { ...profileOf({ adults: 1, children: 0, dietary: 'vegan', accessibility: null }, { diet: ['vegan'], meal: null, budget: null, stepFree: null, shortWalks: null, interests: [], kids: null, asked: true }) }, actions: { ...baseActions(), savePrefs } });
+    await act(async () => fireEvent.click(within(bar()).getByRole('button', { name: 'Change' })));
+    await act(async () => fireEvent.click(within(bar()).getByRole('button', { name: 'Clear my answers' })));
+    expect(within(bar()).getByRole('button', { name: 'Saving' }).getAttribute('aria-disabled')).toBe('true');
+    await act(async () => fireEvent.click(within(bar()).getByRole('button', { name: 'Kosher' })));
+    expect(within(bar()).getByRole('button', { name: 'Kosher' }).getAttribute('aria-pressed')).toBe('false');
+    await act(async () => finish({ ok: false, message: 'x' }));
+    expect((await within(bar()).findByRole('alert')).textContent).toBe('We could not clear that just now. Please try again in a moment.');
   });
 });

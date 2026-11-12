@@ -17,7 +17,9 @@
  *   outside          places from outside our list: min, max, kinds (every one), diet (every one is
  *                    tagged for it), cuisine (at least one has it), notNamed (none matches)
  *   own              the guest's own plan: title, slots; ownNone: true when there must be none
- *   text             includes / excludes: patterns over every word the guest reads
+ *   text             includes / excludes: patterns over the answer's own sentences; a case written
+ *                    since places gained their facts sets `reads: all`, and its patterns then cover what
+ *                    each of our places' cards says too (price, hours, booking, access)
  *   next             includes / excludes: the follow-ups offered
  */
 const arr = (v) => (Array.isArray(v) ? v : v === undefined || v === null ? [] : [v]);
@@ -81,8 +83,9 @@ export default function score(output, context) {
   }
   if (e.ownNone) check('no own plan', !a.own, a.own ? `offered "${a.own.title}"` : '');
 
-  for (const pat of arr(e.text?.includes)) check(`says /${pat}/`, re(pat).test(a.text), 'not in the answer');
-  for (const pat of arr(e.text?.excludes)) check(`never says /${pat}/`, !re(pat).test(a.text), `found: ${(a.text.match(re(pat)) ?? [''])[0]}`);
+  const read = context?.vars?.reads === 'all' ? (a.textAll ?? a.text) : a.text;
+  for (const pat of arr(e.text?.includes)) check(`says /${pat}/`, re(pat).test(read), 'not in the answer');
+  for (const pat of arr(e.text?.excludes)) check(`never says /${pat}/`, !re(pat).test(read), `found: ${(read.match(re(pat)) ?? [''])[0]}`);
   for (const n of arr(e.next?.includes)) check(`offers "${n}" next`, a.next.includes(n), a.next.join(' / '));
   for (const n of arr(e.next?.excludes)) check(`does not offer "${n}" next`, !a.next.includes(n), a.next.join(' / '));
 

@@ -17,6 +17,7 @@
 - description: 'hours: coffee asked for Sunday morning leaves out the cafe that is shut on Sundays, and still offers coffee'
   vars:
     category: hours
+    reads: all
     request: where can we grab a coffee sunday morning before we head to the airport?
     expect:
       clarifies: false
@@ -27,6 +28,7 @@
 - description: 'hours: cocktails on Sunday night never offers the bar that is shut on Sundays, and does offer one that is open'
   vars:
     category: hours
+    reads: all
     request: Cocktails Sunday night once the oldies have gone to bed, where?
     expect:
       clarifies: false
@@ -36,6 +38,7 @@
 - description: 'hours: a museum for 7 pm on Friday does not offer the ones that shut at 5'
   vars:
     category: hours
+    reads: all
     request: we land at 5 on friday. is there a museum or something we could still do around 7pm??
     expect:
       clarifies: false
@@ -45,6 +48,7 @@
 - description: 'hours: an espresso at 8 pm on Friday offers the coffee place known to be open, not the ones that shut in the afternoon'
   vars:
     category: hours
+    reads: all
     request: "Espresso after dinner on Friday, about 8pm. Where's still open?"
     expect:
       clarifies: false
@@ -56,6 +60,7 @@
 - description: 'hours: a cafe shut on Sundays is still offered on Friday morning when the guest asks for it by name'
   vars:
     category: hours
+    reads: all
     request: We love Intelligentsia. Is the Monadnock one open Friday morning? Want to walk over about 9
     expect:
       clarifies: false
@@ -66,6 +71,7 @@
 - description: 'hours: a tasting-menu lunch on Friday does not offer the tasting menu that only opens at 5 pm'
   vars:
     category: hours
+    reads: all
     request: A fancy lunch on Friday, tasting-menu kind of thing, around 12:30. We eat everything.
     prefs: { diet: [], meal: special, asked: true }
     expect:
@@ -75,6 +81,7 @@
 - description: 'hours: an outdoor stroll at 8 on Sunday evening offers a park or the river, not the zoo that shut at 5'
   vars:
     category: hours
+    reads: all
     request: A gentle stroll on Sunday evening, about 8, somewhere outdoors and pretty?
     expect:
       clarifies: false
@@ -88,6 +95,7 @@
 - description: 'price: cheap eats for lunch never offers the steakhouse, the cocktail bar or a tasting menu'
   vars:
     category: price
+    reads: all
     request: cheap eats for friday lunch?? nothing fancy, we eat anything
     prefs: { diet: [], meal: quick, asked: true }
     expect:
@@ -102,6 +110,7 @@
 - description: 'price: dinner under $15 a head offers none of our places known to cost more'
   vars:
     category: price
+    reads: all
     request: "Dinner Friday for under $15 a head, if that's even possible downtown"
     prefs: { diet: [], meal: quick, asked: true }
     expect:
@@ -110,6 +119,7 @@
 - description: 'price: a money-no-object splurge dinner offers a tasting menu, not the burger counter'
   vars:
     category: price
+    reads: all
     request: One big splurge dinner while we're in town, money no object. Friday night. Where?
     prefs: { diet: [], meal: special, asked: true }
     expect:
@@ -118,6 +128,7 @@
 - description: 'price: a saved budget of $15 to $40 a head keeps a plain dinner request to places not known to cost more'
   vars:
     category: price
+    reads: all
     request: Where should we eat on Friday night?
     profile: { adults: 2, prefs: { diet: [], meal: sit-down, budget: 2, asked: true } }
     expect:
@@ -126,6 +137,7 @@
 - description: 'price: the same saved budget gives way when the request itself asks for the best table whatever it costs'
   vars:
     category: price
+    reads: all
     request: "It's our 10th anniversary that weekend and I want to really treat my wife on Friday. The best table in the city, hang the cost."
     profile: { adults: 2, prefs: { diet: [], meal: sit-down, budget: 2, asked: true } }
     expect:
@@ -136,6 +148,7 @@
 - description: 'price: with the lowest saved budget, deep dish still gets the couple''s Chicago classics entry, which holds no price and shows none'
   vars:
     category: price
+    reads: all
     request: where do we get proper chicago deep dish?
     profile: { adults: 2, prefs: { diet: [], meal: quick, budget: 1, asked: true } }
     expect:
@@ -150,6 +163,7 @@
 - description: 'access: a wheelchair user asking for a drink gets a bar known to be step-free, and no step-free claim on the bar whose access is not known'
   vars:
     category: access
+    reads: all
     request: Where can we get a drink on Friday evening?
     profile: { adults: 2, accessibility: 'I use a wheelchair (manual, not powered)' }
     expect:
@@ -159,6 +173,7 @@
 - description: 'access: a guest on a walker who cannot manage steps gets a lunch place known to be step-free, and no invented access for the rest'
   vars:
     category: access
+    reads: all
     request: A quiet sit-down lunch on Friday please, nothing too loud.
     profile: { adults: 2, dietary: 'No restrictions', accessibility: 'Harold uses a walker and cannot manage steps' }
     expect:
@@ -174,6 +189,7 @@
 - description: 'access: a saved step-free answer gets sights known to be step-free on Sunday morning, and no step-free claim where it is not known'
   vars:
     category: access
+    reads: all
     request: What should we see on Sunday morning?
     profile: { adults: 2, prefs: { stepFree: true, asked: true } }
     expect:
@@ -193,6 +209,7 @@
 - description: 'access: a guest who cannot walk more than a couple of blocks gets coffee near the hotel, not on the North Side'
   vars:
     category: access
+    reads: all
     request: coffee saturday morning?
     profile: { adults: 2, accessibility: 'bad hip - cant walk more than a couple of blocks' }
     expect:
@@ -202,6 +219,7 @@
 - description: 'access: a saved short-walks answer gives way when the guest asks for a day trip to the Botanic Garden by name, and its hours are not invented'
   vars:
     category: access
+    reads: all
     request: "We'd love a day trip out to the Botanic Garden on Sunday. Is it worth it, and how long should we allow?"
     profile: { adults: 2, prefs: { shortWalks: true, asked: true } }
     expect:
@@ -215,6 +233,7 @@
 - description: 'kids: a family of four asking what to do on Friday afternoon gets something the children can go to, open then'
   vars:
     category: kids
+    reads: all
     request: What can we do on Friday afternoon?
     profile: { adults: 2, children: 2 }
     expect:
@@ -230,6 +249,7 @@
 - description: 'kids: parents who say grandma has the kids get the cocktail bar, and only places to eat and drink'
   vars:
     category: kids
+    reads: all
     request: DATE NIGHT friday!! grandma has the kids. cocktails somewhere special?
     profile: { adults: 2, children: 2 }
     expect:
@@ -238,6 +258,7 @@
 - description: 'kids: a quick bite with a four-year-old gets the burger counter in the hotel, not a tasting menu'
   vars:
     category: kids
+    reads: all
     request: quick bite with our 4 year old friday lunchtime, she mostly eats fries
     profile: { adults: 2, children: 1, dietary: 'none' }
     expect:
@@ -248,6 +269,7 @@
 - description: 'kids: free things with the children offers a free place, none with a ticket price, and does not call a place free that holds no cost'
   vars:
     category: kids
+    reads: all
     request: free stuff to do with the kids sunday morning? flights cleaned us out
     profile: { adults: 2, children: 3 }
     expect:
@@ -262,6 +284,7 @@
 - description: 'kids: no children on the invitation, but a six-year-old niece in the request, gets only places marked good for children'
   vars:
     category: kids
+    reads: all
     request: "We're borrowing our niece (she's 6) for the day on Friday. Ideas for the afternoon?"
     profile: { adults: 2, children: 0 }
     expect:
@@ -274,6 +297,7 @@
 - description: 'diet: a vegetarian RSVP means dinner is answered without asking what they eat, and the outside search is vegetarian'
   vars:
     category: diet
+    reads: all
     request: Where should we have dinner on Friday?
     profile: { adults: 2, dietary: 'vegetarian' }
     expect:
@@ -284,6 +308,7 @@
 - description: 'diet: a strict vegan RSVP is not asked again, the outside search is vegan, and no restaurant of ours is shown as vegan'
   vars:
     category: diet
+    reads: all
     request: sit down dinner friday night, somewhere with atmosphere
     profile: { adults: 1, dietary: 'Vegan. Strict - no honey, and no dairy "just a little"' }
     expect:
@@ -295,6 +320,7 @@
 - description: 'diet: a misspelt RSVP ("vegitarian") with other notes still counts, with no question and a vegetarian outside search'
   vars:
     category: diet
+    reads: all
     request: somewhere casual for lunch fri
     profile: { adults: 2, dietary: 'vegitarian (me), husband eats everything!! no mushrooms pls' }
     expect:
@@ -304,6 +330,7 @@
 - description: 'diet: a saved vegetarian answer gives way when the request asks for a steak dinner for someone else'
   vars:
     category: diet
+    reads: all
     request: "My dad's joining us Friday night and he wants a proper steak dinner. Where?"
     profile: { adults: 2, prefs: { diet: [vegetarian], meal: sit-down, asked: true } }
     expect:
@@ -313,6 +340,7 @@
 - description: 'diet: a halal RSVP is not asked again, the outside search is halal, and none of our places is shown as halal'
   vars:
     category: diet
+    reads: all
     request: A sit-down dinner near the hotel on Friday night?
     profile: { adults: 2, dietary: 'Halal only please' }
     expect:
@@ -323,6 +351,7 @@
 - description: 'diet: an RSVP that says "none" is an answer, so dinner is not asked about and the search is not narrowed to nothing'
   vars:
     category: diet
+    reads: all
     request: A nice sit-down dinner on Friday, please.
     profile: { adults: 2, dietary: 'none' }
     expect:
@@ -334,11 +363,13 @@
 - description: 'profile: with no profile, a bare dinner request is still asked about first'
   vars:
     category: profile
+    reads: all
     request: where can we get dinner on Friday night?
     expect: { clarifies: true, asksAbout: [diet] }
 - description: 'profile: with no profile, coffee near the hotel is answered at once from our list and from nearby'
   vars:
     category: profile
+    reads: all
     request: good coffee near the hotel?
     expect:
       clarifies: false
@@ -347,6 +378,7 @@
 - description: 'profile: the lowest saved budget gives way when the request asks for the best tasting menu in town'
   vars:
     category: profile
+    reads: all
     request: "What's the best tasting menu in town? Thinking Friday."
     profile: { adults: 2, prefs: { diet: [], meal: quick, budget: 1, asked: true } }
     expect:
@@ -355,6 +387,7 @@
 - description: 'profile: a saved "quick" answer gives way to a request for a long, special anniversary dinner'
   vars:
     category: profile
+    reads: all
     request: "A long, slow, special dinner on Friday for my parents' ruby wedding anniversary. Where would you book?"
     profile: { adults: 4, prefs: { diet: [], meal: quick, asked: true } }
     expect:
@@ -365,6 +398,7 @@
 - description: 'profile: children, a vegetarian RSVP, a buggy and a saved budget all hold at once for a two-word lunch request'
   vars:
     category: profile
+    reads: all
     request: sunday lunch?
     profile:
       adults: 2
@@ -388,6 +422,7 @@
 - description: 'honesty: asked when a cafe with no hours on record opens, the answer does not make up a time'
   vars:
     category: honesty
+    reads: all
     request: What time does Dollop open on Sunday?
     expect:
       cards: { excludes: ['Dollop Coffee:[^\n]*(Open|Closed|\d ?[ap]\.?m)'] }
@@ -396,6 +431,7 @@
 - description: 'honesty: asked whether a baby can come to the cocktail bar, the answer does not state an age limit nobody recorded'
   vars:
     category: honesty
+    reads: all
     request: Can we bring the baby to the Aviary on Friday at 6?
     profile: { adults: 2, children: 1 }
     expect:
@@ -410,6 +446,7 @@
 - description: 'honesty: asked what the aquarium costs, the answer gives the two prices on record'
   vars:
     category: honesty
+    reads: all
     request: How much is the aquarium? 2 adults and 2 kids (5 and 9).
     expect:
       clarifies: false
@@ -419,6 +456,7 @@
 - description: 'honesty: a guest who has booked nothing and wants to just turn up is not sent to the two places that require a booking'
   vars:
     category: honesty
+    reads: all
     request: "we haven't booked a thing for friday night. where can we just turn up and eat? not fussy"
     prefs: { diet: [], meal: sit-down, asked: true }
     expect:

@@ -5,6 +5,7 @@ import type { AdventuresPageData } from '@/capabilities/list_adventures';
 import type { ContentRecordsData } from '@/capabilities/list_content_records';
 import type { ContentTableName } from '@/db/schema/content';
 import { TABLE_SPECS, VISIBILITY_LABELS, type ContentPickList, type FieldSpec } from '@/domain/content/admin';
+import { hoursAreReadable, hoursWords } from '@/domain/content/place-facts';
 import { moveCalls } from '@/components/admin/flow/order';
 import type { PillTone } from '../../_components/console';
 import type { ContentEditor, EditorLists, RefOption, SourceOption } from './types';
@@ -134,6 +135,8 @@ export function describeValue(f: FieldSpec, v: unknown, editor: Pick<ContentEdit
   if (f.pick) return editor.picks[f.pick]?.find((o) => o.value === String(v))?.label ?? `${String(v)} (not listed)`;
   if (f.type === 'datetime') return formatStamp(String(v));
   if (f.type === 'select') return f.optionLabels?.[String(v)] ?? String(v);
+  // Opening hours as a guest reads them, a line for each run of days (the stored form stays in the editor).
+  if (f.format === 'opening-hours' && typeof v === 'string' && hoursAreReadable(v)) return hoursWords(v).join('\n');
   const refName = (table: string | undefined, id: unknown) => (table ? refs[table]?.find((o) => o.value === String(id))?.label : undefined) ?? 'A record no longer listed';
   if (f.ref && f.type === 'text') return refName(f.ref, v);
   if (f.type === 'json' && Array.isArray(v)) {

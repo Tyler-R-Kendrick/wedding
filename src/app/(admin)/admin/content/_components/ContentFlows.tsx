@@ -10,7 +10,7 @@ import type { ContentRecordData } from '@/capabilities/get_content_record';
 // Types only: the module itself is server code (drizzle, the database schema).
 import type { FieldSpec, SubFieldSpec } from '@/domain/content/admin';
 // Plain functions, no server code: the same check the server makes, so a slip is caught on its own step.
-import { HOURS_EXAMPLE, hoursAreReadable } from '@/domain/content/place-facts';
+import { HOURS_EXAMPLE, hoursAreReadable, hoursWords } from '@/domain/content/place-facts';
 import { withArticle, type ContentEditor, type RefOption } from './types';
 import './content-flows.css';
 import { formatStamp } from '@/components/admin/flow/dates';
@@ -326,6 +326,8 @@ function shown(f: FieldSpec, raw: unknown, editor: ContentEditor): string {
   if (f.type === 'select') return f.optionLabels?.[v] ?? v;
   if (f.ref) return refLabel(editor.refs[f.ref], v);
   if (f.type === 'datetime') return formatStamp(v);
+  // Opening hours are read back as a guest will read them, a line for each run of days.
+  if (f.format === 'opening-hours' && hoursAreReadable(v)) return hoursWords(v).join('\n');
   return clip(v);
 }
 
@@ -568,8 +570,25 @@ function Field({ ctx, field: f, editor, isNew }: { ctx: FlowContext<Values>; fie
       return <TextField ctx={ctx} name={f.name} label={f.label} hint={f.help} optional={optional} type="date" />;
     case 'datetime':
       return <TextField ctx={ctx} name={f.name} label={f.label} hint={f.help} optional={optional} type="datetime-local" />;
-    default:
-      return <TextField ctx={ctx} name={f.name} label={f.label} hint={f.help} optional={optional} />;
+    default: {
+      if (f.format !== 'opening-hours') return <TextField ctx={ctx} name={f.name} label={f.label} hint={f.help} optional={optional} />;
+      // Once what is typed can be read, the same words a guest will see sit under the field.
+      const reads = hoursWords(text(ctx.values[f.name]));
+      const hint = (
+        <>
+          {f.help}
+          {reads.length ? (
+            <span className="cf-reads">
+              <span className="cf-reads__lead">Guests will read:</span>
+              {reads.map((line) => (
+                <span key={line}>{line}</span>
+              ))}
+            </span>
+          ) : null}
+        </>
+      );
+      return <TextField ctx={ctx} name={f.name} label={f.label} hint={hint} optional={optional} spellCheck={false} />;
+    }
   }
 }
 

@@ -55,9 +55,9 @@ export function ageWords(minAge: number | null | undefined): string | null {
   return typeof minAge === 'number' && Number.isInteger(minAge) && minAge >= 1 ? `${minAge} and over` : null;
 }
 
-/** "Yes" or "No step-free way in", or `null` when the place does not say. */
+/** "Step-free" or "No step-free way in" (the value beside the label "Way in"), or `null` when the place does not say. */
 export function stepFreeWords(stepFree: boolean | null | undefined): string | null {
-  return stepFree === true ? 'Yes' : stepFree === false ? 'No step-free way in' : null;
+  return stepFree === true ? 'Step-free' : stepFree === false ? 'No step-free way in' : null;
 }
 
 const DIET: Record<Diet, string> = { vegetarian: 'vegetarian', vegan: 'vegan', 'gluten-free': 'gluten-free', halal: 'halal', kosher: 'kosher' };
@@ -105,14 +105,17 @@ export function hoursAreReadable(hours: string | null | undefined): boolean {
   return readWeek(hours) !== null;
 }
 
-/** Minutes from midnight on a 12-hour clock: "7 am", "7:30 pm", "noon", "midnight". */
+/**
+ * Minutes from midnight on a 12-hour clock: "7 am", "7:30 pm", "noon", "midnight". The space before
+ * "am" or "pm" is a non-breaking one (U+00A0), so a narrow column never leaves "pm" alone on a line.
+ */
 function clock(minutes: number): string {
   const m = ((minutes % 1440) + 1440) % 1440;
   if (m === 0) return 'midnight';
   if (m === 720) return 'noon';
   const h24 = Math.floor(m / 60);
   const min = m % 60;
-  return `${h24 % 12 || 12}${min ? `:${String(min).padStart(2, '0')}` : ''} ${h24 < 12 ? 'am' : 'pm'}`;
+  return `${h24 % 12 || 12}${min ? `:${String(min).padStart(2, '0')}` : ''}\u00a0${h24 < 12 ? 'am' : 'pm'}`;
 }
 
 const allDay = (spans: readonly Span[]) => spans.some(([from, to]) => to - from >= 1440);
@@ -138,7 +141,8 @@ export type HoursLine = { days: string; hours: string };
 
 /**
  * The week in plain words, days that keep the same hours grouped together:
- * `[{ days: 'Monday to Thursday', hours: '7 am to 6 pm' }, { days: 'Sunday', hours: 'Closed' }]`.
+ * `[{ days: 'Monday to Thursday', hours: '7 am to 6 pm' }, { days: 'Sunday', hours: 'Closed' }]`
+ * (each clock time holds a non-breaking space: "7\u00a0am").
  * A day the hours do not mention is closed, as the format says. When the weekend's end keeps the same
  * hours as Monday, the two runs are read as one ("Sunday to Thursday"). Empty when the text is not
  * understood.
@@ -165,6 +169,17 @@ export function hoursLines(hours: string | null | undefined): HoursLine[] {
 }
 
 /**
+ * The week as the lines a guest reads, one per run of days: "Monday to Thursday: 7 am to 6 pm",
+ * "Sunday: Closed"; a place that never shuts is the one line "Open all day, every day". Empty when
+ * the text is not understood. The place's page shows these, and /admin/content reads them back.
+ */
+export function hoursWords(hours: string | null | undefined): string[] {
+  const week = hoursLines(hours);
+  const always = week.length === 1 && week[0]!.days === 'Every day' && week[0]!.hours === 'Open all day';
+  return always ? ['Open all day, every day'] : week.map((l) => `${l.days}: ${l.hours}`);
+}
+
+/**
  * Whether the place opens on a day of the week (0 is Sunday, as `Date#getDay` counts), and when:
  * `{ open: true, text: '7 am to 6 pm' }` (`text` is "all day" when it never shuts, so "Open
  * {text}" always reads), `{ open: false }` when its hours say it is shut that day, and `null`
@@ -182,6 +197,11 @@ export function openOn(hours: string | null | undefined, weekday: number): { ope
 
 /** The facts as a recommendation card or a planner place carries them. Null and absent both mean not known. */
 export type PlaceFactsInput = {
+  /**
+   * The place's own words about getting in and around, when they are shown beside these rows (a
+   * card's Accessibility text). With them there, a step-free way in is not said a second time.
+   */
+  access?: string | null;
   priceLevel?: number | null;
   hours?: string | null;
   hoursNote?: string | null;
@@ -196,12 +216,17 @@ export type PlaceFactKey = 'price' | 'hours' | 'booking' | 'diets' | 'stepFree' 
 /** One labelled row of a place's facts. `lines` is never empty; hours take a line per run of days. */
 export type PlaceFactRow = { key: PlaceFactKey; label: string; lines: string[] };
 
-/**
- * A place's facts as labelled rows, in the order a guest weighs them, only for the facts that are
- * set: Price, Hours, Booking, Diet options, Step-free way in, Indoors or outdoors, Ages.
- */
+/** Said once under a place's hours: they were read on one day, and places change them. */
 export const HOURS_CAVEAT = 'Hours change, so check with the place before you go.';
 
+/**
+ * A place's facts as labelled rows, in the order a guest weighs them, only for the facts that are
+ * set: Price, Hours, Booking, Diet options, Way in, Setting, Ages. The labels are short on purpose:
+ * each has to fit the label column of a card, so every value starts on the same edge.
+ *
+ * "Way in: Step-free" is left out when `access` (the place's own words) is given, because those
+ * words already say how to get in; "No step-free way in" is always said.
+ */
 export function placeFactRows(facts: PlaceFactsInput | null | undefined): PlaceFactRow[] {
   if (!facts) return [];
   const rows: PlaceFactRow[] = [];
@@ -211,16 +236,18 @@ export function placeFactRows(facts: PlaceFactsInput | null | undefined): PlaceF
   };
   const price = priceWords(facts.priceLevel);
   add('price', 'Price', price ? `${price.label}, ${price.range}` : null);
-  const week = hoursLines(facts.hours);
-  const always = week.length === 1 && week[0]!.days === 'Every day' && week[0]!.hours === 'Open all day';
-  const note = facts.hoursNote?.trim();
+  const week = hoursWords(facts.hours);
+  const always = week.length === 1 && week[0] === 'Open all day, every day';
+  // The couple's note keeps its words; a clock time in it ("until 2 pm") holds together like the ones above.
+  const note = facts.hoursNote?.trim().replace(/(\d) ([ap]\.?m\b)/gi, '$1\u00a0$2');
   // Hours were read from the place on one day and places change them; a guest is told so, once.
   const caveat = week.length && !always && !/\bcheck\b/i.test(note ?? '') ? HOURS_CAVEAT : null;
-  add('hours', 'Hours', ...(always ? ['Open all day, every day'] : week.map((l) => `${l.days}: ${l.hours}`)), note, caveat);
+  add('hours', 'Hours', ...week, note, caveat);
   add('booking', 'Booking', reservationWords(facts.reservations));
   add('diets', 'Diet options', dietWords(facts.diets));
-  add('stepFree', 'Step-free way in', stepFreeWords(facts.stepFree));
-  add('setting', 'Indoors or outdoors', settingWords(facts.setting));
+  const said = facts.stepFree === true && Boolean(facts.access?.trim());
+  add('stepFree', 'Way in', said ? null : stepFreeWords(facts.stepFree));
+  add('setting', 'Setting', settingWords(facts.setting));
   add('ages', 'Ages', ageWords(facts.minAge));
   return rows;
 }

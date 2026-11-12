@@ -72,7 +72,7 @@ export type TripProfile = {
   interests: Interest[];
   /** The meal questions are answered (here, or because the RSVP already says what they eat). */
   asked: boolean;
-  from: { diet: ProfileSource | null; stepFree: ProfileSource | null; kids: ProfileSource | null };
+  from: { diet: ProfileSource | null; stepFree: ProfileSource | null; shortWalks: ProfileSource | null; kids: ProfileSource | null };
   /** Whether the guest has set anything of their own. */
   saved: boolean;
 };
@@ -106,17 +106,34 @@ export function hasPrefs(p: TripPrefs): boolean {
   return p.diet !== null || p.meal !== null || p.budget !== null || p.stepFree !== null || p.shortWalks !== null || p.interests.length > 0 || p.kids !== null || p.asked;
 }
 
-/** What an RSVP's free-text needs say, in the planner's own terms. The words themselves go no further. */
+// A note that says something is NOT so ("not vegetarian", "no allergies", "no need for a ramp",
+// "no mobility issues") must never be read as its opposite. These are taken out before a note is read.
+const NOT_A_DIET = /\b(no|not|non|never|isn'?t|aren'?t|\w+n'?t)\b[^.,;]{0,14}\b(vegetarians?|vegans?|veggies?|halal|kosher|gluten[- ]free|celiac|coeliac)\b/gi;
+const NOT_AN_ALLERGY = /\b(no|not|none|without|\w+n'?t (have|got)( any)?)\b[^.,;]{0,24}\ballerg\w*/gi;
+const NOT_A_NEED = /\b(no|not|none|never|without|\w+n'?t)\b[^.,;]{0,28}\b(mobility|wheelchairs?|ramps?|elevators?|lifts?|scooters?|walkers?|rollators?|step[- ]free|access\w*|canes?|strollers?|bugg(y|ies)|prams?|pushchairs?|assistance|help)\b/gi;
+// Said with a "no" or a "cannot", and a need all the same.
+const NO_STAIRS = /\b(no (stairs|steps)|(can(no|'?)t|unable to|not able to) (do|manage|climb|use|take) (the )?(stairs|steps)|stairs are (hard|difficult|a problem|not possible))\b/i;
+const CANNOT_WALK_FAR = /\b((can(no|'?)t|unable to|not able to) walk (very )?(far|long)|walking is (hard|difficult|painful))\b/i;
+const STEP_FREE = /\b(wheelchairs?|step[- ]free|ramps?|elevators?|lifts?|scooters?|walkers?|rollators?|mobility (aid|issues?|problems?|needs?)|limited mobility|bugg(y|ies)|strollers?|prams?|pushchairs?)\b/i;
+const SHORT_WALKS = /\b(short (walks?|distances?)|limited mobility|mobility (issues?|problems?)|tires? easily|canes?|walkers?|rollators?|bad (knee|hip|back)s?)\b/i;
+
+/**
+ * What an RSVP's free-text needs say, in the planner's own terms. The words themselves go no
+ * further. A note is read for what it affirms: what it says is not needed is left out first, so
+ * "no mobility issues" asks for nothing and "not vegetarian" is not a diet.
+ */
 export function readNeeds(dietary: string | null | undefined, accessibility: string | null | undefined): { diet: Diet[]; allergy: string | null; stepFree: boolean; shortWalks: boolean; nothing: boolean } {
-  const food = dietary?.trim() ? understand(dietary) : null;
-  const access = accessibility?.trim() ? accessibility.toLowerCase() : '';
+  const said = dietary?.trim() ?? '';
+  const food = said ? understand(said.replace(NOT_A_DIET, ' ').replace(NOT_AN_ALLERGY, ' ')) : null;
+  const access = accessibility?.trim() ?? '';
+  const needs = access.replace(NOT_A_NEED, ' ');
   return {
     diet: food?.diet ?? [],
     allergy: food?.allergy ?? null,
-    stepFree: /\b(wheelchair|step[- ]free|no (stairs|steps)|can(no|'?)t (do|manage|climb|use) (stairs|steps)|stairs are|ramp|elevator|lift|scooter|walker|rollator|mobility|buggy|buggies|stroller|pram|pushchair)\b/.test(access),
+    stepFree: NO_STAIRS.test(access) || STEP_FREE.test(needs),
     // "None", "no restrictions": an answer, so the question is not put to them again.
-    nothing: !!dietary?.trim() && !food?.diet.length && !food?.allergy && (food?.noDiet === true || /^\W*(none|no|nope|nothing|n\/?a|not applicable|no thanks?|none for us)\W*$/i.test(dietary)),
-    shortWalks: /\b(can(no|'?)t walk (far|long)|short (walks?|distances?)|limited mobility|tires? easily|walking is (hard|difficult)|cane|walker|rollator|bad (knee|hip|back)s?)\b/.test(access),
+    nothing: !!said && !food?.diet.length && !food?.allergy && (understand(said).noDiet || /^\W*(none|no|nope|nothing|n\/?a|not applicable|no thanks?|none for us)\W*$/i.test(said)),
+    shortWalks: CANNOT_WALK_FAR.test(access) || SHORT_WALKS.test(needs),
   };
 }
 
@@ -148,6 +165,7 @@ export function profileOf(records: TripRecords | null, prefs: TripPrefs | null):
     from: {
       diet: !diet.length ? null : mine.diet !== null ? 'you' : 'rsvp',
       stepFree: !stepFree ? null : mine.stepFree !== null ? 'you' : 'rsvp',
+      shortWalks: !shortWalks ? null : mine.shortWalks !== null ? 'you' : 'rsvp',
       kids: mine.kids !== null ? 'you' : children > 0 ? 'rsvp' : null,
     },
     saved: prefs !== null && hasPrefs(prefs),
@@ -174,7 +192,7 @@ export function withPrefs(p: TripProfile, prefs: TripPrefs): TripProfile {
     shortWalks: prefs.shortWalks ?? p.shortWalks,
     interests: prefs.interests,
     asked: true,
-    from: { diet: prefs.diet?.length ? 'you' : prefs.diet ? null : p.from.diet, stepFree: prefs.stepFree ? 'you' : prefs.stepFree === false ? null : p.from.stepFree, kids: prefs.kids !== null ? 'you' : p.party.children > 0 ? 'rsvp' : null },
+    from: { diet: prefs.diet?.length ? 'you' : prefs.diet ? null : p.from.diet, stepFree: prefs.stepFree ? 'you' : prefs.stepFree === false ? null : p.from.stepFree, shortWalks: prefs.shortWalks ? 'you' : prefs.shortWalks === false ? null : p.from.shortWalks, kids: prefs.kids !== null ? 'you' : p.party.children > 0 ? 'rsvp' : null },
     saved: true,
   };
 }
@@ -187,27 +205,32 @@ export const BUDGET_LABEL: Record<PriceLevel, string> = { 1: 'Under $15 each', 2
 
 const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
-/** Who is travelling, in a few words: "2 adults and 1 child", "Just you". */
+/** Who is travelling, in a few words: "2 adults and 1 child", "Just you", "You, with children". */
 export function partyWords(p: TripProfile): string {
-  const kids = p.kids && p.party.children > 0 ? count(p.party.children, 'child', 'children') : null;
-  if (p.party.adults === 1 && !kids) return 'Just you';
   const grown = count(p.party.adults, 'adult', 'adults');
-  return kids ? `${grown} and ${kids}` : grown;
+  if (p.kids && p.party.children > 0) return `${grown} and ${count(p.party.children, 'child', 'children')}`;
+  // Children they said come along, though none is on the invitation: said, without a number we do not have.
+  if (p.kids) return p.party.adults === 1 ? 'You, with children' : `${grown}, with children`;
+  return p.party.adults === 1 ? 'Just you' : grown;
 }
 
 /**
- * The profile as the short list the page shows above the planner: who, then only what narrows the
- * answers. Each entry says what it is; `from` marks one that came from the RSVP.
+ * The profile as the one sentence the page shows above the planner: who (the first entry), then
+ * only what narrows the answers, each in a few plain words. `from` marks what came from the RSVP.
+ * What they enjoy is two things and a count, never a list that runs to a paragraph.
  */
 export function profileSummary(p: TripProfile): { key: string; text: string; from?: ProfileSource }[] {
   const out: { key: string; text: string; from?: ProfileSource }[] = [{ key: 'party', text: partyWords(p) }];
-  if (p.kids && p.party.children === 0) out.push({ key: 'kids', text: 'With children' });
-  if (p.diet.length) out.push({ key: 'diet', text: p.diet.map(dietLabel).join(', '), ...(p.from.diet === 'rsvp' ? { from: 'rsvp' as const } : {}) });
-  if (p.allergy) out.push({ key: 'allergy', text: p.allergy === 'food' ? 'A food allergy' : `${p.allergy.charAt(0).toUpperCase()}${p.allergy.slice(1)} allergy`, from: 'rsvp' });
-  if (p.budget && p.budget < 4) out.push({ key: 'budget', text: `${BUDGET_LABEL[p.budget]} for a meal` });
-  if (p.stepFree) out.push({ key: 'stepFree', text: 'Step-free places', ...(p.from.stepFree === 'rsvp' ? { from: 'rsvp' as const } : {}) });
-  if (p.shortWalks) out.push({ key: 'shortWalks', text: 'Close to the hotel' });
-  if (p.interests.length) out.push({ key: 'interests', text: p.interests.map((i) => INTEREST_LABEL[i]).join(', ') });
+  const rsvp = (source: ProfileSource | null) => (source === 'rsvp' ? { from: 'rsvp' as const } : {});
+  if (p.diet.length) out.push({ key: 'diet', text: p.diet.map((d) => dietLabel(d).toLowerCase()).join(' and '), ...rsvp(p.from.diet) });
+  if (p.allergy) out.push({ key: 'allergy', text: p.allergy === 'food' ? 'a food allergy' : `a ${p.allergy} allergy`, from: 'rsvp' });
+  if (p.budget && p.budget < 4) out.push({ key: 'budget', text: `meals ${BUDGET_LABEL[p.budget].toLowerCase()}` });
+  if (p.stepFree) out.push({ key: 'stepFree', text: 'step-free places', ...rsvp(p.from.stepFree) });
+  if (p.shortWalks) out.push({ key: 'shortWalks', text: 'close to the hotel', ...rsvp(p.from.shortWalks) });
+  if (p.interests.length) {
+    const names = p.interests.map((i) => INTEREST_LABEL[i].toLowerCase());
+    out.push({ key: 'interests', text: names.length > 2 ? `${names.slice(0, 2).join(', ')} and ${names.length - 2} more` : names.join(' and ') });
+  }
   return out;
 }
 

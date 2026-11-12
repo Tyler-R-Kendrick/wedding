@@ -25,6 +25,7 @@ tests:
   - file://cases/challenge2.yaml
   - file://cases/profile.yaml
   - file://cases/challenge3.yaml
+  - file://cases/challenge4.yaml
   - file://cases/holdout.yaml
   - file://cases/holdout2.yaml
   - file://cases/holdout3.yaml

@@ -96,6 +96,7 @@ export type Answer = {
   own: { title: string; slots: [string, string][] } | null;
   next: string[];
   text: string;
+  textAll: string;
   turns: number;
 };
 
@@ -124,11 +125,13 @@ function once(s: Scenario, prefs: Scenario['prefs']): { plan: Plan; outside: Ans
 }
 
 /** What a card for this place would say before going, at the time the answer offers it: read through the planner's own words for it. */
-function knownOf(pl: PlannerPlace, x: { day?: string; part?: string }, who: unknown): { priceLevel?: number; stepFree?: boolean; minAge?: number; shut?: string; know: string[] } {
+function knownOf(pl: PlannerPlace, x: { day?: string; part?: string; note?: string }, who: unknown): { priceLevel?: number; stepFree?: boolean; minAge?: number; shut?: string; know: string[] } {
   const f = (pl as unknown as { facts?: Facts }).facts ?? {};
   const when = x.day && x.part ? { date: planner.weekendDate(x.day as never), part: x.part } : null;
   const k = has('knowBeforeYouGo') ? (p.knowBeforeYouGo!(...([pl, when, who ?? undefined] as never[])) as { items: { text: string }[]; shut: string | null }) : { items: [], shut: null };
-  return { ...(f.priceLevel ? { priceLevel: f.priceLevel } : {}), ...(typeof f.stepFree === 'boolean' ? { stepFree: f.stepFree } : {}), ...(f.minAge ? { minAge: f.minAge } : {}), ...(k.shut ? { shut: k.shut } : {}), know: k.items.map((i) => i.text) };
+  // Times are set with a no-break space before "am" and "pm"; a rule about what the guest reads is written with plain ones.
+  const words = (t: string) => t.replace(/\u00a0/g, ' ');
+  return { ...(f.priceLevel ? { priceLevel: f.priceLevel } : {}), ...(typeof f.stepFree === 'boolean' ? { stepFree: f.stepFree } : {}), ...(f.minAge ? { minAge: f.minAge } : {}), ...(k.shut ? { shut: words(k.shut) } : {}), know: [...(x.note ? [words(x.note)] : []), ...k.items.map((i) => words(i.text))] };
 }
 
 const profileFor = (s: Scenario) =>
@@ -157,7 +160,7 @@ export function answer(s: Scenario): Answer {
   return {
     shape: plan.shape,
     title: plan.title,
-    intro: plan.intro,
+    intro: plan.intro.replace(/\u00a0/g, ' '),
     clarifies: s.answers ? first.clarifies : plan.shape === 'clarify',
     asksAbout: first.asksAbout,
     ours,
@@ -165,7 +168,9 @@ export function answer(s: Scenario): Answer {
     own: own ? { title: own.title, slots: own.slots.map((x) => [x.day, x.part]) } : null,
     next: plan.next ?? [],
     // Every word the guest would read in the answer: the program's own strings, and what each of our places' cards says before you go.
-    text: [...strings, ...ours.flatMap((o) => [...o.know, ...(o.shut ? [o.shut] : [])])].join(' \n '),
+    text: strings.map((t) => t.replace(/\u00a0/g, ' ')).join(' \n '),
+    // The same, with what each of our places' cards says before you go (price, hours, booking, access).
+    textAll: [...strings.map((t) => t.replace(/\u00a0/g, ' ')), ...ours.flatMap((o) => [...o.know, ...(o.shut ? [o.shut] : [])])].join(' \n '),
     turns,
   };
 }

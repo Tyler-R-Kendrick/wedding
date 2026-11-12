@@ -28,6 +28,6 @@ export const tripProfileSchema = z.object({
   shortWalks: z.boolean(),
   interests: z.array(z.enum(INTERESTS)),
   asked: z.boolean(),
-  from: z.object({ diet: source, stepFree: source, kids: source }),
+  from: z.object({ diet: source, stepFree: source, shortWalks: source, kids: source }),
   saved: z.boolean(),
 });

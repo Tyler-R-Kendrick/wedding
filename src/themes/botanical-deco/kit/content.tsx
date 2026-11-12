@@ -229,7 +229,7 @@ function MetaList({ items }: Parameters<ContentKit['MetaList']>[0]) {
   return (
     <dl className="bd-meta">
       {items.map((i, n) => (
-        <div key={`${i.label}-${n}`} className="bd-meta__row">
+        <div key={`${i.label}-${n}`} className={i.stack ? 'bd-meta__row bd-meta__row--stack' : 'bd-meta__row'}>
           <dt className="bd-meta__label">{i.label}</dt>
           <dd className="bd-meta__value">{i.value}</dd>
         </div>
@@ -323,12 +323,13 @@ function RecommendationCard({ card, headingLevel = 3 }: { card: RecommendationCa
       ) : null}
     </>
   ) : null;
-  // Price, hours, booking and the rest: only the facts the record holds, each in plain words.
-  const facts = placeFactRows(card.facts);
+  // Price, hours, booking and the rest: only the facts the record holds, each in plain words. The
+  // place's own access notes, when they are settled text, already say how to get in.
+  const facts = placeFactRows({ ...card.facts, access: card.accessibility && !card.accessibility.placeholder ? card.accessibility.text : null });
   const fact = (...keys: PlaceFactKey[]) =>
     facts
       .filter((r) => keys.includes(r.key))
-      .map((r) => ({ label: r.label, value: r.lines.length === 1 ? r.lines[0]! : r.lines.map((line) => <span key={line}>{line}</span>) }));
+      .map((r) => ({ label: r.label, value: r.lines.length === 1 ? r.lines[0]! : r.lines.map((line) => <span key={line}>{line}</span>), stack: r.lines.length > 1 }));
   return (
     <article className="bd-rec" data-recommendation={card.slug}>
       <div className="bd-rec__inner">
@@ -355,7 +356,7 @@ function RecommendationCard({ card, headingLevel = 3 }: { card: RecommendationCa
             ...fact('price'),
             ...(card.cost ? [{ label: 'Cost', value: <Block block={card.cost} inline /> }] : []),
             ...fact('hours', 'booking', 'diets'),
-            ...(card.accessibility ? [{ label: 'Accessibility', value: <Block block={card.accessibility} inline /> }] : []),
+            ...(card.accessibility ? [{ label: 'Accessibility', value: <Block block={card.accessibility} inline />, stack: true }] : []),
             ...fact('stepFree', 'setting'),
             ...(card.kidFriendly !== null ? [{ label: 'With kids', value: card.kidFriendly ? 'Yes' : 'Better without' }] : []),
             ...fact('ages'),

@@ -3127,6 +3127,18 @@
   margin: 0;
   display: grid;
   gap: 4px;
+
+  /* On a full-width card a value (a place's access notes) ran 97 characters to a line. */
+  max-width: var(--bd-measure);
+}
+
+/* A week of opening hours, or a paragraph, in a 175px column beside its label ran 16 lines on a
+   phone. Under the label it has the card's whole width, and each run of days keeps to a line. */
+@media (width < 768px) {
+  .bd-meta__row--stack {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
 }
 
 .bd-chips {
@@ -3246,6 +3258,8 @@
 }
 
 .bd-rec__hours {
+  /* The link to the live hours, with its "last checked" note, ran 118 characters on a desktop card. */
+  max-width: var(--bd-measure);
   font-size: var(--type-body-sm-size);
 }
 

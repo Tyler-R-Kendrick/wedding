@@ -250,7 +250,7 @@ describe('who the planner plans for', () => {
     const { profile, prefs } = await loadPlanner(guest);
     expect(profile.party).toEqual({ adults: 2, children: 1 });
     expect(profile).toMatchObject({ kids: true, diet: ['vegetarian'], allergy: 'peanut', stepFree: true, asked: true, saved: false });
-    expect(profile.from).toEqual({ diet: 'rsvp', stepFree: 'rsvp', kids: 'rsvp' });
+    expect(profile.from).toEqual({ diet: 'rsvp', stepFree: 'rsvp', shortWalks: null, kids: 'rsvp' });
     expect(prefs).toEqual({ value: null, updatedAt: null });
   });
 

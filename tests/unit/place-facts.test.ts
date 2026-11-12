@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  HOURS_EXAMPLE, ageWords, dietWords, hoursAreReadable, hoursLines, openOn, placeFactRows, priceWords, reservationWords, settingWords, stepFreeWords,
+  HOURS_EXAMPLE, ageWords, dietWords, hoursAreReadable, hoursLines, hoursWords, openOn, placeFactRows, priceWords, reservationWords, settingWords, stepFreeWords,
 } from '@/domain/content/place-facts';
 import { PLACE_SETTINGS, PRICE_LEVELS, RESERVATION_POLICIES } from '@/db/schema/content';
 import { parseHours } from '@/domain/trip-planner/hours';
@@ -46,7 +46,8 @@ describe('booking, setting, ages and the way in', () => {
   });
 
   it('says whether there is a step-free way in, and nothing when the place does not say', () => {
-    expect(stepFreeWords(true)).toBe('Yes');
+    // Read beside the label "Way in".
+    expect(stepFreeWords(true)).toBe('Step-free');
     expect(stepFreeWords(false)).toBe('No step-free way in');
     expect(stepFreeWords(null)).toBeNull();
     expect(stepFreeWords(undefined)).toBeNull();
@@ -74,8 +75,8 @@ describe('diet options', () => {
 describe('opening hours, in words', () => {
   it('groups days that keep the same hours', () => {
     expect(hoursLines(HOURS_EXAMPLE)).toEqual([
-      { days: 'Monday to Thursday', hours: '7 am to 6 pm' },
-      { days: 'Friday and Saturday', hours: '7 am to 8 pm' },
+      { days: 'Monday to Thursday', hours: '7\u00a0am to 6\u00a0pm' },
+      { days: 'Friday and Saturday', hours: '7\u00a0am to 8\u00a0pm' },
       { days: 'Sunday', hours: 'Closed' },
     ]);
   });
@@ -87,16 +88,16 @@ describe('opening hours, in words', () => {
 
   it('says "Every day" when the whole week is the same', () => {
     expect(hoursLines('24/7')).toEqual([{ days: 'Every day', hours: 'Open all day' }]);
-    expect(hoursLines('Mo-Su 09:00-17:00')).toEqual([{ days: 'Every day', hours: '9 am to 5 pm' }]);
-    expect(hoursLines('10:00-22:00')).toEqual([{ days: 'Every day', hours: '10 am to 10 pm' }]);
+    expect(hoursLines('Mo-Su 09:00-17:00')).toEqual([{ days: 'Every day', hours: '9\u00a0am to 5\u00a0pm' }]);
+    expect(hoursLines('10:00-22:00')).toEqual([{ days: 'Every day', hours: '10\u00a0am to 10\u00a0pm' }]);
     expect(hoursLines('Mo-Su 00:00-24:00')).toEqual([{ days: 'Every day', hours: 'Open all day' }]);
   });
 
   it('uses a 12-hour clock, with minutes only when there are some', () => {
     expect(hoursLines('Mo 06:30-11:15; Tu 12:30-23:45; We 00:30-01:00')).toEqual([
-      { days: 'Monday', hours: '6:30 am to 11:15 am' },
-      { days: 'Tuesday', hours: '12:30 pm to 11:45 pm' },
-      { days: 'Wednesday', hours: '12:30 am to 1 am' },
+      { days: 'Monday', hours: '6:30\u00a0am to 11:15\u00a0am' },
+      { days: 'Tuesday', hours: '12:30\u00a0pm to 11:45\u00a0pm' },
+      { days: 'Wednesday', hours: '12:30\u00a0am to 1\u00a0am' },
       { days: 'Thursday to Sunday', hours: 'Closed' },
     ]);
   });
@@ -106,46 +107,46 @@ describe('opening hours, in words', () => {
       { days: 'Monday to Friday', hours: 'noon to midnight' },
       { days: 'Saturday and Sunday', hours: 'midnight to noon' },
     ]);
-    expect(hoursLines('Mo-Sa 18:00-24:00')[0]).toEqual({ days: 'Monday to Saturday', hours: '6 pm to midnight' });
+    expect(hoursLines('Mo-Sa 18:00-24:00')[0]).toEqual({ days: 'Monday to Saturday', hours: '6\u00a0pm to midnight' });
   });
 
   it('reads a night that runs past midnight by the time it ends', () => {
     // parseHours keeps the span as 17:00 to 26:00; a guest reads "2 am".
     expect(parseHours('Fr,Sa 17:00-02:00')![4]).toEqual([[1020, 1560]]);
     expect(hoursLines('Su-Th 17:00-23:00; Fr,Sa 17:00-02:00')).toEqual([
-      { days: 'Sunday to Thursday', hours: '5 pm to 11 pm' },
-      { days: 'Friday and Saturday', hours: '5 pm to 2 am' },
+      { days: 'Sunday to Thursday', hours: '5\u00a0pm to 11\u00a0pm' },
+      { days: 'Friday and Saturday', hours: '5\u00a0pm to 2\u00a0am' },
     ]);
   });
 
   it('joins a day with a break in it', () => {
     expect(hoursLines('Tu-Sa 11:30-14:00,17:00-22:00')).toEqual([
       { days: 'Sunday and Monday', hours: 'Closed' },
-      { days: 'Tuesday to Saturday', hours: '11:30 am to 2 pm and 5 pm to 10 pm' },
+      { days: 'Tuesday to Saturday', hours: '11:30\u00a0am to 2\u00a0pm and 5\u00a0pm to 10\u00a0pm' },
     ]);
-    expect(hoursLines('Mo 17:00-22:00,08:00-10:00,12:00-14:00')[0]?.hours).toBe('8 am to 10 am, noon to 2 pm and 5 pm to 10 pm');
+    expect(hoursLines('Mo 17:00-22:00,08:00-10:00,12:00-14:00')[0]?.hours).toBe('8\u00a0am to 10\u00a0am, noon to 2\u00a0pm and 5\u00a0pm to 10\u00a0pm');
   });
 
   it('reads Sunday with the start of the week when their hours match, and not when only two runs exist', () => {
     expect(hoursLines('Mo off; Tu-Su 10:00-17:00')).toEqual([
       { days: 'Monday', hours: 'Closed' },
-      { days: 'Tuesday to Sunday', hours: '10 am to 5 pm' },
+      { days: 'Tuesday to Sunday', hours: '10\u00a0am to 5\u00a0pm' },
     ]);
     expect(hoursLines('Sa-Mo 10:00-17:00; Tu-Fr 09:00-21:00')).toEqual([
-      { days: 'Saturday to Monday', hours: '10 am to 5 pm' },
-      { days: 'Tuesday to Friday', hours: '9 am to 9 pm' },
+      { days: 'Saturday to Monday', hours: '10\u00a0am to 5\u00a0pm' },
+      { days: 'Tuesday to Friday', hours: '9\u00a0am to 9\u00a0pm' },
     ]);
   });
 
   it('treats a day the hours do not mention as closed, and lets a later rule replace an earlier one', () => {
     expect(hoursLines('Mo-Fr 09:00-17:00')).toEqual([
-      { days: 'Monday to Friday', hours: '9 am to 5 pm' },
+      { days: 'Monday to Friday', hours: '9\u00a0am to 5\u00a0pm' },
       { days: 'Saturday and Sunday', hours: 'Closed' },
     ]);
     expect(hoursLines('Mo-Su 09:00-17:00; We off')).toEqual([
-      { days: 'Monday and Tuesday', hours: '9 am to 5 pm' },
+      { days: 'Monday and Tuesday', hours: '9\u00a0am to 5\u00a0pm' },
       { days: 'Wednesday', hours: 'Closed' },
-      { days: 'Thursday to Sunday', hours: '9 am to 5 pm' },
+      { days: 'Thursday to Sunday', hours: '9\u00a0am to 5\u00a0pm' },
     ]);
   });
 
@@ -155,13 +156,13 @@ describe('opening hours, in words', () => {
 
   it('joins the week across Sunday only when the run starts at the weekend', () => {
     expect(hoursLines('Mo-Su 09:00-17:00; Sa off')).toEqual([
-      { days: 'Sunday to Friday', hours: '9 am to 5 pm' },
+      { days: 'Sunday to Friday', hours: '9\u00a0am to 5\u00a0pm' },
       { days: 'Saturday', hours: 'Closed' },
     ]);
     expect(hoursLines('Mo-Su 09:00-17:00; Th off')).toEqual([
-      { days: 'Monday to Wednesday', hours: '9 am to 5 pm' },
+      { days: 'Monday to Wednesday', hours: '9\u00a0am to 5\u00a0pm' },
       { days: 'Thursday', hours: 'Closed' },
-      { days: 'Friday to Sunday', hours: '9 am to 5 pm' },
+      { days: 'Friday to Sunday', hours: '9\u00a0am to 5\u00a0pm' },
     ]);
   });
 
@@ -174,20 +175,51 @@ describe('opening hours, in words', () => {
 
   it('ignores case and extra spaces', () => {
     expect(hoursLines('  mo-th 07:00 - 18:00 ;  SU OFF ')).toEqual([
-      { days: 'Monday to Thursday', hours: '7 am to 6 pm' },
+      { days: 'Monday to Thursday', hours: '7\u00a0am to 6\u00a0pm' },
       { days: 'Friday to Sunday', hours: 'Closed' },
     ]);
+  });
+});
+
+describe('clock times hold together', () => {
+  const NBSP = '\u00a0';
+  it('puts a non-breaking space before am and pm, so a narrow column never leaves "pm" alone on a line', () => {
+    expect(hoursLines('Mo 09:30-17:00')[0]!.hours).toBe(`9:30${NBSP}am to 5${NBSP}pm`);
+    expect(openOn('Mo 09:30-17:00', 1)).toEqual({ open: true, text: `9:30${NBSP}am to 5${NBSP}pm` });
+    // Every clock time, in every shape of week: no digit is followed by an ordinary space and am or pm.
+    for (const hours of [HOURS_EXAMPLE, 'Tu-Sa 11:30-14:00,17:00-22:00', 'Su-Th 17:00-23:00; Fr,Sa 17:00-02:00', 'Mo-Fr 12:00-00:00']) {
+      const words = [...hoursWords(hours), ...placeFactRows({ hours }).flatMap((r) => r.lines)].join(' | ');
+      expect(words, hours).not.toMatch(/\d [ap]m\b/);
+    }
+    // Noon and midnight are words, and break like words.
+    expect(hoursLines('Mo-Fr 12:00-00:00')[0]!.hours).toBe('noon to midnight');
+  });
+
+  it('does the same for a clock time in the couple’s own note, and changes nothing else in it', () => {
+    const [row] = placeFactRows({ hours: 'Mo-Su 10:00-23:00', hoursNote: 'Brunch at weekends until 2 pm. The terrace closes at 11 PM, about 2 hours after the kitchen.' });
+    expect(row!.lines[1]).toBe(`Brunch at weekends until 2${NBSP}pm. The terrace closes at 11${NBSP}PM, about 2 hours after the kitchen.`);
+  });
+});
+
+describe('the week as the lines a guest reads', () => {
+  it('gives a line for each run of days, which the page shows and /admin/content reads back', () => {
+    expect(hoursWords(HOURS_EXAMPLE)).toEqual(['Monday to Thursday: 7\u00a0am to 6\u00a0pm', 'Friday and Saturday: 7\u00a0am to 8\u00a0pm', 'Sunday: Closed']);
+    expect(hoursWords('24/7')).toEqual(['Open all day, every day']);
+    expect(hoursWords('Mo-Su 09:00-17:00')).toEqual(['Every day: 9\u00a0am to 5\u00a0pm']);
+    for (const text of ['', 'most afternoons', 'Mo 25:00-26:00', null, undefined]) expect(hoursWords(text), String(text)).toEqual([]);
+    // The same lines the Hours row starts with.
+    expect(placeFactRows({ hours: HOURS_EXAMPLE })[0]!.lines.slice(0, 3)).toEqual(hoursWords(HOURS_EXAMPLE));
   });
 });
 
 describe('open on a day', () => {
   // 0 is Sunday, as Date#getDay counts.
   it('says the hours for a day the place opens', () => {
-    expect(openOn(HOURS_EXAMPLE, 1)).toEqual({ open: true, text: '7 am to 6 pm' });
-    expect(openOn(HOURS_EXAMPLE, 4)).toEqual({ open: true, text: '7 am to 6 pm' });
-    expect(openOn(HOURS_EXAMPLE, 5)).toEqual({ open: true, text: '7 am to 8 pm' });
-    expect(openOn(HOURS_EXAMPLE, 6)).toEqual({ open: true, text: '7 am to 8 pm' });
-    expect(openOn('Tu-Sa 11:30-14:00,17:00-22:00', 2)).toEqual({ open: true, text: '11:30 am to 2 pm and 5 pm to 10 pm' });
+    expect(openOn(HOURS_EXAMPLE, 1)).toEqual({ open: true, text: '7\u00a0am to 6\u00a0pm' });
+    expect(openOn(HOURS_EXAMPLE, 4)).toEqual({ open: true, text: '7\u00a0am to 6\u00a0pm' });
+    expect(openOn(HOURS_EXAMPLE, 5)).toEqual({ open: true, text: '7\u00a0am to 8\u00a0pm' });
+    expect(openOn(HOURS_EXAMPLE, 6)).toEqual({ open: true, text: '7\u00a0am to 8\u00a0pm' });
+    expect(openOn('Tu-Sa 11:30-14:00,17:00-22:00', 2)).toEqual({ open: true, text: '11:30\u00a0am to 2\u00a0pm and 5\u00a0pm to 10\u00a0pm' });
   });
 
   it('says closed for a day the hours rule out', () => {
@@ -199,7 +231,7 @@ describe('open on a day', () => {
     // 5 September 2026 is a Saturday.
     const saturday = new Date(Date.UTC(2026, 8, 5, 12)).getUTCDay();
     expect(saturday).toBe(6);
-    expect(openOn('Sa 10:00-16:00', saturday)).toEqual({ open: true, text: '10 am to 4 pm' });
+    expect(openOn('Sa 10:00-16:00', saturday)).toEqual({ open: true, text: '10\u00a0am to 4\u00a0pm' });
   });
 
   it('says "all day" when the place never shuts, so "Open {text}" always reads', () => {
@@ -207,7 +239,7 @@ describe('open on a day', () => {
   });
 
   it('does not count a late night that began the day before', () => {
-    expect(openOn('Fr 17:00-02:00', 5)).toEqual({ open: true, text: '5 pm to 2 am' });
+    expect(openOn('Fr 17:00-02:00', 5)).toEqual({ open: true, text: '5\u00a0pm to 2\u00a0am' });
     expect(openOn('Fr 17:00-02:00', 6)).toEqual({ open: false });
   });
 
@@ -229,11 +261,11 @@ describe('a place’s facts as rows', () => {
   it('gives every fact that is set, in the order a guest weighs them', () => {
     expect(placeFactRows(full)).toEqual([
       { key: 'price', label: 'Price', lines: ['Moderate, $15 to $40 each'] },
-      { key: 'hours', label: 'Hours', lines: ['Monday to Thursday: 7 am to 6 pm', 'Friday and Saturday: 7 am to 8 pm', 'Sunday: Closed', 'Shorter hours in winter.', 'Hours change, so check with the place before you go.'] },
+      { key: 'hours', label: 'Hours', lines: ['Monday to Thursday: 7\u00a0am to 6\u00a0pm', 'Friday and Saturday: 7\u00a0am to 8\u00a0pm', 'Sunday: Closed', 'Shorter hours in winter.', 'Hours change, so check with the place before you go.'] },
       { key: 'booking', label: 'Booking', lines: ['Booking is a good idea'] },
       { key: 'diets', label: 'Diet options', lines: ['Vegetarian and vegan options on the menu'] },
-      { key: 'stepFree', label: 'Step-free way in', lines: ['Yes'] },
-      { key: 'setting', label: 'Indoors or outdoors', lines: ['Indoors and outdoors'] },
+      { key: 'stepFree', label: 'Way in', lines: ['Step-free'] },
+      { key: 'setting', label: 'Setting', lines: ['Indoors and outdoors'] },
       { key: 'ages', label: 'Ages', lines: ['21 and over'] },
     ]);
   });
@@ -243,14 +275,30 @@ describe('a place’s facts as rows', () => {
     expect(placeFactRows(null)).toEqual([]);
     expect(placeFactRows({})).toEqual([]);
     expect(placeFactRows({ priceLevel: null, hours: null, hoursNote: null, reservations: null, diets: [], stepFree: null, setting: null, minAge: null })).toEqual([]);
-    expect(placeFactRows({ stepFree: false })).toEqual([{ key: 'stepFree', label: 'Step-free way in', lines: ['No step-free way in'] }]);
+    expect(placeFactRows({ stepFree: false })).toEqual([{ key: 'stepFree', label: 'Way in', lines: ['No step-free way in'] }]);
+  });
+
+  it('keeps every label short enough for a card’s label column, so the values line up', () => {
+    // The column is 7rem; "From the CAA" and "Accessibility" are the longest labels it already holds.
+    for (const row of placeFactRows(full)) expect(row.label.length, row.label).toBeLessThanOrEqual('Accessibility'.length);
+  });
+
+  it('does not say "step-free" twice when the place’s own access notes are shown beside it', () => {
+    const keys = (facts: Parameters<typeof placeFactRows>[0]) => placeFactRows(facts).map((r) => r.key);
+    expect(keys({ stepFree: true })).toEqual(['stepFree']);
+    expect(keys({ stepFree: true, access: 'Lift from the lobby to every floor.' })).toEqual([]);
+    // Empty notes say nothing, so the fact is still told; and a "No" is always told.
+    for (const access of ['', '   ', null, undefined]) expect(keys({ stepFree: true, access }), String(access)).toEqual(['stepFree']);
+    expect(placeFactRows({ stepFree: false, access: 'Two steps at the door.' })).toEqual([{ key: 'stepFree', label: 'Way in', lines: ['No step-free way in'] }]);
+    // The notes change nothing else.
+    expect(keys({ ...full, access: 'Lift from the lobby.' })).toEqual(['price', 'hours', 'booking', 'diets', 'setting', 'ages']);
   });
 
   it('keeps a note about the hours when the hours themselves are not known, and never shows hours it cannot read', () => {
     expect(placeFactRows({ hoursNote: 'Closed on game days.' })).toEqual([{ key: 'hours', label: 'Hours', lines: ['Closed on game days.'] }]);
     expect(placeFactRows({ hours: 'most afternoons' })).toEqual([]);
     // Hours come with one reminder that they change; a note that already says to check is reminder enough, and "always open" needs none.
-    expect(placeFactRows({ hours: 'Mo-Su 09:00-17:00', hoursNote: 'Hours vary by day, so check before you go.' })[0]!.lines).toEqual(['Every day: 9 am to 5 pm', 'Hours vary by day, so check before you go.']);
+    expect(placeFactRows({ hours: 'Mo-Su 09:00-17:00', hoursNote: 'Hours vary by day, so check before you go.' })[0]!.lines).toEqual(['Every day: 9\u00a0am to 5\u00a0pm', 'Hours vary by day, so check before you go.']);
     expect(placeFactRows({ hours: '24/7' })[0]!.lines).toEqual(['Open all day, every day']);
   });
 

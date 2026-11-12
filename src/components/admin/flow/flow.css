@@ -368,6 +368,9 @@ textarea.flow-input {
   margin: 0;
   font-size: var(--text-body-sm);
   color: var(--color-error);
+
+  /* AdminFlow scrolls a rejected field's error into view; this keeps it clear of the sheet's footer. */
+  scroll-margin-block-end: var(--spacing-md);
 }
 
 .flow-field-error::before {

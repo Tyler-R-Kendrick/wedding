@@ -11,6 +11,7 @@
 - description: 'hours: food at 10 pm on Sunday gets the one place of ours still open, not the ones that shut at 9 or 9:30'
   vars:
     category: holdout
+    reads: all
     request: anywhere still doing food at 10 on sunday night? just landed, starving
     prefs: { diet: [], meal: quick, asked: true }
     expect:
@@ -22,6 +23,7 @@
 - description: 'hours: breakfast in the hotel at 8 on Sunday gets the lounge that serves it, and nothing outside the hotel'
   vars:
     category: holdout
+    reads: all
     request: Breakfast in the hotel at 8 on Sunday before we check out?
     prefs: { diet: [], meal: quick, asked: true }
     expect:
@@ -32,6 +34,7 @@
 - description: 'hours: something for the children at 7 pm on Sunday leaves out everything that shut at 4 or 5'
   vars:
     category: holdout
+    reads: all
     request: "what's still open for the kids around 7pm on sunday? they napped late"
     profile: { adults: 2, children: 2 }
     expect:
@@ -48,6 +51,7 @@
 - description: 'price: a misspelt "not to pricey" dinner for six never offers a tasting menu at over $100 a head'
   vars:
     category: holdout
+    reads: all
     request: somwhere not to pricey for dinner fri, theres 6 of us
     prefs: { diet: [], meal: sit-down, asked: true }
     expect:
@@ -58,6 +62,7 @@
 - description: 'price: the lowest saved meal budget does not take the hotel bars away from a guest asking for a drink'
   vars:
     category: holdout
+    reads: all
     request: A drink in the hotel bar on Friday night?
     profile: { adults: 2, prefs: { diet: [], budget: 1, asked: true } }
     expect:
@@ -66,6 +71,7 @@
 - description: 'price: a saved budget with no ceiling gives way when the request asks for cheap and cheerful'
   vars:
     category: holdout
+    reads: all
     request: Cheap and cheerful lunch on Sunday, nothing dear.
     profile: { adults: 2, prefs: { diet: [], meal: quick, budget: 4, asked: true } }
     expect:
@@ -78,6 +84,7 @@
 - description: 'access: a power-chair user asking for architecture gets a sight known to be step-free, and no step-free claim on the cruise or the tours'
   vars:
     category: holdout
+    reads: all
     request: Any architecture things I can do from my chair on Friday afternoon?
     profile: { adults: 1, accessibility: 'Power chair user. Ramps or lifts needed everywhere.' }
     expect:
@@ -90,6 +97,7 @@
 - description: 'access: an RSVP that says short distances only gets dinner from places near the hotel'
   vars:
     category: holdout
+    reads: all
     request: dinner friday?
     profile:
       adults: 2
@@ -102,6 +110,7 @@
 - description: 'access: asked outright whether a restaurant with no access on record is accessible, the answer says to check and does not claim it'
   vars:
     category: holdout
+    reads: all
     request: "Is Esmé wheelchair accessible? My mother can't do steps at all."
     expect:
       cards: { excludes: ['Esm.:[^\n]*[Ss]tep-free way in'] }
@@ -113,6 +122,7 @@
 - description: 'kids: a nightcap once the children are asleep, without leaving the hotel, gets a hotel bar and nothing outside the building'
   vars:
     category: holdout
+    reads: all
     request: "Once the kids are asleep we'd love a nightcap without leaving the hotel (baby monitor range!). Friday."
     profile: { adults: 2, children: 2 }
     expect:
@@ -121,6 +131,7 @@
 - description: 'kids: children on the invitation but a saved "not bringing them" gets a grown-up bar, not the playground'
   vars:
     category: holdout
+    reads: all
     request: A proper grown-up cocktail bar for Friday night?
     profile: { adults: 2, children: 2, prefs: { kids: false, asked: true } }
     expect:
@@ -134,6 +145,7 @@
 - description: 'kids: no children on the invitation but a saved "children are coming" gets something they can go to on Sunday afternoon'
   vars:
     category: holdout
+    reads: all
     request: What shall we do on Sunday afternoon?
     profile: { adults: 2, children: 0, prefs: { kids: true, asked: true } }
     expect:
@@ -149,6 +161,7 @@
 - description: 'diet: "coeliac" on the RSVP is gluten-free: no question, a gluten-free outside search, and one of our places that marks it'
   vars:
     category: holdout
+    reads: all
     request: Lunch on Sunday, sit-down?
     profile: { adults: 2, dietary: 'Coeliac (diagnosed) - must be strictly GF' }
     expect:
@@ -159,6 +172,7 @@
 - description: 'diet: with no profile, a kosher sit-down dinner is answered at once, kosher outside, and none of our places is shown as kosher'
   vars:
     category: holdout
+    reads: all
     request: kosher sit-down dinner friday night?
     expect:
       clarifies: false
@@ -169,6 +183,7 @@
 - description: 'diet: a vegan guest named in the request is searched for, whatever diet the profile saved'
   vars:
     category: holdout
+    reads: all
     request: My vegan niece is joining us for a quick lunch on Friday. Where?
     profile: { adults: 2, prefs: { diet: [gluten-free], meal: quick, asked: true } }
     expect:
@@ -180,6 +195,7 @@
 - description: 'profile: with no profile, a wet Friday afternoon indoors offers nothing that is marked outdoors'
   vars:
     category: holdout
+    reads: all
     request: "It's bucketing down on Friday afternoon. What can we do that's indoors?"
     expect:
       clarifies: false
@@ -188,6 +204,7 @@
 - description: 'profile: saved interests give way to a request for somewhere the children can burn off energy'
   vars:
     category: holdout
+    reads: all
     request: the kids need to burn off energy sunday morning. where?
     profile: { adults: 2, children: 2, prefs: { interests: [coffee, museum], asked: true } }
     expect:
@@ -198,6 +215,7 @@
 - description: 'profile: a profile that holds only the party size does not answer the food question, so dinner is still asked about'
   vars:
     category: holdout
+    reads: all
     request: "Where's good for dinner on Friday evening?"
     profile: { adults: 2 }
     expect: { clarifies: true, asksAbout: [diet] }
@@ -207,6 +225,7 @@
 - description: 'honesty: asked whether a place with no price on record is pricey, its card shows no price'
   vars:
     category: holdout
+    reads: all
     request: Is the Starbucks Roastery pricey? Worth the walk?
     expect:
       clarifies: false
@@ -217,6 +236,7 @@
 - description: 'honesty: asked whether a restaurant with no hours on record is open on Sunday night, the answer invents none and says to book'
   vars:
     category: holdout
+    reads: all
     request: is alinea open sunday night? and how do we get a table
     expect:
       ours: { includes: [alinea] }

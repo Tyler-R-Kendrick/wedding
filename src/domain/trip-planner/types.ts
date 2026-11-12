@@ -258,11 +258,13 @@ export type Intent = {
   grownUps?: boolean;
   /** Nothing is booked and they want to walk in ("where can we just turn up"). */
   walkIn?: boolean;
+  /** A first-time visitor's question: the few things not to miss. */
+  mustSee?: boolean;
   /**
    * Who the answer is for, from the guest's profile, where the request itself did not say: folded in
    * by `draftPlan`, never read from the request's words.
    */
-  who?: { stepFree: boolean; kidsAlong: boolean; interests: Theme[] };
+  who?: { stepFree: boolean; kidsAlong: boolean; interests: Theme[]; allergy?: string | null };
   /** What they eat, from this request or what they told us before, for a meal: a menu we have read that does not mark it is passed over. */
   eats?: Diet[];
 };

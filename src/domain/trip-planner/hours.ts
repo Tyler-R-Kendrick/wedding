@@ -104,7 +104,9 @@ export function weekdayIn(text: string): number | null {
 export function askedTime(text: string, part: string | undefined): AskedTime | null {
   const weekday = weekdayIn(text);
   if (weekday === null) return null;
-  const clock = /\b(\d{1,2})(?::(\d\d))?\s*([ap])\.?m\b/.exec(text);
+  // "Around midnight" is the time asked about, whatever other time the request mentions (a flight landing).
+  if (/\bmidnight\b/.test(text)) return { weekday: (weekday + 1) % 7, from: 0, to: 30 };
+  const clock = /\b(\d{1,2})(?:[:.](\d\d))?\s*(?:ish\s*)?([ap])\.?m\b/.exec(text);
   if (clock) {
     const h = (Number(clock[1]) % 12) + (clock[3] === 'p' ? 12 : 0);
     const at = h * 60 + Number(clock[2] ?? 0);
@@ -112,7 +114,6 @@ export function askedTime(text: string, part: string | undefined): AskedTime | n
     const small = h < 5 && /\b(night|late|tonight|after the bars?)\b/.test(text);
     return { weekday: small ? (weekday + 1) % 7 : weekday, from: at, to: at + 30 };
   }
-  if (/\bmidnight\b/.test(text)) return { weekday: (weekday + 1) % 7, from: 0, to: 30 };
   if (/\b(late[- ]night|late at night)\b/.test(text)) return { weekday, from: 22 * 60, to: 24 * 60 };
   if (/\bnight\b/.test(text) && part === 'evening') return { weekday, from: 19 * 60, to: 23 * 60 };
   const span = part ? PART_SPAN[part] : undefined;

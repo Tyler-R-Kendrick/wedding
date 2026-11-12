@@ -142,7 +142,8 @@ const MOST_STARTERS = 6;
 const NO_ITINERARIES: PlannerItinerary[] = [];
 const PLAIN_PROFILE = profileOf(null, null);
 const PREFS_SAVED = 'Saved. New ideas will fit this.';
-const PREFS_ELSEWHERE = 'You changed this on another device since. Those answers are kept; change them here if you like.';
+const PREFS_ELSEWHERE = 'These were changed somewhere else a moment ago, so we kept those.';
+const PREFS_NOT_CLEARED = 'We could not clear that just now. Please try again in a moment.';
 const PREFS_FAILED = 'We could not save that just now. Your answers still apply on this page.';
 /** A page brought back into view asks again for the saved plans, at most this often. */
 const FRESH_MS = 15_000;
@@ -421,7 +422,7 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
     setWhoBusy(true);
     const r = await actions.savePrefs({ prefs: { diet: null, meal: null, budget: null, stepFree: null, shortWalks: null, interests: [], kids: null, asked: false } }).catch(() => ({ ok: false as const, message: PREFS_FAILED }));
     setWhoBusy(false);
-    if (!r.ok) return setWhoProblem(r.message || PREFS_FAILED);
+    if (!r.ok) return setWhoProblem(PREFS_NOT_CLEARED);
     prefsAt.current = r.updatedAt;
     setProfile(r.profile);
     channel.current?.postMessage('saved');
@@ -1353,11 +1354,13 @@ function Board({
     const place = byId.get(s.id);
     const name = place?.name ?? s.name;
     const stop = at.get(s.id);
-    const when = stop && stop.start !== null && stop.end !== null ? `Around ${clockSpan(stop.start, stop.end)}` : null;
+    // Known to be shut at the time it is planned for: said on the plan itself, where it can be moved,
+    // and in place of a time of day that cannot happen.
+    const shut = place ? knowBeforeYouGo(place, { date: savedDate(s), part: s.part }).shut : null;
+    const when = !shut && stop && stop.start !== null && stop.end !== null ? `Around ${clockSpan(stop.start, stop.end)}` : null;
     const howLong = place ? aboutHowLong(stopMinutes(place).minutes) : null;
     const way = wayTo(s, order);
-    // Known to be shut at the time it is planned for: said on the plan itself, where it can be moved.
-    const shut = place ? knowBeforeYouGo(place, { date: savedDate(s), part: s.part }).shut : null;
+
     const isPicked = picked === s.id;
     return (
       <article key={s.id} data-saved-id={s.id} className={`trip-saved${s.own ? ' trip-saved--own' : ''}${dragging === s.id ? ' is-dragging' : ''}${isPicked ? ' is-picked' : ''}`}>
@@ -1385,7 +1388,7 @@ function Board({
           <div className="trip-saved__facts">
             {shut ? (
               <p className="trip-saved__fact trip-saved__fact--shut">
-                <Icon name="clock" className="trip-icon trip-icon--sm" />
+                <Icon name="alert" className="trip-icon trip-icon--sm" />
                 {`${shut} Move it to another time.`}
               </p>
             ) : null}

@@ -106,8 +106,8 @@ describe('opening hours', () => {
 describe('what we do not know is said', () => {
   const said = (request: string) => draftPlan({ request, places: PLACES, saved: [], prefs: ASKED }).intro;
   it('hours, access and allergies', () => {
-    expect(said('what time does the aquarium open on sunday morning?')).toMatch(/do not hold opening hours/);
-    expect(said('My mother uses a wheelchair. Can she get around the Art Museum alright?')).toMatch(/do not hold wheelchair or step-free details/);
+    expect(said('what time does the aquarium open on sunday morning?')).toMatch(/have not checked the hours/);
+    expect(said('My mother uses a wheelchair. Can she get around the Art Museum alright?')).toMatch(/have not checked the way in/);
     expect(said("my wife has a serious shellfish allergy. where's safe for dinner friday, somewhere we can sit down")).toMatch(/cannot vouch for any kitchen on a shellfish allergy/);
   });
 

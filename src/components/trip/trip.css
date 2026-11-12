@@ -670,21 +670,49 @@
   gap: 0 var(--spacing-md);
 }
 
-/* Good to know before going: price, the day's hours, booking, in one line of plain words. */
+/* Good to know before going: price, the day's hours, booking. Set under the facts above, on their
+   text column. Side by side with a middle dot between where the row is wide; one to a line, with
+   no dots, where it is not, so no line ever ends in a dot or holds a lone price. */
 .trip-place__know {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  padding-inline-start: calc(1.25rem + var(--spacing-sm));
+  list-style: none;
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
   color: var(--color-on-surface);
 }
 
-/* Not open at the time it would go in the plans: said in the warm ink, with a clock, above the button. */
-.trip-place__shut {
+@container (inline-size >= 34rem) {
+  .trip-place__know {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--spacing-sm);
+  }
+
+  .trip-place__know > li:not(:last-child)::after {
+    margin-inline-start: var(--spacing-sm);
+    color: var(--color-gold-deep);
+    content: "\00b7";
+  }
+}
+
+/* Not open at the time it would go in the plans: the one warning on a card. First, in ink and set
+   strong, with its own mark, so it is not taken for a time or a link. */
+.trip-place__shut,
+.trip-saved__fact.trip-saved__fact--shut {
   display: flex;
   align-items: flex-start;
   gap: var(--spacing-xs);
   margin: 0;
   font-family: var(--font-text);
   font-size: var(--type-body-sm-size);
+  font-weight: 600;
   line-height: var(--type-body-sm-line);
-  color: var(--color-tertiary);
+  color: var(--color-on-surface);
 }
 
 .trip-place__shut > .trip-icon {
@@ -1585,39 +1613,56 @@
 }
 
 .trip-who__label {
-  margin-inline-end: var(--spacing-sm);
   color: var(--color-on-surface-muted);
 }
 
-.trip-who__fact {
+/* The party is the one part set strong; the rest of the sentence is said plainly. */
+.trip-who__party {
   font-weight: 600;
 }
 
 .trip-who__from {
-  font-weight: 400;
   color: var(--color-on-surface-muted);
-}
-
-/* A middle dot between facts, drawn after each but the last so a wrapped line never starts with one. */
-.trip-who__dot::before {
-  margin-inline: var(--spacing-sm);
-  font-weight: 400;
-  color: var(--color-gold-deep);
-  content: "\00b7";
 }
 
 .trip-who__change {
   flex: none;
+  font-size: var(--type-body-md-size);
+  line-height: var(--type-body-md-line);
+}
+
+/* One of several, drawn as a chip: a ring that fills when it is the one chosen. */
+.trip-radio {
+  cursor: pointer;
+}
+
+.trip-radio__dot {
+  flex: none;
+  inline-size: 0.75rem;
+  block-size: 0.75rem;
+  border: 1.5px solid currentcolor;
+  border-radius: var(--rounded-pill);
+}
+
+.trip-radio.is-picked .trip-radio__dot {
+  background: currentcolor;
+  box-shadow: inset 0 0 0 2px var(--color-secondary);
+}
+
+.trip-radio:has(:focus-visible) {
+  border-color: var(--color-gold-deep);
+  box-shadow: var(--focus-ring);
+}
+
+.trip-radio:has(:disabled) {
+  cursor: default;
+  opacity: 0.72;
 }
 
 .trip-who__form {
   display: grid;
   gap: var(--spacing-lg);
   min-inline-size: 0;
-}
-
-.trip-who__hint {
-  margin-block-start: var(--spacing-sm);
 }
 
 .trip-who__problem {
@@ -2462,11 +2507,6 @@
 
 .trip-saved__fact > .trip-icon {
   block-size: 1lh;
-}
-
-/* The place is known to be shut at the time it is planned for. */
-.trip-saved__fact--shut {
-  color: var(--color-tertiary);
 }
 
 /* A part of the day holding more than fits it, said plainly with a way out. */

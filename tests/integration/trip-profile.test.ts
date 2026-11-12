@@ -20,7 +20,7 @@ import { seedSwarmE } from './helpers/swarm-e';
  * The notes themselves never leave: not to an assistant, not into a stored response.
  */
 const guest = (guestId: string, householdId: string, actsFor: string[], entitlements: Entitlement[] = ['view_travel_tools']): GuestPrincipal =>
-  ({ kind: 'guest', authIdentityId: newId<AuthIdentityId>(), guestId, householdId, actsFor, entitlements: new Set(entitlements), authenticatedAt: new Date().toISOString(), sessionId: 's' }) as GuestPrincipal;
+  ({ kind: 'guest', authIdentityId: newId<AuthIdentityId>(), guestId, householdId, actsFor, entitlements: new Set(entitlements), authenticatedAt: new Date().toISOString(), sessionId: 's' }) as unknown as GuestPrincipal;
 const managerA = guest(FX.guestA1, FX.householdA, [FX.guestA1, FX.guestA2, FX.guestA3]);
 const memberA = guest(FX.guestA2, FX.householdA, [FX.guestA2]);
 const soloC = guest(FX.guestC1, FX.householdC, [FX.guestC1]);
@@ -60,7 +60,7 @@ describe('who the trip planner plans for', () => {
   it('counts the party from the household, and leaves out whoever has said no to everything', async () => {
     const first = await run(getMyTripProfile, managerA, {});
     expect(first.ok && first.value.data.profile).toMatchObject({ party: { adults: 2, children: 1 }, kids: true, diet: [], asked: false, saved: false });
-    expect(first.ok && first.value.data.profile.from).toEqual({ diet: null, stepFree: null, kids: 'rsvp' });
+    expect(first.ok && first.value.data.profile.from).toEqual({ diet: null, stepFree: null, shortWalks: null, kids: 'rsvp' });
     const db = await getDb();
     const event = Object.values(FX.events)[0]!;
     const answer = (guestId: string, status: 'accepted' | 'declined') => ({ id: newId(), guestId, eventId: event, status, submittedBy: by, createdAt: new Date(), updatedAt: new Date() });

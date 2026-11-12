@@ -68,7 +68,8 @@ export function buildKnowledgeRecords(rows: Rows, now: Date): KnowledgeRecordIns
     const place = r.placeId ? placeById.get(r.placeId) : undefined;
     // Price, hours, booking and the rest, in the words the place's page uses ("Hours: Monday to Thursday: 7 am to 6 pm; Sunday: Closed.").
     // The note on the hours is the couple's own text, so it goes in by itself: `push` drops a sentence of it that is still a TODO.
-    const facts = placeFactRows({ ...r, hoursNote: null }).map((f) => `${f.label}: ${f.lines.join('; ')}.`);
+    // Plain spaces and one full stop: the page's non-breaking spaces and a line's own stop are for the page.
+    const facts = placeFactRows({ ...r, hoursNote: null }).map((f) => `${f.label}: ${f.lines.map((l) => l.replace(/\.$/, '')).join('; ')}.`.replace(/\u00a0/g, ' '));
     push('recommendation', 'recommendations', r, r.title, thingsToDoDetailPath(r.slug), [
       r.what, r.distanceFromCaa, r.cost, r.accessibility, ...facts, r.hoursNote,
       place && !place.placeholder ? `Place: ${place.name}${place.address ? `, ${place.address}` : ''}` : null,

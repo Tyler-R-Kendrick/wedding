@@ -157,7 +157,8 @@ export function OperationalRow({ field }: { field: OperationalFieldView }) {
 export function RecommendationCardView({ card, headingLevel = 3 }: { card: RecommendationCard; headingLevel?: 2 | 3 }) {
   const H = headingLevel === 2 ? 'h2' : 'h3';
   // Price, hours, booking and the rest: only the facts the record holds, each in plain words.
-  const facts = placeFactRows(card.facts);
+  // The place's own access notes, when they are settled text, already say how to get in.
+  const facts = placeFactRows({ ...card.facts, access: card.accessibility && !card.accessibility.placeholder ? card.accessibility.text : null });
   const fact = (...keys: PlaceFactKey[]) =>
     facts
       .filter((r) => keys.includes(r.key))
