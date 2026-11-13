@@ -49,4 +49,4 @@ Auth files absent on first attempt; device code **G6KV-SPEN** issued then supers
 
 ## CI
 
-PR **#129**, branch `cursor/guest-multi-contacts-b3d2`. Re-run after Round 4b code/doc commits (see GitHub checks on latest head).
+PR **#129**, branch `cursor/guest-multi-contacts-b3d2`, head **`27988c26`**: design-quality + stages **green** after Round 4b push (2026-11-13).
