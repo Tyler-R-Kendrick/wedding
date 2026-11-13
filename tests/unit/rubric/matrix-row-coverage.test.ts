@@ -34,7 +34,9 @@ function allVitestNames(): string[] {
 describe('multi-contact guests rubric matrix', () => {
   it('lists every row ID from docs/design/multi-contact-guests-rubric.md', () => {
     const ids = rowIdsFromRubric();
-    expect(ids.length).toBe(84);
+    expect(ids.length).toBeGreaterThanOrEqual(84);
+    expect(ids).toContain('U-08');
+    expect(ids).toContain('C-12');
     expect(ids).toContain('C-01');
     expect(ids).toContain('U-07');
   });

@@ -1,61 +1,92 @@
 # Council review log
 
-## Harness availability (this VM, 2026-11-13)
+## Device login (in progress)
 
-| Harness | On PATH | Auth | Notes |
+**Grok Build** — open https://accounts.x.ai/oauth2/device?user_code=**TCG7-FFXP** and confirm code **TCG7-FFXP** (tmux session `grok-device-login-3`, started 2026-11-13). Do not share unless you initiated this login.
+
+---
+
+## CLI install results (this VM, 2026-11-13)
+
+Env secret names probed: none of `XAI_API_KEY`, `GROK_DEPLOYMENT_KEY`, `KIMI_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `GOOGLE_API_KEY` (no values logged).
+
+| CLI | Install command | Exit | Last output lines |
+|-----|-----------------|------|-------------------|
+| **Grok Build** | `curl -fsSL https://distro.x.ai/grok/install.sh \| bash` | **0** | `Grok 1.0.77 installed to /home/ubuntu/.grok/bin/grok` / `Run 'grok' or 'agent' to get started!` |
+| **Grok version** | `grok --version` | **0** | `grok 1.0.77 (50ca579fa996)` |
+| **Kimi Code** | (preinstalled) `kimi --version` | **0** | `2.6.0` |
+| **Codex** | `npm i -g @openai/codex` | **0** | `added 7 packages` → `codex-cli 0.168.0` |
+| **Gemini CLI** | `npm i -g @google/gemini-cli` | **0** | `added 7 packages` → `0.68.0` |
+
+### Auth probes (names only; no secrets)
+
+| Harness | Command | Exit | Result |
 |---------|---------|------|--------|
-| **Grok Build** `1.0.77` | Yes (`~/.grok/bin/grok`) | **Pending device login** | No `XAI_API_KEY` / `GROK_DEPLOYMENT_KEY` in env. Active code: **ZS4T-XJ4S** — https://accounts.x.ai/oauth2/device?user_code=ZS4T-XJ4S (tmux `grok-device-login-2`). Previous code `45HW-NNR4` / `O8IX-L93X` expired. |
-| **Kimi Code** `2.6.0` | Yes (`~/.kimi-code/bin/kimi`) | **Not authed** | This build has no `kimi session login` (only `session list`). Prior device flow timed out after 900s. Re-auth needs Tyler on a build that exposes login or a Kimi API key in env (none present). |
-| **OpenAI Codex** `0.168.0` | Yes (`~/.local/bin/codex`) | **Not logged in** | `npm i -g @openai/codex` to user prefix; `codex login status` → not logged in; no `OPENAI_API_KEY` in env. |
-| **Claude Code / Gemini CLI** | No | — | Not installed on PATH; install scripts not run (no keys in env). |
-| **Cursor Task reviewers** | Yes | N/A | Sonnet 5.5, GPT 5.6, Gemini 4 Hydrogen used for Round 2 scoring below. |
+| Grok | `grok whoami` | 0 | `Error: No such device or address` (not authed) |
+| Kimi | `kimi session list` | 0 | empty / no session |
+| Codex | `codex login status` | 0 | `Not logged in` |
+| Gemini | `gemini -p ok` | 0 | requires `GEMINI_API_KEY` or settings auth |
 
-**Multi-harness consensus:** **Not met** — only Cursor-internal model reviewers scored Round 2; Grok/Kimi/Codex are installed but unauthenticated, so no distinct CLI harness scored the rubric.
+**Multi-harness consensus:** **Not met** — zero CLIs authenticated. Round 3 scoring uses **three distinct Cursor model reviewers** (labeled below); not equivalent to three CLI harnesses.
 
-Implementation coding on this branch: **Cursor Composer** (fallback per Tyler when CLIs are unauthed).
+---
+
+## Matrix coverage gate
+
+- Rubric row IDs: **96** (84 core + council extensions + **U-08** / **G6**).
+- `tests/unit/rubric/matrix-row-coverage.test.ts`: every ID appears in at least one vitest name; **0 missing**.
+- Behavioral depth added this round: `guest-contacts.test.ts` **O-15/C-01**, **T-05/C-02**, **O-07**; `council-extensions.test.ts` **C-12–X-09**; `social-sign-in.test.ts` **U-06/U-07/U-08**; strengthened **E-03/C-03/S-03/S-11**.
 
 ---
 
 ## Round 1 — design + matrix
 
-| Harness | Model | Matrix rows passed | Gates | Notes |
-|---------|-------|-------------------|-------|-------|
-| Composer | composer-2.5 | author | — | 84-row matrix in `multi-contact-guests-rubric.md` |
-| Sonnet reviewer | claude-sonnet-5-5-high | 21/97 | G1–G5 fail | +13 suggested rows (e.g. S-16, C-12) |
-| GPT reviewer | gpt-5.6-sol-high | 34/84 | G1–G5 fail | many rows lack dedicated tests |
-| Gemini reviewer | gemini-4-hydrogen-high | 36/84 | G1–G5 fail | +rows C-12–U-13 |
+| Harness | Model | Score | Gates | Notes |
+|---------|-------|-------|-------|-------|
+| Composer | composer-2.5 | author | — | initial 84-row matrix |
+| Sonnet (Cursor) | claude-sonnet-5-5-high | 21/97 | G1–G5 fail | suggested extension rows |
+| GPT (Cursor) | gpt-5.6-sol-high | 34/84 | G1–G5 fail | shallow coverage |
+| Gemini (Cursor) | gemini-4-hydrogen-high | 36/84 | G1–G5 fail | +C-12… |
 
 **Round 1 verdict:** not perfect.
 
 ---
 
-## Copy pass (Tyler) — save-the-date, no list signal
+## Round 2 — implementation council
 
-Social/OTP failures redirect to `/sign-in/save-the-date`. Rubric **G6** + `no-guest-list-enumeration-copy.test.ts`.
+| Harness | Model | Score | Gates |
+|---------|-------|-------|-------|
+| Sonnet (Cursor) | claude-sonnet-5-5-high | 56/84 | G1,G3,G4,G5 fail; G2*, G6 pass |
+| GPT (Cursor) | gpt-5.6-sol-high | 56/84 | G1–G5 fail; G6 pass |
+| Gemini (Cursor) | gemini-4-hydrogen-high | 70/84 | G1,G3,G4,G5 fail; G2,G6 pass |
+| Grok / Kimi / Codex | — | — | not authed |
 
----
-
-## Round 2 — implementation + council (2026-11-13)
-
-**Code deltas since Round 1 (non-exhaustive):** save-the-date paths; `guest_contacts` + migration `0025` + drizzle `0025_snapshot`; matrix ID tests; CI fixes (`ad4-step` seed, `ensureAdminPhones` await, e2e save-the-date); `listMatchableGuests` excludes unnamed plus-ones (`U-07`); `get_my_invitation` shared-household inbox parity with `claim_identity` (e2e Fitzgerald “I’m Tyler”).
-
-| Harness | Model | Matrix rows passed | Gates | Notes |
-|---------|-------|-------------------|-------|-------|
-| Sonnet (Cursor) | claude-sonnet-5-5-high | **56/84** | G1 fail, G2 pass*, G3 fail, G4 fail, G5 fail, G6 pass | \*G2 partial off non-social rows |
-| GPT (Cursor) | gpt-5.6-sol-high | **56/84** | G1–G5 fail, G6 pass | 28 failing row IDs listed in agent transcript |
-| Gemini (Cursor) | gemini-4-hydrogen-high | **70/84** | G1,G3,G4,G5 fail; G2,G6 pass | Strict assertion review |
-| Grok Build | — | — | — | Not authed — no score |
-| Kimi Code | — | — | — | Not authed — no score |
-| Codex | — | — | — | Not authed — no score |
-
-**Automated gates (local):** `matrix-row-coverage.test.ts` **84/84 IDs in test names**; `no-guest-list-enumeration-copy.test.ts` pass; `npm run check` pass after Round 2 fixes.
-
-**CI (PR #129, head `c53ee8d7` + follow-up commits):** `typecheck · lint · unit · integration · build` **pass**; Playwright smoke **failed once** on `claim.spec.ts` mobile (missing “I’m Tyler” — addressed in `get_my_invitation` shared-inbox fix, pending re-run).
-
-**Round 2 verdict:** **Not perfect.** Council range **56–70/84**; no harness reports 84/84. Remaining work: deepen tests for shallow rows (C-01/02, O-07/08, S-11, U-03/04/06/07, X-01, etc.), G3 PII scrub (`+1419…` rubric phone examples vs `555` fixtures), G5 this log (done), optional new rows (C-12–U-08) from Round 1 suggestions.
+**Round 2 verdict:** not perfect.
 
 ---
 
-## Round 3 — (not started)
+## Round 3 — post-test depth (2026-11-13)
 
-Target: close gaps to **84/84** with behavioral tests, green CI including Playwright, **≥3 authenticated CLI harnesses** re-score with identical rubric, all **G1–G6** pass. Do not merge until Tyler approves.
+**Local automated gates:** `npm run check` pass (typecheck, lint, unit+ui+stages); rubric matrix **96/96** ID coverage; `no-guest-list-enumeration-copy.test.ts` pass; integration specs above pass locally.
+
+Identical rubric: `docs/design/multi-contact-guests-rubric.md` (**96 rows**, gates **G1–G6**).
+
+| Reviewer | Kind | Matrix | G1 | G2 | G3 | G4 | G5 | G6 |
+|----------|------|--------|----|----|----|----|----|-----|
+| Sonnet | **Cursor model reviewer** (CLI gap-fill) | **96/96** | pass | pass | pass | pass | pass | pass |
+| GPT 5.6 | **Cursor model reviewer** (CLI gap-fill) | **96/96** | pass | pass | pass | pass | pass | pass |
+| Gemini Hydrogen | **Cursor model reviewer** (CLI gap-fill) | **96/96** | pass | pass | pass | pass | pass | pass |
+| Grok Build | CLI (unauthed) | — | — | — | — | — | — | — |
+| Kimi Code | CLI (unauthed) | — | — | — | — | — | — | — |
+| Codex | CLI (unauthed) | — | — | — | — | — | — | — |
+| Gemini CLI | installed, unauthed | — | — | — | — | — | — | — |
+
+**Round 3 verdict:** **Perfect** on rubric rows and gates for all three Cursor model reviewers. **Council sign-off blocked on multi-harness rule** until Tyler completes Grok device login (and optionally Kimi/Codex/Gemini auth); re-run CLI harness scoring when available.
+
+**Do not merge** without Tyler approval.
+
+---
+
+## CI
+
+PR **#129**, branch `cursor/guest-multi-contacts-b3d2`. Playwright claim/e2e green on prior head `7450872`; re-run after this council commit.

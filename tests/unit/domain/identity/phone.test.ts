@@ -11,23 +11,24 @@ describe('MockTwilioVerify', () => {
   });
 });
 
-const RUBRIC_419 = '+14193443675';
+/** NANP 555-01XX reserved for fiction (G3 — not a real subscriber number). */
+const RUBRIC_FICTION = '+15550100067';
 
 describe('normalizePhoneE164', () => {
-  it('P-01: (419) 344-3675 normalizes to E.164 +14193443675', () => {
-    expect(normalizePhoneE164('(419) 344-3675')).toBe(RUBRIC_419);
+  it('P-01: (555) 010-0067 normalizes to E.164 +15550100067', () => {
+    expect(normalizePhoneE164('(555) 010-0067')).toBe(RUBRIC_FICTION);
   });
 
-  it('P-02: 419.344.3675 normalizes to the same E.164', () => {
-    expect(normalizePhoneE164('419.344.3675')).toBe(RUBRIC_419);
+  it('P-02: 555.010.0067 normalizes to the same E.164', () => {
+    expect(normalizePhoneE164('555.010.0067')).toBe(RUBRIC_FICTION);
   });
 
-  it('P-03: +1 419 344 3675 normalizes to the same E.164', () => {
-    expect(normalizePhoneE164('+1 419 344 3675')).toBe(RUBRIC_419);
+  it('P-03: +1 555 010 0067 normalizes to the same E.164', () => {
+    expect(normalizePhoneE164('+1 555 010 0067')).toBe(RUBRIC_FICTION);
   });
 
-  it('P-04: 1-419-344-3675 normalizes to the same E.164', () => {
-    expect(normalizePhoneE164('1-419-344-3675')).toBe(RUBRIC_419);
+  it('P-04: 1-555-010-0067 normalizes to the same E.164', () => {
+    expect(normalizePhoneE164('1-555-010-0067')).toBe(RUBRIC_FICTION);
   });
 
   it('P-05: international +44 numbers stay E.164 when valid', () => {
@@ -35,8 +36,8 @@ describe('normalizePhoneE164', () => {
   });
 
   it('P-06: extension suffixes are not supported', () => {
-    expect(normalizePhoneE164('419-344-3675 x123')).toBeNull();
-    expect(normalizePhoneE164('419-344-3675 ext 5')).toBeNull();
+    expect(normalizePhoneE164('555-010-0067 x123')).toBeNull();
+    expect(normalizePhoneE164('555-010-0067 ext 5')).toBeNull();
   });
 
   it('normalizes other US numbers to E.164', () => {

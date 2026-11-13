@@ -4,7 +4,7 @@
 
 1. **Matrix completeness:** Every row below must exist with accurate expected behavior, guest copy, and a **real test** (a file under `tests/` or a matrix row ID in the test name). A reviewer who finds a missing scenario adds a row; until the row is filled and tested, that criterion scores **0** for all harnesses.
 2. **Per-row score:** **1** = behavior matches + test passes in CI; **0** = mismatch, missing test, or flaky.
-3. **Perfect approval:** **1 on every row** + summary gates **G1–G5** (below).
+3. **Perfect approval:** **1 on every row** + summary gates **G1–G6** (below).
 
 Harnesses without CLI quota on this VM use **Cursor Task** reviewers on distinct model families (documented in `multi-contact-guests-reviews.md`).
 
@@ -55,10 +55,10 @@ Harnesses without CLI quota on this VM use **Cursor Task** reviewers on distinct
 
 | ID | Scenario | Expected behavior | Guest-facing message | Test |
 |----|----------|---------------------|----------------------|------|
-| P-01 | `(419) 344-3675` | → `+14193443675` | Sent to normalized | `tests/unit/domain/identity/phone.test.ts` P-01 |
-| P-02 | `419.344.3675` | Same E.164 | Same | `phone.test.ts` P-02 |
-| P-03 | `+1 419 344 3675` | Same E.164 | Same | `phone.test.ts` P-03 |
-| P-04 | `1-419-344-3675` | Same E.164 | Same | `phone.test.ts` P-04 |
+| P-01 | `(555) 010-0067` | → `+15550100067` (fiction 555-01XX) | Sent to normalized | `tests/unit/domain/identity/phone.test.ts` P-01 |
+| P-02 | `555.010.0067` | Same E.164 | Same | `phone.test.ts` P-02 |
+| P-03 | `+1 555 010 0067` | Same E.164 | Same | `phone.test.ts` P-03 |
+| P-04 | `1-555-010-0067` | Same E.164 | Same | `phone.test.ts` P-04 |
 | P-05 | International E.164 `+44…` | Accepted if 7–15 digits after + | SMS only if Twilio accepts | `phone.test.ts` P-05 |
 | P-06 | Extension `x123` / `ext 5` | **Not** supported; likely validation fail | `Enter a valid US mobile number.` | `phone.test.ts` P-06 |
 | P-07 | Landline / non-SMS | Lookup may succeed; if Verify fails, challenge with `smsSent:false`; verify same as wrong code | Suggest try **email** on sign-in page (copy on form) | integration phone send fail |
@@ -152,7 +152,24 @@ Harnesses without CLI quota on this VM use **Cursor Task** reviewers on distinct
 | U-04 | Mobile layout | sign-in usable 390px | e2e optional | `tests/integration/rubric/session-ux-matrix.test.ts` |
 | U-05 | Audit / logs | No emails in info logs for unknown OTP | server log hash only | request_otp code |
 | U-06 | Minor social attempt | Excluded from candidates | save-the-date page (`SAVE_THE_DATE_COPY`) | complete filter |
-| U-07 | Plus-one unnamed | Social still adult filter | per kind | integration |
+| U-07 | Plus-one unnamed | Excluded from social name match (`isNamed === false`) | save-the-date page (`SAVE_THE_DATE_COPY`) | `tests/integration/identity/social-sign-in.test.ts` U-07 |
+| U-08 | G6 behavioral | Social failure paths leave no session and identical redirect for no_match, not_sent, blocked | `/sign-in/save-the-date` | `tests/integration/identity/social-sign-in.test.ts` U-08 |
+
+### Council extensions (reviewer-added)
+
+| ID | Scenario | Expected behavior | Guest-facing message | Test |
+|----|----------|---------------------|----------------------|------|
+| C-12 | Backfill skips conflicting shared address | `ON CONFLICT DO NOTHING`; no duplicate contact row | N/A | `tests/integration/rubric/council-extensions.test.ts` C-12 |
+| C-13 | Empty contacts clears primary columns | `guests.email`/`phone` nulled | N/A | `council-extensions.test.ts` C-13 |
+| C-14 | Cross-guest phone conflict | Same as email conflict | Admin validation | `council-extensions.test.ts` C-14 |
+| O-15 | OTP to secondary address delivers mail to typed address | `devInbox` + mask on typed local | Same promise copy | `guest-contacts.test.ts` C-01 |
+| T-05 | Phone sign-in via secondary contact | SMS path uses typed E.164 | Masked phone | `guest-contacts.test.ts` C-02 |
+| A-13 | Verified email matches child guest | No session; excluded | save-the-date | `council-extensions.test.ts` A-13 |
+| A-14 | Verified email matches merged guest | Excluded via `notMerged` | save-the-date | `council-extensions.test.ts` A-14 |
+| A-15 | Legacy duplicate email columns (fixture-only) | Ambiguous or single resolver; never steal | N/A | documented fixture `skipUniqueness` + C-11 tests |
+| A-16 | Email match wins over ambiguous name | Email path | success | `social-sign-in.test.ts` A-06 |
+| S-16 | Handle-only provider profile | No match without email | save-the-date | `name-match.test.ts` S-12 |
+| X-09 | Provider/token error at callback | No cookie; save-the-date | save-the-date | `council-extensions.test.ts` X-09 |
 
 ---
 
@@ -173,7 +190,7 @@ Guest record: **Michelle** / **Sunder**. All provider profiles below must match:
 Harness: <name>  Model: <slug>  Round: <n>  Artifact: design|implementation
 For each row ID: score 0|1  notes
 Rows added by reviewer: <IDs>
-Total: <earned>/<count>  Gates G1-G5: pass/fail
+Total: <earned>/<count>  Gates G1-G6: pass/fail
 ```
 
 Perfect = all rows 1, all gates pass.

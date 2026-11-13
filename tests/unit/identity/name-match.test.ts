@@ -8,6 +8,7 @@ describe('name-match', () => {
   });
 
   it('S-03: nickname Mike matches guest Michael', () => {
+    expect(namesMatch({ givenName: 'Mike', familyName: 'Sunder' }, { firstName: 'Michael', lastName: 'Sunder' })).toBe(true);
     expect(namesMatch({ givenName: 'Bill', familyName: 'Hayes' }, { firstName: 'William', lastName: 'Hayes' })).toBe(true);
     expect(namesMatch({ givenName: 'Liz', familyName: 'Chen' }, { firstName: 'Elizabeth', lastName: 'Chen' })).toBe(true);
   });
@@ -65,13 +66,15 @@ describe('name-match', () => {
     expect(namesMatch({ givenName: 'Wei', familyName: 'Lee' }, { firstName: 'Wei', lastName: 'Lee' })).toBe(true);
   });
 
-  it('S-11: reversed first/last in provider `name` field is parsed', () => {
+  it('S-11: reversed first/last in provider `name` field is parsed but does not match canonical order', () => {
     const parsed = parseProviderProfile({ name: 'Sunder Michelle' });
     expect(parsed.family.length).toBeGreaterThan(0);
     expect(parsed.given.length).toBeGreaterThan(0);
+    expect(namesMatch({ name: 'Sunder Michelle' }, { firstName: 'Michelle', lastName: 'Sunder' })).toBe(false);
+    expect(namesMatch({ givenName: 'Michelle', familyName: 'Sunder' }, { firstName: 'Michelle', lastName: 'Sunder' })).toBe(true);
   });
 
-  it('S-12: provider handle without email path does not match without name overlap', () => {
+  it('S-12 S-16: provider handle without email path does not match without name overlap', () => {
     expect(namesMatch({ givenName: 'totally_unrelated_handle' }, { firstName: 'Ana', lastName: 'Ruiz' })).toBe(false);
   });
 

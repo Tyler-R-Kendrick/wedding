@@ -3,7 +3,7 @@ import { validateContactInput, replaceGuestContacts, syncPrimaryContactColumn } 
 import { findGuestsByEmail, upsertGuest, deleteGuest } from '@/domain/guests/repo';
 import { upsertHousehold } from '@/domain/households/repo';
 import { getDb } from '@/db/client';
-import { guestContacts } from '@/db/schema';
+import { guestContacts, guests } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { isEmailShape, normalizeEmail } from '@/domain/identity/mask';
 import type { GuestContactInput } from '@/domain/guests/contacts';
@@ -35,6 +35,8 @@ describe('guest contacts (C, E)', { timeout: 30_000 }, () => {
     const hh = requireOk(await upsertHousehold(db, { name: `Dots ${Date.now()}` }));
     const a = requireOk(await upsertGuest(db, { householdId: hh.id, firstName: 'Dot', lastName: 'One', email: 'ab@test.example' }));
     const b = requireOk(await upsertGuest(db, { householdId: hh.id, firstName: 'Dot', lastName: 'Two', email: 'a.b@test.example' }));
+    expect((await findGuestsByEmail(db, 'ab@test.example')).map((x) => x.id)).toEqual([a.id]);
+    expect((await findGuestsByEmail(db, 'a.b@test.example')).map((x) => x.id)).toEqual([b.id]);
     const byPlus = await findGuestsByEmail(db, 'user+tag@plus.example');
     expect(byPlus).toHaveLength(0);
     await replaceGuestContacts(db, a.id, [{ kind: 'email', value: 'user+tag@plus.example', isPrimary: true }]);
@@ -51,6 +53,7 @@ describe('guest contacts (C, E)', { timeout: 30_000 }, () => {
     const two = requireOk(await upsertGuest(db, { householdId: hh.id, firstName: 'Two', lastName: 'Guest' }));
     const bad = await syncPrimaryContactColumn(db, two.id, 'email', 'only-one@example.test');
     expect(bad.ok).toBe(false);
+    if (!bad.ok) expect(bad.error.message).toMatch(/another guest already uses that email/i);
     await deleteGuest(db, two.id);
     await deleteGuest(db, one.id);
   });
@@ -65,6 +68,8 @@ describe('guest contacts (C, E)', { timeout: 30_000 }, () => {
     ];
     const r = await replaceGuestContacts(db, g.id, rows);
     expect(r.ok).toBe(true);
+    const [row] = await db.select({ email: guests.email }).from(guests).where(eq(guests.id, g.id));
+    expect(row?.email).toBe('primary@example.test');
     const found = await findGuestsByEmail(db, 'secondary@example.test');
     expect(found.some((x) => x.id === g.id)).toBe(true);
     await deleteGuest(db, g.id);

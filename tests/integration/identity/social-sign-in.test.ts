@@ -2,7 +2,7 @@ import { describe, expect, it, beforeAll, beforeEach } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { getDb } from '@/db/client';
 import { authAccounts, invitations, socialAuthReviews } from '@/db/schema';
-import { completeSocialSignIn, GUEST_SIGN_IN_FAIL_PATH } from '@/domain/identity/social/complete';
+import { completeSocialSignIn, GUEST_SIGN_IN_FAIL_PATH, type SocialSignInResult } from '@/domain/identity/social/complete';
 import { replaceGuestContacts } from '@/domain/guests/contacts';
 import { getAuditSink } from '@/lib/audit';
 import type { CookieSink } from '@/lib/auth/cookies';
@@ -257,7 +257,7 @@ describe('social sign-in', () => {
     expect(sink.setCookies.some((c) => c.includes('session_token'))).toBe(false);
   });
 
-  it('A-06: verified email match allows sign-in when name does not match', async () => {
+  it('A-06 A-16: verified email match allows sign-in when name does not match', async () => {
     const db = await getDb();
     await db.update(invitations).set({ sentAt: new Date() }).where(eq(invitations.householdId, f.households.okafor));
     const secondary = `a06+${Date.now()}@example.test`;
@@ -360,6 +360,125 @@ describe('social sign-in', () => {
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.redirectTo).toMatch(/^\/admin/);
     expect(sink.setCookies.some((c) => c.includes('session_token'))).toBe(true);
+  });
+
+  it('U-08: no_match, not_sent, and blocked failures share save-the-date redirect without session', async () => {
+    const db = await getDb();
+    const audit = await getAuditSink();
+    const cases: Array<{ label: string; run: () => Promise<SocialSignInResult> }> = [
+      {
+        label: 'no_match',
+        run: () =>
+          completeSocialSignIn(db, sink, {
+            provider: 'google',
+            profile: { providerAccountId: `g-u08-nomatch-${Date.now()}`, givenName: 'Nobody', familyName: 'Here' },
+            accessToken: 't',
+            next: null,
+            ipHash: 'iphash',
+            requestId: 'u08-nomatch',
+            audit,
+          }),
+      },
+      {
+        label: 'not_sent',
+        run: async () => {
+          await db.update(invitations).set({ sentAt: null }).where(eq(invitations.householdId, f.households.okafor));
+          return completeSocialSignIn(db, sink, {
+            provider: 'google',
+            profile: { providerAccountId: `g-u08-notsent-${Date.now()}`, givenName: 'Chidi', familyName: 'Okafor' },
+            accessToken: 't',
+            next: null,
+            ipHash: 'iphash',
+            requestId: 'u08-notsent',
+            audit,
+          });
+        },
+      },
+      {
+        label: 'blocked',
+        run: async () => {
+          const fresh = await upsertGuest(db, {
+            householdId: f.households.ruiz,
+            firstName: `U08Bound${Date.now()}`,
+            lastName: 'Guest',
+            email: null,
+          });
+          if (!fresh.ok) throw fresh.error;
+          const firstSink: CookieSink = { setCookies: [] };
+          await completeSocialSignIn(db, firstSink, {
+            provider: 'google',
+            profile: { providerAccountId: `g-u08-bound-a-${Date.now()}`, givenName: fresh.value.firstName, familyName: fresh.value.lastName },
+            accessToken: 't',
+            next: '/guests',
+            ipHash: 'iphash',
+            requestId: 'u08-bound-1',
+            audit,
+          });
+          sink = { setCookies: [] };
+          return completeSocialSignIn(db, sink, {
+            provider: 'google',
+            profile: { providerAccountId: `g-u08-bound-b-${Date.now()}`, givenName: fresh.value.firstName, familyName: fresh.value.lastName },
+            accessToken: 't',
+            next: '/guests',
+            ipHash: 'iphash2',
+            requestId: 'u08-bound-2',
+            audit,
+          });
+        },
+      },
+    ];
+  const redirects: string[] = [];
+    for (const c of cases) {
+      sink = { setCookies: [] };
+      const r = await c.run();
+      expect(r.ok, c.label).toBe(false);
+      if (!r.ok) redirects.push(r.redirectTo);
+      expect(sink.setCookies.filter((x) => x.includes('session_token')), c.label).toHaveLength(0);
+    }
+    expect(new Set(redirects)).toEqual(new Set([GUEST_SIGN_IN_FAIL_PATH]));
+    await db.update(invitations).set({ sentAt: new Date() }).where(eq(invitations.householdId, f.households.okafor));
+  });
+
+  it('U-06 U-07: minors and unnamed plus-ones never receive social sessions', async () => {
+    const db = await getDb();
+    const audit = await getAuditSink();
+    const minor = await upsertGuest(db, {
+      householdId: f.households.ruiz,
+      firstName: 'Minor',
+      lastName: `Child${Date.now()}`,
+      email: null,
+      kind: 'child',
+      isMinor: true,
+    });
+    if (!minor.ok) throw minor.error;
+    const plus = await upsertGuest(db, {
+      householdId: f.households.ruiz,
+      firstName: 'Plus',
+      lastName: `One${Date.now()}`,
+      email: null,
+      kind: 'plus_one',
+      isNamed: false,
+    });
+    if (!plus.ok) throw plus.error;
+    for (const guest of [minor.value, plus.value]) {
+      sink = { setCookies: [] };
+      const r = await completeSocialSignIn(db, sink, {
+        provider: 'google',
+        profile: {
+          providerAccountId: `g-u06-${guest.id}-${Date.now()}`,
+          givenName: guest.firstName!,
+          familyName: guest.lastName!,
+        },
+        accessToken: 't',
+        next: null,
+        ipHash: 'iphash',
+        requestId: `u06-${guest.id}`,
+        audit,
+      });
+      expect(r.ok).toBe(false);
+      if (!r.ok) expect(r.redirectTo).toBe(GUEST_SIGN_IN_FAIL_PATH);
+      expect(sink.setCookies).toHaveLength(0);
+    }
   });
 
   it('X-08: social completion waits at least 150ms floor', async () => {
