@@ -46,7 +46,6 @@ export const authAccounts = pgTable(
   'auth_accounts',
   {
     id: text('id').primaryKey(),
-    issuer: text('issuer').notNull(),
     accountId: text('account_id').notNull(),
     providerId: text('provider_id').notNull(),
     userId: text('user_id')
@@ -63,7 +62,7 @@ export const authAccounts = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   },
-  (t) => [uniqueIndex('auth_accounts_issuer_account_idx').on(t.issuer, t.accountId), index('auth_accounts_user_idx').on(t.userId)],
+  (t) => [uniqueIndex('auth_accounts_provider_account_idx').on(t.providerId, t.accountId), index('auth_accounts_user_idx').on(t.userId)],
 );
 
 /** OTP codes (hashed) and passkey challenges. Rows are short-lived. */

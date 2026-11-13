@@ -91,7 +91,6 @@ async function linkProviderAccount(db: Db, input: { userId: string; provider: So
       userId: input.userId,
       providerId: input.provider,
       accountId: input.accountId,
-      issuer: input.provider,
       accessToken: input.accessToken ?? null,
       createdAt: now,
       updatedAt: now,

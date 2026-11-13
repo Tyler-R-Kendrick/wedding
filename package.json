@@ -110,14 +110,14 @@
     "stylelint-config-standard": "^40.0.0",
     "tsx": "^4.23.13",
     "typescript": "^6.0.3",
-    "vercel": "^62.0.0",
-    "vitest": "^4.1.11"
+    "vercel": "^65.15.0",
+    "vitest": "^4.1.12"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1127.0",
     "@aws-sdk/s3-request-presigner": "^3.1127.0",
-    "@better-auth/drizzle-adapter": "^1.7.2",
-    "@better-auth/passkey": "^1.7.2",
+    "@better-auth/drizzle-adapter": "^1.7.22",
+    "@better-auth/passkey": "^1.7.22",
     "@browser-ai/core": "^3.0.3",
     "@electric-sql/pglite": "^0.5.8",
     "@electric-sql/pglite-pgvector": "^0.0.9",
@@ -128,13 +128,13 @@
     "@vercel/connect": "^2.3.2",
     "@wedding/sitemap": "*",
     "ai": "^7.0.93",
-    "better-auth": "^1.7.2",
+    "better-auth": "^1.7.22",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.2",
     "exifr": "^7.1.3",
     "file-type": "^22.0.2",
     "heic-convert": "^2.1.0",
-    "next": "^16.3.4",
+    "next": "^16.4.6",
     "pino": "^10.3.1",
     "postcss": "^8.5.28",
     "postgres": "^3.4.9",
@@ -143,6 +143,6 @@
     "server-only": "^0.0.1",
     "sharp": "^0.35.4",
     "tailwindcss": "^4.3.3",
-    "zod": "^4.5.4"
+    "zod": "^4.6.6"
   }
 }
