@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { getDb } from '@/db/client';
 import { getAuditSink } from '@/lib/audit';
 import { applyCookieSink, type CookieSink } from '@/lib/auth/cookies';
-import { completeSocialSignIn, hashSocialAttemptIp, PENDING_PATH } from '@/domain/identity/social/complete';
+import { completeSocialSignIn, GUEST_SIGN_IN_FAIL_PATH, hashSocialAttemptIp } from '@/domain/identity/social/complete';
 import { exchangeCode, fetchProviderProfile } from '@/domain/identity/social/oauth';
 import { isSocialProvider, socialProviderConfig } from '@/domain/identity/social/providers';
 import { decodeOAuthState, oauthStateCookieOptions } from '@/domain/identity/social/state';
@@ -21,11 +21,11 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ provider: s
   const { provider: raw } = await ctx.params;
   // Where this request was made: the session cookie is set for this host, so the guest stays on it.
   const here = siteOriginOf(req.headers, siteOrigin(), req.nextUrl.origin);
-  const pending = () => new URL(PENDING_PATH, here);
+  const guestFail = () => new URL(GUEST_SIGN_IN_FAIL_PATH, here);
 
   if (!isSocialProvider(raw) || !socialProviderConfig(raw)) {
     await floor(started);
-    return NextResponse.redirect(pending());
+    return NextResponse.redirect(guestFail());
   }
 
   // A sign-in that began on an alias host comes back here, because the provider knows one redirect
@@ -48,7 +48,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ provider: s
 
   if (oauthError || !code || !state || !stored || stored.provider !== raw || stored.state !== state) {
     await floor(started);
-    return NextResponse.redirect(pending());
+    return NextResponse.redirect(guestFail());
   }
 
   const db = await getDb();
@@ -58,18 +58,18 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ provider: s
   const limited = await limiter.consume(`social:callback:ip:${hashOtpIdentifier(ip)}`, { capacity: 30, refillPerSecond: 30 / 600, failMode: 'closed' });
   if (!limited.allowed) {
     await floor(started);
-    return NextResponse.redirect(pending());
+    return NextResponse.redirect(guestFail());
   }
 
   const tokens = await exchangeCode(raw, code, stored.codeVerifier);
   if (!tokens) {
     await floor(started);
-    return NextResponse.redirect(pending());
+    return NextResponse.redirect(guestFail());
   }
   const profile = await fetchProviderProfile(raw, tokens.accessToken);
   if (!profile) {
     await floor(started);
-    return NextResponse.redirect(pending());
+    return NextResponse.redirect(guestFail());
   }
 
   const sink: CookieSink = { setCookies: [] };

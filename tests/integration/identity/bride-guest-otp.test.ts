@@ -4,7 +4,7 @@ import { devInbox } from '@/providers/auth-email/mock';
 import { call, expectOk, latestCode } from './harness';
 
 describe('bride guest sign-in', () => {
-  it('request_otp sends a code to Sara Fitzgerald’s guest email', async () => {
+  it('O-01: request_otp sends a code and masked deliveredTo for known guest email', async () => {
     devInbox.clear();
     const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() };
     const req = expectOk(

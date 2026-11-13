@@ -99,14 +99,14 @@ describe('admin reset, rebind, roles, CSV', () => {
   });
 
   it('admin reset / rebind / roles require a fresh admin session (step-up)', async () => {
-    const f = await seed('ad4');
+    const f = await seed('ad4-step');
     await grantAdmin(f.emails.admin, 'owner');
     const admin = await signIn(f.emails.admin, {}, 'admin_sign_in');
     await ageSession(admin.cookie, 6);
     expect((await principalFor({ cookie: admin.cookie })).kind).toBe('admin');
     expectErr(await call('admin_reset_identity', { guestId: f.guests.chidi, reason: 'x' }, { cookie: admin.cookie }), 'step_up_required');
-    expectErr(await call('admin_rebind_identity', { guestId: f.guests.chidi, email: 'new+ad4@example.test', reason: 'x' }, { cookie: admin.cookie }), 'step_up_required');
-    expectErr(await call('admin_set_admin_role', { email: 'p+ad4@example.test', role: 'planner' }, { cookie: admin.cookie }), 'step_up_required');
+    expectErr(await call('admin_rebind_identity', { guestId: f.guests.chidi, email: 'new+ad4-step@example.test', reason: 'x' }, { cookie: admin.cookie }), 'step_up_required');
+    expectErr(await call('admin_set_admin_role', { email: 'p+ad4-step@example.test', role: 'planner' }, { cookie: admin.cookie }), 'step_up_required');
     expectErr(await call('admin_issue_invitation', { householdId: f.households.ruiz }, { cookie: admin.cookie }), 'step_up_required');
     // Reads still work on the aged session.
     expect((await call('admin_list_guests', {}, { cookie: admin.cookie })).ok).toBe(true);

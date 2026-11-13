@@ -1,5 +1,5 @@
 {
-  "id": "bb2f70d3-3c06-4a43-80f1-4f12c930939d",
+  "id": "dad55dc8-8668-4c87-b294-322ef174ef0b",
   "prevId": "20c93f25-cd94-4194-a7f9-66e0d07d353a",
   "version": "7",
   "dialect": "postgresql",
@@ -2973,6 +2973,12 @@
           "primaryKey": true,
           "notNull": true
         },
+        "issuer": {
+          "name": "issuer",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "account_id": {
           "name": "account_id",
           "type": "text",
@@ -3049,11 +3055,11 @@
         }
       },
       "indexes": {
-        "auth_accounts_provider_account_idx": {
-          "name": "auth_accounts_provider_account_idx",
+        "auth_accounts_issuer_account_idx": {
+          "name": "auth_accounts_issuer_account_idx",
           "columns": [
             {
-              "expression": "provider_id",
+              "expression": "issuer",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -3698,6 +3704,136 @@
         "guest_access_bindings_guest_id_guests_id_fk": {
           "name": "guest_access_bindings_guest_id_guests_id_fk",
           "tableFrom": "guest_access_bindings",
+          "tableTo": "guests",
+          "columnsFrom": [
+            "guest_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.guest_contacts": {
+      "name": "guest_contacts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "guest_id": {
+          "name": "guest_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "label": {
+          "name": "label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_primary": {
+          "name": "is_primary",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "guest_contacts_kind_value_idx": {
+          "name": "guest_contacts_kind_value_idx",
+          "columns": [
+            {
+              "expression": "kind",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "value",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "guest_contacts_guest_idx": {
+          "name": "guest_contacts_guest_idx",
+          "columns": [
+            {
+              "expression": "guest_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "guest_contacts_value_idx": {
+          "name": "guest_contacts_value_idx",
+          "columns": [
+            {
+              "expression": "value",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "guest_contacts_guest_id_guests_id_fk": {
+          "name": "guest_contacts_guest_id_guests_id_fk",
+          "tableFrom": "guest_contacts",
           "tableTo": "guests",
           "columnsFrom": [
             "guest_id"

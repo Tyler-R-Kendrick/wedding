@@ -6,7 +6,7 @@ import { call, expectOk, grantAdmin, seed } from './harness';
 describe('challenge opacity', () => {
   const decodeParts = (token: string) => token.split('.').map((p) => Buffer.from(p, 'base64url').toString('utf8'));
 
-  it('claim, sign_in and admin_sign_in challenges are nonce.sig with no decodable fields, for known and unknown addresses alike', async () => {
+  it('O-08: independent challenges per purpose; known and unknown share opaque shape', async () => {
     const f = await seed('leak1');
     await grantAdmin(f.emails.admin, 'owner');
     const tokens: { label: string; token: string; secrets: string[] }[] = [];

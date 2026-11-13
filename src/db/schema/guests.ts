@@ -69,6 +69,33 @@ export const guests = pgTable(
   (t) => [index('guests_household_idx').on(t.householdId), index('guests_email_idx').on(t.email), index('guests_phone_idx').on(t.phone), index('guests_managed_by_idx').on(t.managedByGuestId)],
 );
 
+export const GUEST_CONTACT_KINDS = ['email', 'phone'] as const;
+export type GuestContactKind = (typeof GUEST_CONTACT_KINDS)[number];
+
+/** Sign-in addresses and numbers beyond the primary columns on `guests` (which mirror each kind's primary). */
+export const guestContacts = pgTable(
+  'guest_contacts',
+  {
+    id: text('id').primaryKey(),
+    guestId: text('guest_id')
+      .notNull()
+      .references(() => guests.id, { onDelete: 'cascade' }),
+    kind: text('kind').$type<GuestContactKind>().notNull(),
+    /** Lowercased email or E.164 phone. */
+    value: text('value').notNull(),
+    /** Optional admin label (cell, work, …). */
+    label: text('label'),
+    isPrimary: boolean('is_primary').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('guest_contacts_kind_value_idx').on(t.kind, t.value),
+    index('guest_contacts_guest_idx').on(t.guestId),
+    index('guest_contacts_value_idx').on(t.value),
+  ],
+);
+
 export const invitations = pgTable(
   'invitations',
   {
@@ -161,6 +188,7 @@ export const adminRoles = pgTable('admin_roles', {
 
 export type HouseholdRow = typeof households.$inferSelect;
 export type GuestRow = typeof guests.$inferSelect;
+export type GuestContactRow = typeof guestContacts.$inferSelect;
 export type InvitationRow = typeof invitations.$inferSelect;
 export type GuestAccessBindingRow = typeof guestAccessBindings.$inferSelect;
 export type OtpAttemptRow = typeof otpAttempts.$inferSelect;

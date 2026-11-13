@@ -7,6 +7,14 @@ import { CheckField, ChoiceField, Consequences, ReviewList, SelectField, TextFie
 import { callCapability, newIdempotencyKey } from '@/components/handoff/client';
 import { formatDay } from '@/components/admin/flow/dates';
 
+export interface GuestContactSummary {
+  id: string;
+  kind: 'email' | 'phone';
+  value: string;
+  label: string | null;
+  isPrimary: boolean;
+}
+
 export interface GuestSummary {
   id: string;
   householdId: string;
@@ -21,6 +29,29 @@ export interface GuestSummary {
   managedByGuestId: string | null;
   notes: string | null;
   claimed: boolean;
+  contacts?: GuestContactSummary[];
+}
+
+function parseExtraContacts(raw: string, kind: 'email' | 'phone'): { kind: 'email' | 'phone'; value: string; label?: string | null }[] {
+  return raw
+    .split(';')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((segment) => {
+      const pipe = segment.indexOf('|');
+      if (pipe > 0) return { kind, value: segment.slice(pipe + 1).trim(), label: segment.slice(0, pipe).trim() };
+      return { kind, value: segment };
+    })
+    .filter((c) => c.value.length > 0);
+}
+
+function buildGuestContacts(v: Pick<GuestValues, 'email' | 'phone' | 'extraEmails' | 'extraPhones'>): { kind: 'email' | 'phone'; value: string; label?: string | null; isPrimary?: boolean }[] {
+  const out: { kind: 'email' | 'phone'; value: string; label?: string | null; isPrimary?: boolean }[] = [];
+  if (v.email.trim()) out.push({ kind: 'email', value: v.email.trim(), isPrimary: true });
+  for (const e of parseExtraContacts(v.extraEmails, 'email')) out.push({ ...e, isPrimary: false });
+  if (v.phone.trim()) out.push({ kind: 'phone', value: v.phone.trim(), isPrimary: true });
+  for (const p of parseExtraContacts(v.extraPhones, 'phone')) out.push({ ...p, isPrimary: false });
+  return out;
 }
 
 type Option = { value: string; label: string };
@@ -43,6 +74,8 @@ interface GuestValues extends Record<string, unknown> {
   isMinor: boolean;
   email: string;
   phone: string;
+  extraEmails: string;
+  extraPhones: string;
   managedByGuestId: string;
   notes: string;
   /** The chosen household's members, fetched on step 1, for the "managed by" choice. */
@@ -68,6 +101,16 @@ export function GuestFlow({ guest, households: given, defaultHouseholdId, label,
     isMinor: guest?.isMinor ?? false,
     email: guest?.email ?? '',
     phone: guest?.phone ?? '',
+    extraEmails:
+      guest?.contacts
+        ?.filter((c) => c.kind === 'email' && !c.isPrimary)
+        .map((c) => (c.label ? `${c.label}|${c.value}` : c.value))
+        .join('; ') ?? '',
+    extraPhones:
+      guest?.contacts
+        ?.filter((c) => c.kind === 'phone' && !c.isPrimary)
+        .map((c) => (c.label ? `${c.label}|${c.value}` : c.value))
+        .join('; ') ?? '',
     managedByGuestId: guest?.managedByGuestId ?? '',
     notes: guest?.notes ?? '',
     members: [],
@@ -126,11 +169,27 @@ export function GuestFlow({ guest, households: given, defaultHouseholdId, label,
     },
     {
       title: 'How to reach them',
-      fields: ['email', 'phone', 'managedByGuestId', 'notes'],
+      fields: ['email', 'phone', 'extraEmails', 'extraPhones', 'managedByGuestId', 'notes'],
       render: (ctx) => (
         <>
           <TextField ctx={ctx} name="email" label="Email" type="email" inputMode="email" optional spellCheck={false} hint="Sign-in codes go here. Leave empty for someone the household manager answers for." />
+          <TextField
+            ctx={ctx}
+            name="extraEmails"
+            label="More emails"
+            optional
+            spellCheck={false}
+            hint="Semicolons between addresses. Optional label: work|name@example.com"
+          />
           <TextField ctx={ctx} name="phone" label="Mobile phone" type="tel" inputMode="tel" optional spellCheck={false} hint="US mobile for SMS sign-in when that is turned on. E.164 is stored." />
+          <TextField
+            ctx={ctx}
+            name="extraPhones"
+            label="More phones"
+            optional
+            spellCheck={false}
+            hint="Semicolons between numbers. Optional label: cell|(555) 123-4567"
+          />
           <SelectField
             ctx={ctx}
             name="managedByGuestId"
@@ -182,12 +241,11 @@ export function GuestFlow({ guest, households: given, defaultHouseholdId, label,
                 householdId: v.householdId,
                 firstName: v.firstName.trim(),
                 lastName: v.lastName.trim(),
-                email: v.email.trim() || null,
-                phone: v.phone.trim() || null,
                 kind: v.kind,
                 isMinor: v.isMinor,
                 managedByGuestId: v.managedByGuestId || null,
                 notes: v.notes.trim() || null,
+                contacts: buildGuestContacts(v),
               }),
             }
           : {
@@ -197,12 +255,11 @@ export function GuestFlow({ guest, households: given, defaultHouseholdId, label,
                     householdId: v.householdId,
                     firstName: v.firstName.trim(),
                     lastName: v.lastName.trim(),
-                    email: v.email.trim() || null,
-                phone: v.phone.trim() || null,
                     kind: v.kind,
                     isMinor: v.isMinor,
                     managedByGuestId: v.managedByGuestId || null,
                     notes: v.notes.trim() || null,
+                    contacts: buildGuestContacts(v),
                   },
                   idempotencyKey: newIdempotencyKey(),
                 });
