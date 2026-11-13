@@ -110,6 +110,7 @@ async function listMatchableGuests(db: Db) {
       householdId: guests.householdId,
       kind: guests.kind,
       isMinor: guests.isMinor,
+      isNamed: guests.isNamed,
       mergedIntoGuestId: guests.mergedIntoGuestId,
     })
     .from(guests)
@@ -224,7 +225,9 @@ export async function completeSocialSignIn(
     }
   }
 
-  const candidates = (await listMatchableGuests(db)).filter((g) => g.kind !== 'child' && !g.isMinor);
+  const candidates = (await listMatchableGuests(db)).filter(
+    (g) => g.kind !== 'child' && !g.isMinor && g.isNamed !== false,
+  );
   const { confidence, matches: nameMatches } = matchGuestsByName(profileName, candidates);
 
   let emailMatches: typeof candidates = [];
