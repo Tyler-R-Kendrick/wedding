@@ -18,6 +18,8 @@ export type Setting = (typeof SETTINGS)[number];
 export type PlaceFacts = {
   /** Food and drink: what one person typically spends. 1 under $15, 2 $15 to $40, 3 $40 to $100, 4 over $100. */
   priceLevel?: PriceLevel;
+  /** Our own guess at that, for a place with no checked price (`price.ts`). Never the couple's record, and always shown as a guess. */
+  priceGuess?: PriceLevel;
   /** What a ticket costs, in the couple's words ("Adults about $32"), or "Free". */
   cost?: string;
   /** Regular hours in OpenStreetMap's `opening_hours` syntax, which `hours.ts` reads. */

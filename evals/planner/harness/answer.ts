@@ -29,7 +29,7 @@ function factsOf(r: Rec): { facts?: Record<string, unknown> } {
 const spots = new Map((placesSeed as Spot[]).map((p) => [p.slug, p]));
 
 /** The couple's live recommendations, as the page hands them to the planner (planner-data.ts). */
-export const PLACES: PlannerPlace[] = (recommendations as Rec[])
+const LISTED: PlannerPlace[] = (recommendations as Rec[])
   .filter((r) => !r.draft && !r.placeholder && r.what && !/TODO\(/.test(r.what))
   .map((r) => {
     const at = r.placeSlug ? spots.get(r.placeSlug) : undefined;
@@ -50,6 +50,9 @@ export const PLACES: PlannerPlace[] = (recommendations as Rec[])
       href: `/guests/things-to-do/${r.slug}`,
     };
   });
+// With our guess at a price where the record holds none, as the page adds it (a planner from before guesses has no such step).
+const guessed = (planner as unknown as { withPriceGuesses?: (list: PlannerPlace[]) => PlannerPlace[] }).withPriceGuesses;
+export const PLACES: PlannerPlace[] = guessed ? guessed(LISTED) : LISTED;
 const BY_ID = new Map(PLACES.map((p) => [p.id, p]));
 
 type SeedItinerary = { slug: string; title: string; intro?: string; bucket: string; minMinutes?: number; maxMinutes?: number; interests?: string[]; stops: { recommendationSlug: string; minutes?: number }[]; draft?: boolean };
