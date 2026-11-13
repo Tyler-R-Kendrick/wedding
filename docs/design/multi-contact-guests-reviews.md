@@ -29,6 +29,10 @@ Implementation coding used **Cursor (Composer)** directly after CLI harnesses we
 
 ---
 
+## Copy pass (Tyler) — save-the-date, no list signal
+
+Social/OTP failures redirect to `/sign-in/save-the-date` (not `error=guest_not_found`). Rubric **G6** + `no-guest-list-enumeration-copy.test.ts`.
+
 ## Round 2 — implementation (in progress)
 
 | Harness | Model | Matrix rows passed | Gates | Notes |

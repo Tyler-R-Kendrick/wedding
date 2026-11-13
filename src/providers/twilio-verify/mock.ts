@@ -25,7 +25,7 @@ export class MockTwilioVerify implements TwilioVerifyProvider {
     return { status: 'up', checkedAt: new Date().toISOString(), detail: 'mock twilio verify' };
   }
 
-  async startVerification(input: TwilioVerifySendInput) {
+  async startVerification(input: TwilioVerifySendInput): Promise<{ ok: true; value: { sid: string; status: string } } | { ok: false; error: ProviderFailure }> {
     MockTwilioVerify.stage(input.to);
     return { ok: true as const, value: { sid: 'VEmock', status: 'pending' } };
   }

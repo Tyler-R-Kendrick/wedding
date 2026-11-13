@@ -67,12 +67,23 @@ export const claimIdentity = defineCapability<z.infer<typeof input>, ClaimIdenti
 
     // Household authority comes first, so an outsider learns nothing about who has claimed.
     const sameHousehold = household.id === principal.householdId;
+    const emailOnHousehold = !!(await findGuestsByEmail(db, user.email)).some((g) => g.householdId === target.householdId);
+    const identityBindings = await activeBindingsForIdentity(db, principal.authIdentityId);
+    let identityInHousehold = false;
+    for (const b of identityBindings) {
+      const row = (await db.select({ householdId: guests.householdId }).from(guests).where(eq(guests.id, b.guestId)).limit(1))[0];
+      if (row?.householdId === target.householdId) {
+        identityInHousehold = true;
+        break;
+      }
+    }
     const sharedHouseholdInbox =
       !!user.email &&
       !target.email &&
       target.kind !== 'child' &&
       !target.isMinor &&
-      (await findGuestsByEmail(db, user.email)).some((g) => g.householdId === target.householdId);
+      emailOnHousehold &&
+      (target.id === principal.guestId || (!target.managedByGuestId && identityInHousehold));
     const selfBind = !!user.email && (target.email === user.email || sharedHouseholdInbox);
     let tokenAccess = false;
     if (!sameHousehold && selfBind && i.token) {
@@ -85,6 +96,11 @@ export const claimIdentity = defineCapability<z.infer<typeof input>, ClaimIdenti
     const existing = await activeBindingForGuest(db, target.id);
     if (existing && existing.authIdentityId !== principal.authIdentityId) {
       return deny('bound_elsewhere', new CapabilityError('conflict', 'That person has already claimed their invitation with another email. If that’s wrong, please get in touch with Sara and Tyler.'));
+    }
+
+    const isManager = principal.guestId === household.managerGuestId;
+    if (target.managedByGuestId && target.managedByGuestId !== principal.guestId && !isManager) {
+      return deny('not_manager', new CapabilityError('forbidden', 'Only your household manager can act for someone without their own email. Ask them, or get in touch with Sara and Tyler.'));
     }
 
     // Self-bind (shared inbox): the member's own address is this verified inbox. A live link for
@@ -102,7 +118,6 @@ export const claimIdentity = defineCapability<z.infer<typeof input>, ClaimIdenti
     // No inbox of their own: managing them is a household-manager act. A link never grants it
     // (review B2): same household, and either you are the household manager or you already
     // manage them explicitly (or nobody does and the household has no manager).
-    const isManager = principal.guestId === household.managerGuestId;
     const alreadyMine = target.managedByGuestId === principal.guestId;
     const unmanaged = target.managedByGuestId === null && household.managerGuestId === null;
     if (!isManager && !alreadyMine && !unmanaged) return deny('not_manager', new CapabilityError('forbidden', 'Only your household manager can act for someone without their own email. Ask them, or get in touch with Sara and Tyler.'));

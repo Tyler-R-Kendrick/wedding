@@ -841,6 +841,20 @@
     }
    }
   },
+  "sign-in-save-the-date": {
+   "title": "Save the date | Sara + Tyler",
+   "url": "/sign-in/save-the-date",
+   "finalUrl": "/sign-in/save-the-date",
+   "source": "app (test server, fixture data)",
+   "principal": null,
+   "capturedAt": "2026-11-13",
+   "designs": {
+    "botanical-deco": {
+     "status": 200,
+     "file": "botanical-deco.json"
+    }
+   }
+  },
   "sign-in-pending": {
    "title": "Sign in | Sara + Tyler",
    "url": "/sign-in/pending",

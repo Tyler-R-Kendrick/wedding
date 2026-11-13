@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { call, claim, expectErr, expectOk, principalFor, seed, signIn } from './harness';
 
 describe('spouses sharing an inbox', () => {
-  it('one claim binds the picked spouse; the other picks themselves afterwards and the session switches', async () => {
+  it('C-11: shared inbox email offers multiple guest candidates at sign-in', async () => {
     const f = await seed('si1');
     const sara = await claim(f.invitations.fitzgerald.token, f.guests.sara, f.emails.shared);
     expect(sara.outcome.guestId).toBe(f.guests.sara);

@@ -3,6 +3,9 @@ import { validateContactInput, replaceGuestContacts, syncPrimaryContactColumn } 
 import { findGuestsByEmail, upsertGuest, deleteGuest } from '@/domain/guests/repo';
 import { upsertHousehold } from '@/domain/households/repo';
 import { getDb } from '@/db/client';
+import { guestContacts } from '@/db/schema';
+import { eq } from 'drizzle-orm';
+import { isEmailShape, normalizeEmail } from '@/domain/identity/mask';
 import type { GuestContactInput } from '@/domain/guests/contacts';
 
 function requireOk<T, E>(r: { ok: true; value: T } | { ok: false; error: E }): T {
@@ -66,4 +69,30 @@ describe('guest contacts (C, E)', { timeout: 30_000 }, () => {
     expect(found.some((x) => x.id === g.id)).toBe(true);
     await deleteGuest(db, g.id);
   });
+
+  it('E-04: unicode local parts normalize to lowercase exact match', async () => {
+    const raw = 'Müller+tag@example.test';
+    const v = validateContactInput({ kind: 'email', value: raw });
+    expect(v.ok).toBe(true);
+    if (v.ok) expect(v.value.value).toBe(normalizeEmail(raw));
+    const invalid = validateContactInput({ kind: 'email', value: 'not-an-email' });
+    expect(invalid.ok).toBe(false);
+  });
+
+  it('E-05: punycode domain emails pass isEmailShape', () => {
+    const puny = 'user@xn--bcher-kva.example';
+    expect(isEmailShape(normalizeEmail(puny))).toBe(true);
+  });
+
+  it('C-05: delete guest cascades contact rows', async () => {
+    const db = await getDb();
+    const hh = requireOk(await upsertHousehold(db, { name: `Cascade ${Date.now()}` }));
+    const g = requireOk(await upsertGuest(db, { householdId: hh.id, firstName: 'Cas', lastName: 'Cade', email: 'cascade@example.test' }));
+    const before = await db.select().from(guestContacts).where(eq(guestContacts.guestId, g.id));
+    expect(before.length).toBeGreaterThan(0);
+    await deleteGuest(db, g.id);
+    const after = await db.select().from(guestContacts).where(eq(guestContacts.guestId, g.id));
+    expect(after).toHaveLength(0);
+  });
+
 });

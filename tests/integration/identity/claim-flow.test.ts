@@ -39,7 +39,7 @@ describe('claim flow (invite -> pick -> OTP -> session)', () => {
     expect(again.data.members.find((m) => m.guestId === f.guests.ana)?.claimed).toBe(true);
   });
 
-  it('shows kind recovery for unknown, expired and revoked links; never a session', async () => {
+  it('O-12: claim path on bad invitation tokens never sends OTP or session', async () => {
     const f = await seed('cf2');
     for (const [token, status] of [['not-a-real-token-at-all-0000000000000000', 'unknown'], [f.invitations.expired.token, 'expired'], [f.invitations.revoked.token, 'revoked']] as const) {
       const r = expectOk(await call<{ status: string; recovery?: { title: string; message: string } }>('lookup_invitation', { token }, { method: 'GET' }));
@@ -50,7 +50,7 @@ describe('claim flow (invite -> pick -> OTP -> session)', () => {
     }
   });
 
-  it('children cannot be picked; a no-email adult is claimed through the household manager', async () => {
+  it('O-11 U-06 U-07: children excluded from claim OTP; adult manager path only', async () => {
     const f = await seed('cf3');
     expectErr(await call('request_otp', { purpose: 'claim', token: f.invitations.fitzgerald.token, guestId: f.guests.nora }), 'validation');
     devInbox.clear();
@@ -84,7 +84,7 @@ describe('claim flow (invite -> pick -> OTP -> session)', () => {
     expect(ruth?.managedBy).toBe(f.guests.sara);
   });
 
-  it('wrong, expired-challenge and replayed codes all fail with the same message; a used code cannot be replayed', async () => {
+  it('O-04 O-08 O-09: wrong and replayed OTP codes fail; challenge is single-use', async () => {
     const f = await seed('cf4');
     const req = expectOk(await call<{ sent: boolean; challenge: string }>('request_otp', { purpose: 'claim', token: f.invitations.okafor.token, guestId: f.guests.chidi }));
     const wrong = expectErr(await call('verify_otp', { challenge: req.data.challenge, code: '000000' }), 'validation');

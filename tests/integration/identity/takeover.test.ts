@@ -25,7 +25,7 @@ describe('forwarded links and cross-guest attempts', () => {
     expect(p.kind === 'guest' && p.guestId).toBe(f.guests.chidi);
   });
 
-  it('typing another guest’s email at sign-in yields an identical response but no code and no binding', async () => {
+  it('O-02 O-14: unknown sign-in email matches known response shape; verify fails uniformly', async () => {
     const f = await seed('tk2');
     devInbox.clear();
     const known = expectOk(await call<{ sent: boolean; challenge: string; deliveredTo: string }>('request_otp', { purpose: 'sign_in', email: f.emails.amara }));

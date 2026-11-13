@@ -18,7 +18,6 @@ export const ERROR_COPY: Record<string, string> = {
   provider_unavailable: 'We couldn’t send the code just now. Please try again in a moment.',
   mail_off: 'We can’t send sign-in codes yet — the site’s email isn’t set up. Please try again later, or get in touch with Sara and Tyler.',
   internal: 'Something went wrong on our side. Please try again in a moment.',
-  guest_not_found: "We couldn't find you on the guest list. If you think you should have access, get in touch with Sara and Tyler.",
 };
 
 export function errorCopy(code: string | undefined): string | null {

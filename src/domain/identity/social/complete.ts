@@ -11,15 +11,16 @@ import { establishGuestSession } from '@/lib/auth/establish-session';
 import { getAuth } from '@/lib/auth';
 import { hashOtpIdentifier } from '@/domain/identity/otp';
 import { isSafeReturnPath, safeReturnPath } from '@/domain/identity/routes';
+import { GUEST_SAVE_THE_DATE_PATH } from '@/domain/identity/guest-sign-in-paths';
 import { guestSignInLandingPath } from '@/domain/lifecycle/guest-portal';
 import { resolveAdminRoles } from '@/domain/identity/principal';
 import { invitationLifecycle } from '@/domain/identity/tokens';
 import { env } from '@/lib/env';
 import type { OAuthProfile } from './oauth';
 
-export const PENDING_PATH = '/sign-in/pending';
-/** Guest social failure: no session, generic copy, no enumeration. */
-export const GUEST_SIGN_IN_FAIL_PATH = '/sign-in?error=guest_not_found';
+export const PENDING_PATH = GUEST_SAVE_THE_DATE_PATH;
+/** Guest social failure: no session, save-the-date page (no membership signal). */
+export const GUEST_SIGN_IN_FAIL_PATH = GUEST_SAVE_THE_DATE_PATH;
 
 export function syntheticSocialEmail(provider: SocialProvider, accountId: string): string {
   const slug = accountId.replace(/[^a-zA-Z0-9._+-]/g, '_').slice(0, 120);

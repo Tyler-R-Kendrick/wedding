@@ -44,7 +44,7 @@ Migration `0025_guest_contacts.sql`:
 
 3. RLS: table enabled; no policies (same as `0014` pattern for new public tables).
 
-**Production:** `db:migrate` runs on deploy (`scripts/deploy/migrate-on-deploy.mjs`) when `DATABASE_URL` is set. Supabase workflow in `.github/workflows/deploy-supabase.yml` is only needed if ops run migrations outside Vercel.
+**Production:** `db:migrate` runs on deploy (`scripts/deploy/migrate-on-deploy.mjs`) when `DATABASE_URL` is set.
 
 ## Lookups (all login paths)
 
@@ -103,7 +103,7 @@ If the matched guest already has an active binding for another identity → `blo
 
 ### Failure response
 
-No OAuth session cookie on failure. Redirect to `/sign-in?error=guest_not_found` with fixed copy in `ERROR_COPY` (no guest list leakage). Callback OAuth/state errors use the same guest-facing path where appropriate.
+No OAuth session cookie on failure. Redirect to `/sign-in/save-the-date` with warm neutral copy (`SAVE_THE_DATE_COPY` in `guest-auth-copy.ts`) that never implies list membership. Callback OAuth/state errors use the same guest-facing path where appropriate.
 
 **Reviews:** Failed attempts still insert `social_auth_reviews` (reasons include `no_match`, `ambiguous`, `not_sent`, `blocked`, `email_name_conflict`) for `admin_link_social_auth`.
 

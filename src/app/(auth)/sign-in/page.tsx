@@ -6,6 +6,7 @@ import { currentPrincipal } from '../_lib/invoke';
 import { isSafeReturnPath } from '@/domain/identity/routes';
 import { guestSignInLandingPath } from '@/domain/lifecycle/guest-portal';
 import { errorCopy } from '../_lib/errors';
+import { GUEST_SAVE_THE_DATE_PATH, SIGN_IN_CODE_PROMISE_EMAIL, SIGN_IN_CODE_PROMISE_PHONE, SIGN_IN_SAVE_THE_DATE_NOTE } from '../_lib/guest-auth-copy';
 import { Actions, AuthShell, Button, Field, Notice } from '../_components/kit';
 import { isPhoneSignInAvailable } from '@/lib/phone-sign-in';
 import { OtherSignInMethods } from './_components/OtherSignInMethods';
@@ -26,6 +27,7 @@ type Method = 'email' | 'text';
  */
 export default async function SignInPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const sp = await searchParams;
+  if (sp.error === 'guest_not_found') redirect(GUEST_SAVE_THE_DATE_PATH);
   const error = errorCopy(sp.error);
   // Every page's header and footer link here, and public pages are prerendered, so "Sign in" is shown
   // to people who already are. Say so and send them on, rather than asking for a code they don't need.
@@ -54,7 +56,12 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
     <AuthShell
       eyebrow="Welcome back"
       title="Sign in"
-      lede={<p>{texting ? 'We’ll text you a six-digit code, or email it if you prefer. No password needed.' : 'Enter the email Sara and Tyler have for you and we’ll send a six-digit code. No password needed.'}</p>}
+      lede={
+        <p>
+          {texting ? 'Sign in with a six-digit code by text or email — no password needed.' : 'Sign in with a six-digit code by email — no password needed.'}{' '}
+          {SIGN_IN_SAVE_THE_DATE_NOTE}
+        </p>
+      }
     >
       {texting ? (
         <nav className="auth-methods" aria-label="How to get your code">
@@ -78,20 +85,20 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
               <Button>Text me a code</Button>
             </Actions>
           </form>
-          <p className="auth-hint">We text the number Sara and Tyler have for you. Nothing arrived? Check the number, or use email instead.</p>
+          <p className="auth-hint">{SIGN_IN_CODE_PROMISE_PHONE} Nothing arrived? Check the number or try email instead.</p>
         </>
       ) : (
         <>
           <form action={sendSignInCode}>
             {next ? <input type="hidden" name="next" value={next} /> : null}
-            <Field id="email" label="Email address" hint="The one your invitation was sent to.">
+            <Field id="email" label="Email address" hint="Use the email you expect correspondence on.">
               <input id="email" name="email" type="email" className="auth-input" autoComplete="email" inputMode="email" required maxLength={254} aria-describedby="email-hint" />
             </Field>
             <Actions>
               <Button>Send me a code</Button>
             </Actions>
           </form>
-          <p className="auth-hint">If you receive nothing within a minute, check spam — or open your invitation link again to start fresh.</p>
+          <p className="auth-hint">{SIGN_IN_CODE_PROMISE_EMAIL} Check spam if nothing arrives within a minute.</p>
         </>
       )}
       <OtherSignInMethods next={sp.next} />

@@ -25,7 +25,7 @@ describe('social sign-in', () => {
     sink = { setCookies: [] };
   });
 
-  it('redirects to the neutral pending path for unknown names', async () => {
+  it('U-01 X-06 X-07: unknown social names fail with no session cookie; review queued', async () => {
     const db = await getDb();
     const audit = await getAuditSink();
     const r = await completeSocialSignIn(db, sink, {
@@ -43,7 +43,7 @@ describe('social sign-in', () => {
     expect(open.some((o) => o.reason === 'no_match')).toBe(true);
   });
 
-  it('redirects to pending when invitation not marked sent', async () => {
+  it('A-07: invitation not sent fails without session', async () => {
     const db = await getDb();
     await db.update(invitations).set({ sentAt: null }).where(eq(invitations.householdId, f.households.okafor));
     const audit = await getAuditSink();
@@ -62,7 +62,7 @@ describe('social sign-in', () => {
     expect(reviews.some((x) => x.reason === 'not_sent')).toBe(true);
   });
 
-  it('signs in administrators with verified Google email before name matching', async () => {
+  it('A-10: admin verified Google email wins before guest name match', async () => {
     const db = await getDb();
     const adminEmail = `social-admin-google+${Date.now()}@example.test`;
     await grantAdmin(adminEmail, 'owner');
@@ -89,7 +89,7 @@ describe('social sign-in', () => {
     expect(linked.length).toBe(1);
   });
 
-  it('does not grant admin session when Google email is unverified', async () => {
+  it('A-02: unverified Google email is ignored for admin match', async () => {
     const db = await getDb();
     const adminEmail = `social-admin-unverified+${Date.now()}@example.test`;
     await grantAdmin(adminEmail, 'owner');
@@ -113,7 +113,7 @@ describe('social sign-in', () => {
     if (!r.ok) expect(r.redirectTo).toBe(GUEST_SIGN_IN_FAIL_PATH);
   });
 
-  it('signs in administrators with confirmed Facebook email', async () => {
+  it('A-04: Facebook email treated verified for admin sign-in', async () => {
     const db = await getDb();
     const adminEmail = `social-admin-fb+${Date.now()}@example.test`;
     await grantAdmin(adminEmail, 'planner');
@@ -137,7 +137,7 @@ describe('social sign-in', () => {
     if (r.ok) expect(r.redirectTo).toBe('/admin');
   });
 
-  it('signs in on exact name match when invitation was sent', async () => {
+  it('U-02: safe next path preserved on successful name match', async () => {
     const db = await getDb();
     const audit = await getAuditSink();
     const r = await completeSocialSignIn(db, sink, {
@@ -208,7 +208,7 @@ describe('social sign-in', () => {
     expect(reviews.length).toBeGreaterThan(0);
   });
 
-  it('admin can link an open review to a guest', async () => {
+  it('X-07 A-12: ambiguous social attempt opens review; admin can link guest', async () => {
     const db = await getDb();
     const audit = await getAuditSink();
     const linkTarget = await upsertGuest(db, {
@@ -239,5 +239,141 @@ describe('social sign-in', () => {
       audit,
     });
     expect(linked.ok).toBe(true);
+  });
+
+  it('A-03: Facebook profile without email uses name path only', async () => {
+    const db = await getDb();
+    const audit = await getAuditSink();
+    const r = await completeSocialSignIn(db, sink, {
+      provider: 'facebook',
+      profile: { providerAccountId: `fb-noemail-${Date.now()}`, givenName: 'Nobody', familyName: 'Known' },
+      accessToken: 't',
+      next: null,
+      ipHash: 'iphash',
+      requestId: 'req-soc-fb-noemail',
+      audit,
+    });
+    expect(r.ok).toBe(false);
+    expect(sink.setCookies.some((c) => c.includes('session_token'))).toBe(false);
+  });
+
+  it('A-06: verified email match allows sign-in when name does not match', async () => {
+    const db = await getDb();
+    await db.update(invitations).set({ sentAt: new Date() }).where(eq(invitations.householdId, f.households.okafor));
+    const secondary = `a06+${Date.now()}@example.test`;
+    await replaceGuestContacts(db, f.guests.chidi, [
+      { kind: 'email', value: f.emails.chidi, isPrimary: true },
+      { kind: 'email', value: secondary },
+    ]);
+    const audit = await getAuditSink();
+    const r = await completeSocialSignIn(db, sink, {
+      provider: 'google',
+      profile: { providerAccountId: `g-a06-${Date.now()}`, givenName: 'Wrong', familyName: 'Person', email: secondary, emailVerified: true },
+      accessToken: 't',
+      next: '/guests',
+      ipHash: 'iphash',
+      requestId: 'req-a06',
+      audit,
+    });
+    expect(r.ok).toBe(true);
+    expect(sink.setCookies.some((c) => c.includes('session_token'))).toBe(true);
+  });
+
+  it('A-08: guest already bound to another identity is blocked', async () => {
+    const db = await getDb();
+    const audit = await getAuditSink();
+    const fresh = await upsertGuest(db, { householdId: f.households.ruiz, firstName: `Bound${Date.now()}`, lastName: 'Guest', email: null });
+    if (!fresh.ok) throw fresh.error;
+    const first = await completeSocialSignIn(db, sink, {
+      provider: 'google',
+      profile: { providerAccountId: `g-bound-a-${Date.now()}`, givenName: fresh.value.firstName, familyName: fresh.value.lastName },
+      accessToken: 't',
+      next: '/guests',
+      ipHash: 'iphash',
+      requestId: 'req-bound-1',
+      audit,
+    });
+    expect(first.ok).toBe(true);
+    sink = { setCookies: [] };
+    const second = await completeSocialSignIn(db, sink, {
+      provider: 'google',
+      profile: { providerAccountId: `g-bound-b-${Date.now()}`, givenName: fresh.value.firstName, familyName: fresh.value.lastName },
+      accessToken: 't',
+      next: '/guests',
+      ipHash: 'iphash2',
+      requestId: 'req-bound-2',
+      audit,
+    });
+    expect(second.ok).toBe(false);
+    expect(sink.setCookies).toHaveLength(0);
+  });
+
+  it('A-09 X-04 X-05: linked provider account signs in again without re-matching', async () => {
+    const db = await getDb();
+    const providerAccountId = `g-linked-${Date.now()}`;
+    const audit = await getAuditSink();
+    const fresh = await upsertGuest(db, { householdId: f.households.ruiz, firstName: `Link${Date.now()}`, lastName: 'Provider', email: null });
+    if (!fresh.ok) throw fresh.error;
+    const ok = await completeSocialSignIn(db, sink, {
+      provider: 'google',
+      profile: { providerAccountId, givenName: fresh.value.firstName, familyName: fresh.value.lastName },
+      accessToken: 't',
+      next: '/guests',
+      ipHash: 'iphash',
+      requestId: 'req-linked-1',
+      audit,
+    });
+    expect(ok.ok).toBe(true);
+    const cookieA = [...sink.setCookies];
+    sink = { setCookies: [] };
+    const again = await completeSocialSignIn(db, sink, {
+      provider: 'google',
+      profile: { providerAccountId, givenName: 'Renamed', familyName: 'ProviderLater' },
+      accessToken: 't2',
+      next: '/guests',
+      ipHash: 'iphash',
+      requestId: 'req-linked-2',
+      audit,
+    });
+    expect(again.ok).toBe(true);
+    expect(sink.setCookies.some((c) => c.includes('session_token'))).toBe(true);
+    expect(cookieA.some((c) => c.includes('session_token'))).toBe(true);
+  });
+
+  it('A-11: administrator path wins when admin is also on guest list', async () => {
+    const db = await getDb();
+    const adminAlso = `admin-also-guest+${Date.now()}@example.test`;
+    await grantAdmin(adminAlso, 'owner');
+    const onList = await upsertGuest(db, { householdId: f.households.ruiz, firstName: 'AdminAlso', lastName: `Guest${Date.now()}`, email: adminAlso });
+    if (!onList.ok) throw onList.error;
+    const audit = await getAuditSink();
+    const accountId = `g-admin-also-${Date.now()}`;
+    const r = await completeSocialSignIn(db, sink, {
+      provider: 'google',
+      profile: { providerAccountId: accountId, givenName: 'Nobody', familyName: 'Else', email: adminAlso, emailVerified: true },
+      accessToken: 't',
+      next: '/admin/guests',
+      ipHash: 'iphash',
+      requestId: 'req-a11',
+      audit,
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.redirectTo).toMatch(/^\/admin/);
+    expect(sink.setCookies.some((c) => c.includes('session_token'))).toBe(true);
+  });
+
+  it('X-08: social completion waits at least 150ms floor', async () => {
+    const db = await getDb();
+    const started = performance.now();
+    await completeSocialSignIn(db, sink, {
+      provider: 'google',
+      profile: { providerAccountId: `g-floor-${Date.now()}`, givenName: 'Nobody', familyName: 'Here' },
+      accessToken: 't',
+      next: null,
+      ipHash: 'iphash',
+      requestId: 'req-floor',
+      audit: await getAuditSink(),
+    });
+    expect(performance.now() - started).toBeGreaterThanOrEqual(140);
   });
 });

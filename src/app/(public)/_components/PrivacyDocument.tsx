@@ -25,7 +25,7 @@ export function PrivacyDocument({ reader }: { reader: Reader }) {
           <li className="credits__item">
             <p className="credits__name">Sign-in</p>
             <p>
-              Email addresses for one-time codes; phone numbers when you choose text sign-in (handled by Twilio Verify); and, if you use it, basic profile name and email from Google or Facebook so we can match you to the guest list by name. We do not receive your social passwords.
+              Email addresses for one-time codes; phone numbers when you choose text sign-in (handled by Twilio Verify); and, if you use it, basic profile name and email from Google or Facebook so we can match you to your invitation by name. We do not receive your social passwords.
             </p>
           </li>
           <li className="credits__item">

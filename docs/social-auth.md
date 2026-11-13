@@ -75,7 +75,7 @@ Guest matching uses **verified provider email OR fuzzy name** (see `docs/design/
 - **Fuzzy name** → middle initials ignored; nicknames, diacritics, hyphens, `alternate_names`; typo tolerance only when **exactly one** adult matches.
 - Email match wins when name differs; **email + name → different guests** → no session (`email_name_conflict`).
 - **Invitation sent** required for both paths.
-- **Failure** → no session; `/sign-in?error=guest_not_found` (fixed copy). Attempts stay in `social_auth_reviews` for `admin_link_social_auth`.
+- **Failure** → no session; `/sign-in/save-the-date` (warm save-the-date copy — never implies list membership). Attempts stay in `social_auth_reviews` for `admin_link_social_auth`.
 
 Mark an invitation as sent from the admin console (`admin_mark_invitation_sent`) once the paper or email invitation goes out.
 

@@ -1,10 +1,19 @@
 /** Lowercase, strip diacritics, punctuation, and collapse whitespace. */
+const TITLES_SUFFIXES = /\b(dr|mr|mrs|ms|prof|rev|jr|sr|ii|iii|iv)\b\.?/gi;
+const EMOJI = /\p{Extended_Pictographic}/gu;
+
 export function normalizeNamePart(raw: string): string {
-  const ascii = raw
+  const stripped = raw.replace(EMOJI, '');
+  const ascii = stripped
     .normalize('NFD')
     .replace(/\p{M}/gu, '')
     .toLowerCase();
-  return ascii.replace(PUNCT, '').replace(HYPHEN, ' ').replace(/\s+/g, ' ').trim();
+  return ascii
+    .replace(TITLES_SUFFIXES, ' ')
+    .replace(PUNCT, '')
+    .replace(HYPHEN, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 export const NICKNAME_CANONICAL: Readonly<Record<string, string>> = {
   bill: 'william',

@@ -135,8 +135,10 @@ const pageExpected = (p: SitemapPage): string => {
       return '200 for a signed-in guest: the galleries their invitation may see. Signed out: redirect to /sign-in?next=/photos.';
     case 'photo-collection':
       return '200 for a signed-in guest when the collection exists. Signed out: redirect to /sign-in?next=/photos/<collection>. Unknown collection is 404.';
+    case 'sign-in-save-the-date':
+      return '200. Warm save-the-date guidance when sign-in cannot continue. It does not start a session.';
     case 'sign-in-pending':
-      return '200. Holding page when social sign-in cannot match an invitation yet. It does not start a session.';
+      return '307 redirect to /sign-in/save-the-date (legacy alias).';
     case 'rsvp-step':
       return '200 when that part applies to the signed-in household. 404 when it does not (a household with no plus-one has no /rsvp/guest). Signed out: the guests-only gate, not a 404.';
     case 'invitation':
@@ -381,7 +383,7 @@ function apiRows(): InventoryRow[] {
       audience: 'api',
       method: 'GET',
       purpose: 'OAuth callback. Binds a matching guest, or sends the reader to the social sign-in holding page.',
-      expected: '307 to /sign-in?error=guest_not_found when the state or code is missing. A match continues into the session. The crawler does not call it.',
+      expected: '307 to /sign-in/save-the-date when the state or code is missing. A match continues into the session. The crawler does not call it.',
     }),
     row({
       url: '/api/webmcp/manifest',
