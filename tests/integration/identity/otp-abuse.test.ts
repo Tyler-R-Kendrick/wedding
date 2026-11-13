@@ -5,7 +5,7 @@ import { devInbox } from '@/providers/auth-email/mock';
 import { call, expectErr, expectOk, latestCode, seed } from './harness';
 
 describe('OTP abuse controls', () => {
-  it('five wrong codes lock the address for 15 minutes, even for the right code', async () => {
+  it('O-05: five wrong codes lock the address for 15 minutes', async () => {
     const f = await seed('ab1');
     const req = expectOk(await call<{ challenge: string }>('request_otp', { purpose: 'claim', token: f.invitations.okafor.token, guestId: f.guests.chidi }, { ip: '10.9.1.1' }));
     for (let i = 0; i < 5; i++) {
@@ -24,7 +24,7 @@ describe('OTP abuse controls', () => {
     expect(ok.ok).toBe(true);
   });
 
-  it('an address nobody has is suppressed out loud in the server log, and never named there', async () => {
+  it('O-02 U-05: unknown email gets a challenge; server logs hash only not the address', async () => {
     const f = await seed('ab0');
     const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() };
     const ghost = 'ghost+ab0@example.test';
@@ -37,7 +37,7 @@ describe('OTP abuse controls', () => {
     expect(known.info.mock.calls.map(([, msg]) => msg)).not.toContain('otp not sent: no guest or administrator has this address');
   });
 
-  it('send limits: 5 per (email, client), a soft 20 per email across clients, and a per-IP cap', async () => {
+  it('O-06 O-10: send rate limits per email, client, and IP', async () => {
     const f = await seed('ab2');
     const { MemoryRateLimit } = await import('@/providers/rate-limit');
     const { setProviderOverride } = await import('@/providers/registry');
@@ -68,7 +68,7 @@ describe('OTP abuse controls', () => {
     }
   });
 
-  it('S8: the provider send is not awaited — a slow mailer does not delay the answer, and known/unknown take the same floor', async () => {
+  it('O-02 O-14: known and unknown sign-in share timing floor; mail is async', async () => {
     const f = await seed('ab4');
     const { setProviderOverride } = await import('@/providers/registry');
     const { MockAuthEmail } = await import('@/providers/auth-email/mock');
@@ -97,12 +97,19 @@ describe('OTP abuse controls', () => {
     }
   });
 
-  it('per-code attempt cap: Better Auth discards a code after 5 wrong tries', async () => {
+  it('O-03 O-08: per-code attempt cap consumes challenge after wrong tries', async () => {
     const f = await seed('ab3');
     const req = expectOk(await call<{ challenge: string }>('request_otp', { purpose: 'sign_in', email: f.emails.ana }, { ip: '10.9.4.1' }));
     const code = await latestCode(f.emails.ana);
     for (let i = 0; i < 5; i++) await call('verify_otp', { challenge: req.data.challenge, code: String(200000 + i) }, { ip: `10.9.4.${i + 2}` });
     // Lockout (5 failures) and the per-code cap both hold now; the correct code no longer works.
     expect((await call('verify_otp', { challenge: req.data.challenge, code }, { ip: '10.9.4.50' })).ok).toBe(false);
+  });
+
+  it('O-09: a second request_otp issues a new challenge after closing the tab', async () => {
+    const f = await seed('ab5');
+    const first = expectOk(await call<{ challenge: string }>('request_otp', { purpose: 'sign_in', email: f.emails.ana }, { ip: '10.9.7.1' }));
+    const second = expectOk(await call<{ challenge: string }>('request_otp', { purpose: 'sign_in', email: f.emails.ana }, { ip: '10.9.7.1' }));
+    expect(second.data.challenge).not.toBe(first.data.challenge);
   });
 });

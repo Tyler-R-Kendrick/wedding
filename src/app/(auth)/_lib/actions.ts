@@ -15,6 +15,7 @@ import { guestSignInLandingPath } from '@/domain/lifecycle/guest-portal';
 import { getAuth } from '@/lib/auth';
 import { clearChallengeCookie, readChallengeCookie, readVerified, rememberVerified, setChallengeCookie } from './challenge-cookie';
 import { errorCode } from './errors';
+import { GUEST_SAVE_THE_DATE_PATH } from '@/domain/identity/guest-sign-in-paths';
 import { currentPrincipal, invokeFromRequest } from './invoke';
 
 /**
@@ -94,7 +95,8 @@ export async function verifyCode(formData: FormData): Promise<void> {
   const d = r.value.data;
   if (!d.guestId && !d.isAdmin) {
     await clearChallengeCookie();
-    redirect(withError(cookie.kind === 'phone_sign_in' ? TEXT_TAB : cookie.kind === 'admin_sign_in' ? '/sign-in/admin' : EMAIL_TAB, 'unlinked'));
+    if (cookie.kind === 'sign_in' || cookie.kind === 'phone_sign_in') redirect(GUEST_SAVE_THE_DATE_PATH);
+    redirect(withError(cookie.kind === 'admin_sign_in' ? '/sign-in/admin' : cookie.back ?? EMAIL_TAB, 'unlinked'));
   }
   // Who they said they were, when the session is about to be somebody else. Read before the cookie
   // is cleared, and carried only when the claim went through a household manager — the welcome page

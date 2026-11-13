@@ -2,6 +2,7 @@ import { and, eq, isNull } from 'drizzle-orm';
 import { newId } from '@/contracts/ids';
 import type { Db } from '@/db/client';
 import { authAccounts, authUsers, guests, invitations, socialAuthReviews, type SocialProvider, type SocialReviewReason } from '@/db/schema';
+import { findGuestsByEmail } from '@/domain/guests/repo';
 import { matchGuestsByName, type ProviderProfileName } from '@/domain/identity/name-match';
 import { activeBindingForGuest, activeBindingsForIdentity, bindIdentity, ensureAuthUser, findAuthUserByEmail } from '@/domain/identity/bindings';
 import { verifiedProviderEmail } from '@/domain/identity/social/admin-email';
@@ -10,13 +11,16 @@ import { establishGuestSession } from '@/lib/auth/establish-session';
 import { getAuth } from '@/lib/auth';
 import { hashOtpIdentifier } from '@/domain/identity/otp';
 import { isSafeReturnPath, safeReturnPath } from '@/domain/identity/routes';
+import { GUEST_SAVE_THE_DATE_PATH } from '@/domain/identity/guest-sign-in-paths';
 import { guestSignInLandingPath } from '@/domain/lifecycle/guest-portal';
 import { resolveAdminRoles } from '@/domain/identity/principal';
 import { invitationLifecycle } from '@/domain/identity/tokens';
 import { env } from '@/lib/env';
 import type { OAuthProfile } from './oauth';
 
-export const PENDING_PATH = '/sign-in/pending';
+export const PENDING_PATH = GUEST_SAVE_THE_DATE_PATH;
+/** Guest social failure: no session, save-the-date page (no membership signal). */
+export const GUEST_SIGN_IN_FAIL_PATH = GUEST_SAVE_THE_DATE_PATH;
 
 export function syntheticSocialEmail(provider: SocialProvider, accountId: string): string {
   const slug = accountId.replace(/[^a-zA-Z0-9._+-]/g, '_').slice(0, 120);
@@ -106,6 +110,7 @@ async function listMatchableGuests(db: Db) {
       householdId: guests.householdId,
       kind: guests.kind,
       isMinor: guests.isMinor,
+      isNamed: guests.isNamed,
       mergedIntoGuestId: guests.mergedIntoGuestId,
     })
     .from(guests)
@@ -176,7 +181,7 @@ export async function completeSocialSignIn(
   const redirectSuccess = guestSignInLandingPath(input.next, '/guests');
   const profileName: ProviderProfileName = { givenName: input.profile.givenName, familyName: input.profile.familyName, name: input.profile.name };
 
-  const finishPending = async (reason: SocialReviewReason, candidateGuestIds: string[]) => {
+  const finishGuestFailure = async (reason: SocialReviewReason, candidateGuestIds: string[]) => {
     await enqueueSocialReview(db, {
       provider: input.provider,
       profile: profileName,
@@ -186,7 +191,7 @@ export async function completeSocialSignIn(
       ipHash: input.ipHash,
     });
     await hold(started);
-    return { ok: false as const, redirectTo: PENDING_PATH };
+    return { ok: false as const, redirectTo: GUEST_SIGN_IN_FAIL_PATH };
   };
 
   const linked = await findLinkedAccount(db, input.provider, input.profile.providerAccountId);
@@ -220,22 +225,44 @@ export async function completeSocialSignIn(
     }
   }
 
-  const candidates = (await listMatchableGuests(db)).filter((g) => g.kind !== 'child' && !g.isMinor);
-  const { confidence, matches } = matchGuestsByName(profileName, candidates);
+  const candidates = (await listMatchableGuests(db)).filter(
+    (g) => g.kind !== 'child' && !g.isMinor && g.isNamed !== false,
+  );
+  const { confidence, matches: nameMatches } = matchGuestsByName(profileName, candidates);
 
-  if (confidence === 'none') return finishPending('no_match', []);
-  if (confidence === 'ambiguous') return finishPending('ambiguous', matches.map((m) => m.id));
+  let emailMatches: typeof candidates = [];
+  const guestVerifiedEmail = verifiedEmail;
+  if (guestVerifiedEmail) {
+    const byEmail = await findGuestsByEmail(db, guestVerifiedEmail);
+    const ids = new Set(candidates.map((c) => c.id));
+    emailMatches = byEmail.filter((g) => ids.has(g.id)).map((g) => {
+      const row = candidates.find((c) => c.id === g.id)!;
+      return row;
+    });
+  }
 
-  const guest = matches[0]!;
-  if (!(await invitationSentForGuest(db, guest.id))) return finishPending('not_sent', [guest.id]);
+  const emailGuest = emailMatches.length === 1 ? emailMatches[0]! : emailMatches.length > 1 ? null : null;
+  const nameGuest = confidence === 'one' ? nameMatches[0]! : null;
+
+  if (emailMatches.length > 1) return finishGuestFailure('ambiguous', emailMatches.map((m) => m.id));
+  if (confidence === 'ambiguous') return finishGuestFailure('ambiguous', nameMatches.map((m) => m.id));
+
+  if (emailGuest && nameGuest && emailGuest.id !== nameGuest.id) {
+    return finishGuestFailure('email_name_conflict', [emailGuest.id, nameGuest.id]);
+  }
+
+  const guest = emailGuest ?? nameGuest;
+  if (!guest) return finishGuestFailure('no_match', []);
+
+  if (!(await invitationSentForGuest(db, guest.id))) return finishGuestFailure('not_sent', [guest.id]);
 
   const existingBinding = await activeBindingForGuest(db, guest.id);
-  if (existingBinding) return finishPending('blocked', [guest.id]);
+  if (existingBinding) return finishGuestFailure('blocked', [guest.id]);
 
   const displayName = [input.profile.givenName, input.profile.familyName].filter(Boolean).join(' ') || input.profile.name || 'Guest';
   const email = syntheticSocialEmail(input.provider, input.profile.providerAccountId);
   const userResult = await ensureAuthUser(db, email, displayName);
-  if (!userResult.ok) return finishPending('blocked', [guest.id]);
+  if (!userResult.ok) return finishGuestFailure('blocked', [guest.id]);
   await linkProviderAccount(db, { userId: userResult.value.id, provider: input.provider, accountId: input.profile.providerAccountId, accessToken: input.accessToken });
 
   const bound = await bindIdentity(db, {
@@ -248,7 +275,7 @@ export async function completeSocialSignIn(
     requestId: input.requestId,
     audit: input.audit,
   });
-  if (!bound.ok) return finishPending('blocked', [guest.id]);
+  if (!bound.ok) return finishGuestFailure('blocked', [guest.id]);
 
   const auth = await getAuth(db);
   await establishGuestSession(db, auth, sink, { userId: userResult.value.id, activeGuestId: guest.id });

@@ -90,6 +90,7 @@ import { WEDDING_DETAILS } from './helpers/wedding-details';
  * '/sign-in'
  * '/sign-in/admin'
  * '/sign-in/pending'
+ * '/sign-in/save-the-date'
  * '/sign-out'
  * '/sitemap.xml'
  * '/step-up'

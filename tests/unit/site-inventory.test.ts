@@ -51,7 +51,7 @@ describe('site inventory', () => {
     expect(byUrl('/sign-in/phone')).toBeUndefined();
     expect(publicSitemapPaths().some((path) => path === '/guests' || path.startsWith('/guests/'))).toBe(false);
     expect(byUrl('/api/auth/social/[provider]/start')?.crawl).toBe(false);
-    expect(byUrl('/api/auth/social/[provider]/callback')?.expected).toContain('/sign-in/pending');
+    expect(byUrl('/api/auth/social/[provider]/callback')?.expected).toContain('/sign-in/save-the-date');
   });
 
   it('says every page about the wedding asks for a session', () => {

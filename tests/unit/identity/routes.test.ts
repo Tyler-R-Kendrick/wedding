@@ -27,6 +27,17 @@ describe('safe return paths (review S7/N4)', () => {
 });
 
 describe('fixed error copy (review N7)', () => {
+  it('O-03: wrong code maps to ERROR_COPY.code', () => {
+    expect(errorCopy('code')).toBe(ERROR_COPY.code);
+    expect(errorCode({ code: 'validation', details: { issues: [] } })).toBe('code');
+  });
+
+  it('O-04 O-05: expired challenge and lockout map to stable guest copy', () => {
+    expect(errorCode({ code: 'validation', details: { reason: 'challenge' } })).toBe('expired');
+    expect(errorCode({ code: 'rate_limited', message: 'Too many incorrect codes. For your security, please wait 15 minutes' })).toBe('locked');
+    expect(errorCode({ code: 'rate_limited', message: 'Too many attempts.' })).toBe('rate_limited');
+  });
+
   it('maps every capability error to first-party text and never echoes messages', () => {
     expect(errorCopy('code')).toBe(ERROR_COPY.code);
     expect(errorCopy('not-a-code')).toBe(ERROR_COPY.internal);

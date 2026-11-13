@@ -65,14 +65,14 @@ export default async function VerifyPage({ searchParams }: { searchParams: Promi
           .{' '}
           {isSms ? (
             <>
-              Wrong number on file?{' '}
+              Try{' '}
               <Link className="auth-link" href="/sign-in">
-                try email sign-in
+                email sign-in
               </Link>{' '}
-              or ask Sara and Tyler to update your phone.
+              instead, or use a different mobile number — the same options are always available.
             </>
           ) : (
-            <>If the address Sara and Tyler have for you is wrong, a code will never arrive — ask them to fix it.</>
+            <>No code yet? Check spam, try another email on the sign-in page, or keep an eye out for your save-the-date.</>
           )}
         </p>
       }

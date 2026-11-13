@@ -4,7 +4,7 @@ import { CapabilityError } from '@/contracts/errors';
 import { err, ok } from '@/contracts/result';
 import { appServices } from '@/capabilities/context';
 import { GUEST_KINDS } from '@/db/schema';
-import { getGuest, guestDisplayName, listHouseholdMembers } from '@/domain/guests/repo';
+import { findGuestsByEmail, getGuest, guestDisplayName, listHouseholdMembers } from '@/domain/guests/repo';
 import { getHousehold } from '@/domain/households/repo';
 import { activeBindingsForGuests, getAuthUser } from '@/domain/identity/bindings';
 import { guestOf } from './identity/shared';
@@ -79,6 +79,8 @@ export const getMyInvitation = defineCapability<z.infer<typeof input>, MyInvitat
     if (!me || !household) return err(new CapabilityError('not_found', 'We could not find your invitation.'));
     const [invitation, members] = await Promise.all([currentInvitationForHousehold(db, household.id), listHouseholdMembers(db, household.id)]);
     const bindings = await activeBindingsForGuests(db, members.map((m) => m.id));
+    const emailOnHousehold = user?.email ? (await findGuestsByEmail(db, user.email)).some((g) => g.householdId === household.id) : false;
+    const identityInHousehold = members.some((g) => bindings.get(g.id)?.authIdentityId === p.authIdentityId);
     return ok({
       data: {
         you: { guestId: me.id, displayName: guestDisplayName(me), isManager: p.entitlements.has('manage_household_rsvp') },
@@ -93,7 +95,14 @@ export const getMyInvitation = defineCapability<z.infer<typeof input>, MyInvitat
           // `claim_identity` binds you TO someone only when their address on the invitation is this
           // very inbox (a couple sharing one). Anything else is either theirs to sign in with, or a
           // household-manager act, or already spoken for.
-          const sharesThisInbox = !!m.email && !!user?.email && m.email === user.email;
+          const sharesThisInbox =
+            !!user?.email &&
+            ((!!m.email && m.email === user.email) ||
+              (!m.email &&
+                m.kind !== 'child' &&
+                !m.isMinor &&
+                emailOnHousehold &&
+                (m.id === p.guestId || (!m.managedByGuestId && identityInHousehold))));
           const boundElsewhere = bindings.get(m.id)?.authIdentityId !== undefined && bindings.get(m.id)!.authIdentityId !== p.authIdentityId;
           const mayManage = p.guestId === household.managerGuestId || m.managedByGuestId === p.guestId || (m.managedByGuestId === null && household.managerGuestId === null);
           return {

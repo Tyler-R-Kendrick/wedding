@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('social sign-in (fallback)', () => {
-  test('pending page is warm and offers email sign-in', async ({ page }) => {
+  test('save-the-date page is warm and offers email sign-in', async ({ page }) => {
     const res = await page.goto('/sign-in/pending');
-    expect(res?.status()).toBe(200);
-    await expect(page.getByRole('heading', { name: /invitation has been sent/i })).toBeVisible();
-    await expect(page.getByRole('link', { name: /sign in with email/i })).toHaveAttribute('href', '/sign-in');
+    expect(res?.status()).toBeLessThan(400);
+    await expect(page.getByRole('heading', { name: /keep an eye on your save-the-date/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /sign in with email or text/i })).toHaveAttribute('href', '/sign-in');
   });
 });

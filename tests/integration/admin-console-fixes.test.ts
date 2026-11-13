@@ -72,7 +72,7 @@ describe('merged duplicates', () => {
 });
 
 describe('merging moves a seat, never leaves the duplicate seated', () => {
-  it('gives the kept guest the duplicate\'s seat when they have none, and frees it when they do', async () => {
+  it('C-06: gives the kept guest the duplicate\'s seat when they have none, and frees it when they do', async () => {
     const audit = { record: async () => undefined } as never;
     const table = expectOk(await run(adminUpsertTable, admin, { name: 'Merge Table', capacity: 6 })).data.id;
     const mk = async (firstName: string) => {

@@ -65,14 +65,18 @@ Start URLs (linked from the sign-in page):
   - Case-insensitive exact match on the normalized address → admin session, redirect to `/admin` (or a safe `next`).
 - On first verified admin match, link the provider subject to that auth user for later sign-ins.
 - Console administrators must have a valid email on their `admin_roles` row (enforced in the schema and admin UI).
+- **Administrator also on the guest list (A-11):** verified social sign-in always takes the **admin path** (console redirect, not the guest portal). To preview the guest experience, use **Browse as a guest** on `/admin/guests` (`admin_browse_as_guest` in `src/capabilities/identity/browse_as_guest.ts`) — never a second social bind for the same person.
 
 ### Guests
 
-- Match guests **by name only** (given, family, full name from the provider). Email and phone from the provider are ignored for guest matching.
-- Normalization covers case, diacritics, punctuation, whitespace, common nicknames, maiden/hyphenated surnames, and `guests.alternate_names` (editable in admin guest ops).
-- **Exactly one** confident name match **and** a usable invitation with `sent_at` set → bind provider account + guest session.
-- **Linked provider account** (prior successful bind) → sign in by subject id without re-matching names.
-- Any other outcome → **`/sign-in/pending`** (“Come back when your invitation has been sent!”) with the same page for zero match, ambiguous match, invitation not sent, or already claimed by another identity. Attempts are logged in `social_auth_reviews` for admin linking (`admin_link_social_auth`).
+Guest matching uses **verified provider email OR fuzzy name** (see `docs/design/multi-contact-guests.md`).
+
+- **Linked provider account** → sign in by subject id without re-matching.
+- **Verified email** → match any row on `guest_contacts` or `guests.email` (same normalization as OTP). Google requires `email_verified`. Facebook: treat a returned email as verified (documented in design).
+- **Fuzzy name** → middle initials ignored; nicknames, diacritics, hyphens, `alternate_names`; typo tolerance only when **exactly one** adult matches.
+- Email match wins when name differs; **email + name → different guests** → no session (`email_name_conflict`).
+- **Invitation sent** required for both paths.
+- **Failure** → no session; `/sign-in/save-the-date` (warm save-the-date copy — never implies list membership). Attempts stay in `social_auth_reviews` for `admin_link_social_auth`.
 
 Mark an invitation as sent from the admin console (`admin_mark_invitation_sent`) once the paper or email invitation goes out.
 
@@ -81,6 +85,10 @@ Mark an invitation as sent from the admin console (`admin_mark_invitation_sent`)
 - OAuth **state** + **PKCE** (S256); state stored in HttpOnly cookie `wedding.social_oauth`.
 - Rate limits on start and callback per client IP (via the `rate-limit` provider).
 - Minimum response timing on callback to reduce timing oracle between outcomes.
+
+## Multi-contact emails
+
+Social guest email matching uses `findGuestsByEmail` (contacts + legacy column). Secondary addresses work when the provider returns that exact verified email.
 
 ## After sign-in
 

@@ -1,11 +1,12 @@
-import { and, asc, eq, ilike, inArray, isNull, or } from 'drizzle-orm';
+import { and, asc, eq, ilike, inArray, isNull, or, sql } from 'drizzle-orm';
 import type { AuditSink } from '@/contracts/audit';
 import { CapabilityError } from '@/contracts/errors';
 import { newId, type GuestId } from '@/contracts/ids';
 import type { PrincipalRef } from '@/contracts/principal';
 import { err, ok, type Result } from '@/contracts/result';
 import type { Db } from '@/db/client';
-import { GUEST_KINDS, guestAccessBindings, guests, households, seatAssignments, type GuestKind, type GuestRow } from '@/db/schema';
+import { GUEST_KINDS, guestAccessBindings, guestContacts, guests, households, seatAssignments, type GuestKind, type GuestRow } from '@/db/schema';
+import { findGuestIdsByContact, mergeGuestContacts, syncPrimaryContactColumn } from '@/domain/guests/contacts';
 import { isEmailShape, normalizeEmail } from '@/domain/identity/mask';
 import { isPhoneShape, normalizePhoneE164 } from '@/domain/identity/phone';
 
@@ -21,6 +22,7 @@ export interface GuestUpsert {
   isNamed?: boolean;
   plusOneOfGuestId?: string | null;
   managedByGuestId?: string | null;
+  alternateNames?: string[];
   notes?: string | null;
 }
 
@@ -36,6 +38,11 @@ export async function getGuestsByIds(db: Db, ids: readonly string[]): Promise<Gu
   return db.select().from(guests).where(inArray(guests.id, [...ids]));
 }
 
+async function guestsByIdsOrdered(db: Db, ids: readonly string[]): Promise<GuestRow[]> {
+  if (ids.length === 0) return [];
+  return db.select().from(guests).where(and(inArray(guests.id, [...ids]), notMerged)).orderBy(asc(guests.createdAt));
+}
+
 /** Members of a household as printed (merged duplicates hidden), children last, alphabetical. */
 export async function listHouseholdMembers(db: Db, householdId: string): Promise<GuestRow[]> {
   const rows = await db.select().from(guests).where(and(eq(guests.householdId, householdId), notMerged)).orderBy(asc(guests.firstName), asc(guests.lastName));
@@ -46,14 +53,18 @@ export async function listHouseholdMembers(db: Db, householdId: string): Promise
 export async function findGuestsByEmail(db: Db, email: string): Promise<GuestRow[]> {
   const normalized = normalizeEmail(email);
   if (!isEmailShape(normalized)) return [];
-  return db.select().from(guests).where(and(eq(guests.email, normalized), notMerged)).orderBy(asc(guests.createdAt));
+  const ids = await findGuestIdsByContact(db, 'email', normalized);
+  if (ids.length === 0) return [];
+  return guestsByIdsOrdered(db, ids);
 }
 
 /** Live guests with this E.164 phone (shared numbers are rare but possible). */
 export async function findGuestsByPhone(db: Db, phone: string): Promise<GuestRow[]> {
   const normalized = normalizePhoneE164(phone);
-  if (!normalized) return [];
-  return db.select().from(guests).where(and(eq(guests.phone, normalized), notMerged)).orderBy(asc(guests.createdAt));
+  if (!normalized || !isPhoneShape(normalized)) return [];
+  const ids = await findGuestIdsByContact(db, 'phone', normalized);
+  if (ids.length === 0) return [];
+  return guestsByIdsOrdered(db, ids);
 }
 
 /**
@@ -92,12 +103,16 @@ export async function listGuests(db: Db, filter: { householdId?: string; q?: str
     filter.householdId ? eq(guests.householdId, filter.householdId) : undefined,
     filter.includeMerged ? undefined : notMerged,
     filter.q
-      ? or(
-          ilike(guests.firstName, `%${filter.q.replace(/[%_]/g, '')}%`),
-          ilike(guests.lastName, `%${filter.q.replace(/[%_]/g, '')}%`),
-          ilike(guests.email, `%${filter.q.replace(/[%_]/g, '')}%`),
-          ilike(guests.phone, `%${filter.q.replace(/[%_]/g, '')}%`),
-        )
+      ? (() => {
+          const q = `%${filter.q.replace(/[%_]/g, '')}%`;
+          return or(
+            ilike(guests.firstName, q),
+            ilike(guests.lastName, q),
+            ilike(guests.email, q),
+            ilike(guests.phone, q),
+            sql`exists (select 1 from ${guestContacts} gc where gc.guest_id = ${guests.id} and gc.value ilike ${q})`,
+          );
+        })()
       : undefined,
   ].filter((c): c is NonNullable<typeof c> => c !== undefined);
   return db
@@ -151,9 +166,19 @@ export async function upsertGuest(db: Db, input: GuestUpsert): Promise<Result<Gu
     if (input.plusOneOfGuestId !== undefined) patch.plusOneOfGuestId = input.plusOneOfGuestId;
     if (input.managedByGuestId !== undefined) patch.managedByGuestId = input.managedByGuestId;
     if (input.notes !== undefined) patch.notes = input.notes;
+    if (input.alternateNames !== undefined) patch.alternateNames = input.alternateNames.map((n) => n.trim()).filter(Boolean);
     const [row] = await db.update(guests).set(patch).where(eq(guests.id, input.id)).returning();
     if (!row) return err(new CapabilityError('not_found', 'That guest does not exist.'));
-    return ok(row);
+    if (input.email !== undefined) {
+      const synced = await syncPrimaryContactColumn(db, row.id, 'email', email, { skipUniquenessForGuestId: row.id });
+      if (!synced.ok) return err(synced.error);
+    }
+    if (input.phone !== undefined) {
+      const synced = await syncPrimaryContactColumn(db, row.id, 'phone', phone, { skipUniquenessForGuestId: row.id });
+      if (!synced.ok) return err(synced.error);
+    }
+    const refreshed = (await db.select().from(guests).where(eq(guests.id, row.id)).limit(1))[0]!;
+    return ok(refreshed);
   }
   const values = {
     householdId: input.householdId,
@@ -169,8 +194,24 @@ export async function upsertGuest(db: Db, input: GuestUpsert): Promise<Result<Gu
     notes: input.notes ?? null,
     updatedAt: new Date(),
   };
-  const [row] = await db.insert(guests).values({ id: newId<GuestId>(), ...values, createdAt: new Date() }).returning();
-  return ok(row!);
+  const guestId = newId<GuestId>();
+  await db.insert(guests).values({ id: guestId, ...values, alternateNames: input.alternateNames?.map((n) => n.trim()).filter(Boolean) ?? [], createdAt: new Date() });
+  if (email) {
+    const synced = await syncPrimaryContactColumn(db, guestId, 'email', email, { skipUniquenessForGuestId: guestId });
+    if (!synced.ok) {
+      await db.delete(guests).where(eq(guests.id, guestId));
+      return err(synced.error);
+    }
+  }
+  if (phone) {
+    const synced = await syncPrimaryContactColumn(db, guestId, 'phone', phone, { skipUniquenessForGuestId: guestId });
+    if (!synced.ok) {
+      await db.delete(guests).where(eq(guests.id, guestId));
+      return err(synced.error);
+    }
+  }
+  const refreshed = (await db.select().from(guests).where(eq(guests.id, guestId)).limit(1))[0]!;
+  return ok(refreshed);
 }
 
 export async function deleteGuest(db: Db, id: string): Promise<Result<void, CapabilityError>> {
@@ -199,7 +240,13 @@ export async function mergeGuests(
   const result = await db.transaction(async (tx) => {
     const [kept] = await tx
       .update(guests)
-      .set({ email: keep.email ?? merge.email, lastName: keep.lastName || merge.lastName, notes: keep.notes ?? merge.notes, updatedAt: now })
+      .set({
+        email: keep.email ?? merge.email,
+        phone: keep.phone ?? merge.phone,
+        lastName: keep.lastName || merge.lastName,
+        notes: keep.notes ?? merge.notes,
+        updatedAt: now,
+      })
       .where(eq(guests.id, keep.id))
       .returning();
     const keepBinding = (await tx.select().from(guestAccessBindings).where(and(eq(guestAccessBindings.guestId, keep.id), isNull(guestAccessBindings.revokedAt))).limit(1))[0];
@@ -219,7 +266,8 @@ export async function mergeGuests(
     const keepSeat = (await tx.select({ id: seatAssignments.id }).from(seatAssignments).where(eq(seatAssignments.guestId, keep.id)).limit(1))[0];
     if (keepSeat) await tx.delete(seatAssignments).where(eq(seatAssignments.guestId, merge.id));
     else await tx.update(seatAssignments).set({ guestId: keep.id, updatedAt: now }).where(eq(seatAssignments.guestId, merge.id));
-    await tx.update(guests).set({ mergedIntoGuestId: keep.id, email: null, updatedAt: now }).where(eq(guests.id, merge.id));
+    await tx.update(guests).set({ mergedIntoGuestId: keep.id, email: null, phone: null, updatedAt: now }).where(eq(guests.id, merge.id));
+    await mergeGuestContacts(tx as unknown as Db, keep.id, merge.id);
     return kept!;
   });
   await input.audit.record({
