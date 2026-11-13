@@ -123,4 +123,4 @@ Identical rubric: `docs/design/multi-contact-guests-rubric.md` (**96 rows**, gat
 
 ## CI
 
-PR **#129**, branch `cursor/guest-multi-contacts-b3d2`. Last fully green head **`425f70d5`**; new commits re-trigger checks (see GitHub).
+PR **#129**, branch `cursor/guest-multi-contacts-b3d2`, head **`2a0aa7a7`**: all required GitHub checks **green** (2026-11-13).
