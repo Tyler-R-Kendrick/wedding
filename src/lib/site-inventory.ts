@@ -381,7 +381,7 @@ function apiRows(): InventoryRow[] {
       audience: 'api',
       method: 'GET',
       purpose: 'OAuth callback. Binds a matching guest, or sends the reader to the social sign-in holding page.',
-      expected: '307 to /sign-in/pending when the state or code is missing. A match continues into the session. The crawler does not call it.',
+      expected: '307 to /sign-in?error=guest_not_found when the state or code is missing. A match continues into the session. The crawler does not call it.',
     }),
     row({
       url: '/api/webmcp/manifest',

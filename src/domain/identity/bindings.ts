@@ -208,6 +208,8 @@ export async function rebindIdentity(
     .values({ id: newId(), authIdentityId: user.value.id, guestId: input.guestId, role: 'self', claimMethod: 'admin', claimedAt: now, reboundFromId: previous?.id ?? null })
     .returning();
   await db.update(guests).set({ email: user.value.email, updatedAt: now }).where(eq(guests.id, input.guestId));
+  const { syncPrimaryContactColumn } = await import('@/domain/guests/contacts');
+  await syncPrimaryContactColumn(db, input.guestId, 'email', user.value.email, { skipUniquenessForGuestId: input.guestId });
   await input.audit.record({
     actor: input.actor,
     action: 'identity.rebound',

@@ -52,7 +52,7 @@ export async function seedIdentityFixtures(db: Db, deps: { audit: AuditSink; req
   const households = { fitzgerald: await hh('The Fitzgerald Family'), ruiz: await hh('Ana Ruiz & Guest'), okafor: await hh('Chidi & Amara Okafor'), revoked: await hh('The Revoked Household'), expired: await hh('The Expired Household') };
   const guests = {
     sara: await g({ householdId: households.fitzgerald, firstName: 'Sara', lastName: 'Fitzgerald', email: emails.shared }),
-    tyler: await g({ householdId: households.fitzgerald, firstName: 'Tyler', lastName: 'Kendrick', email: emails.shared }),
+    tyler: await g({ householdId: households.fitzgerald, firstName: 'Tyler', lastName: 'Kendrick' }),
     nora: await g({ householdId: households.fitzgerald, firstName: 'Nora', lastName: 'Fitzgerald', kind: 'child', isMinor: true }),
     ruth: await g({ householdId: households.fitzgerald, firstName: 'Ruth', lastName: 'Fitzgerald', kind: 'adult' }),
     ana: await g({ householdId: households.ruiz, firstName: 'Ana', lastName: 'Ruiz', email: emails.ana }),

@@ -44,4 +44,40 @@ describe('name-match', () => {
   it('ignores middle names and hyphenated surnames when tokens overlap', () => {
     expect(namesMatch({ name: 'Sarah Anne Fitzgerald-Kendrick' }, { firstName: 'Sarah', lastName: 'Fitzgerald' })).toBe(true);
   });
+
+  describe('S-01 middle name matrix (Michelle Sunder)', () => {
+    const guest = { firstName: 'Michelle', lastName: 'Sunder', alternateNames: [] as string[] };
+    const guestMiddle = { firstName: 'Michelle Elaine', lastName: 'Sunder', alternateNames: [] as string[] };
+
+    const profiles = [
+      { givenName: 'Michelle', familyName: 'Sunder' },
+      { name: 'Michelle Elaine Sunder' },
+      { name: 'Michelle E. Sunder' },
+    ] as const;
+
+    for (const p of profiles) {
+      it(`matches provider ${JSON.stringify(p)} to Michelle Sunder`, () => {
+        expect(namesMatch(p, guest)).toBe(true);
+      });
+    }
+
+    it('reverse: Michelle Sunder provider matches guest with middle on record', () => {
+      expect(namesMatch({ givenName: 'Michelle', familyName: 'Sunder' }, guestMiddle)).toBe(true);
+    });
+  });
+
+  it('S-14 fuzzy match allows single typo when one guest', () => {
+    const guests = [{ id: '1', firstName: 'Michelle', lastName: 'Sunder', alternateNames: [] as string[] }];
+    const r = matchGuestsByName({ givenName: 'Michele', familyName: 'Sunder' }, guests);
+    expect(r.confidence).toBe('one');
+  });
+
+  it('S-15 fuzzy typo ambiguous with two similar guests', () => {
+    const guests = [
+      { id: '1', firstName: 'Michael', lastName: 'Smith', alternateNames: [] as string[] },
+      { id: '2', firstName: 'Micheal', lastName: 'Smith', alternateNames: [] as string[] },
+    ];
+    const r = matchGuestsByName({ givenName: 'Michal', familyName: 'Smith' }, guests);
+    expect(r.confidence).toBe('ambiguous');
+  });
 });

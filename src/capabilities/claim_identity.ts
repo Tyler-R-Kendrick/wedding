@@ -4,7 +4,7 @@ import { defineCapability } from '@/contracts/capability';
 import { CapabilityError } from '@/contracts/errors';
 import { err, ok } from '@/contracts/result';
 import { authSessions, guests } from '@/db/schema';
-import { getGuest, guestDisplayName } from '@/domain/guests/repo';
+import { findGuestsByEmail, getGuest, guestDisplayName } from '@/domain/guests/repo';
 import { getHousehold } from '@/domain/households/repo';
 import { activeBindingForGuest, activeBindingsForIdentity, bindIdentity, getAuthUser } from '@/domain/identity/bindings';
 import { invitationLifecycle } from '@/domain/identity/tokens';
@@ -67,7 +67,13 @@ export const claimIdentity = defineCapability<z.infer<typeof input>, ClaimIdenti
 
     // Household authority comes first, so an outsider learns nothing about who has claimed.
     const sameHousehold = household.id === principal.householdId;
-    const selfBind = !!target.email && target.email === user.email;
+    const sharedHouseholdInbox =
+      !!user.email &&
+      !target.email &&
+      target.kind !== 'child' &&
+      !target.isMinor &&
+      (await findGuestsByEmail(db, user.email)).some((g) => g.householdId === target.householdId);
+    const selfBind = !!user.email && (target.email === user.email || sharedHouseholdInbox);
     let tokenAccess = false;
     if (!sameHousehold && selfBind && i.token) {
       const invitation = await findInvitationByToken(db, i.token);

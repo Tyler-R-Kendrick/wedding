@@ -4,6 +4,7 @@ import { authUsers, guests } from '@/db/schema';
 import { upsertHousehold } from '@/domain/households/repo';
 import { isEmailShape, normalizeEmail } from '@/domain/identity/mask';
 import { normalizePhoneE164 } from '@/domain/identity/phone';
+import { syncPrimaryContactColumn } from './contacts';
 import { findGuestsByEmail, upsertGuest } from './repo';
 
 /**
@@ -57,6 +58,7 @@ export async function seedAdminPhones(db: Db, pairs: readonly AdminPhone[]): Pro
           continue;
         }
         await db.update(guests).set({ phone, updatedAt: new Date() }).where(eq(guests.id, guest.id));
+        await syncPrimaryContactColumn(db, guest.id, 'phone', phone, { skipUniquenessForGuestId: guest.id });
         result.updated += 1;
       }
       continue;

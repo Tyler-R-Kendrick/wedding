@@ -3,7 +3,7 @@ import { index, jsonb, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
 export const SOCIAL_PROVIDERS = ['google', 'facebook'] as const;
 export type SocialProvider = (typeof SOCIAL_PROVIDERS)[number];
 
-export const SOCIAL_REVIEW_REASONS = ['no_match', 'ambiguous', 'not_sent', 'blocked'] as const;
+export const SOCIAL_REVIEW_REASONS = ['no_match', 'ambiguous', 'not_sent', 'blocked', 'email_name_conflict'] as const;
 export type SocialReviewReason = (typeof SOCIAL_REVIEW_REASONS)[number];
 
 export const SOCIAL_REVIEW_STATUSES = ['open', 'linked', 'dismissed'] as const;

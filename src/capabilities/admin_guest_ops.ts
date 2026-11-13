@@ -7,6 +7,7 @@ import { err, ok } from '@/contracts/result';
 import { appServices } from '@/capabilities/context';
 import { adminRoles, GUEST_KINDS, guestAccessBindings, guests, households, INVITATION_STATUSES, invitations, socialAuthReviews, type GuestRow } from '@/db/schema';
 import { GUEST_CSV_COLUMNS, GUEST_CSV_OPTIONAL_COLUMNS, parseGuestCsv, toCsv } from '@/domain/guests/csv';
+import { contactsToViews, listGuestContactsForGuests, replaceGuestContacts, type GuestContactInput } from '@/domain/guests/contacts';
 import { deleteGuest, getGuest, guestDisplayName, listGuests, mergeGuests, upsertGuest } from '@/domain/guests/repo';
 import { deleteHousehold, findHouseholdByName, getHousehold, listHouseholds, upsertHousehold } from '@/domain/households/repo';
 import { activeBindingsForGuests, getAuthUser, rebindIdentity, resetIdentity } from '@/domain/identity/bindings';
@@ -67,12 +68,30 @@ const guestOut = z.object({
   claimedAt: z.string().nullable(),
   claimMethod: z.string().nullable(),
   updatedAt: z.string(),
+  contacts: z.array(
+    z.object({
+      id: z.string(),
+      kind: z.enum(['email', 'phone']),
+      value: z.string(),
+      label: z.string().nullable(),
+      isPrimary: z.boolean(),
+    }),
+  ),
+  alternateNames: z.array(z.string()),
+});
+
+const guestContactIn = z.object({
+  kind: z.enum(['email', 'phone']),
+  value: z.string().min(1).max(254),
+  label: z.string().max(64).nullable().optional(),
+  isPrimary: z.boolean().optional(),
 });
 
 async function decorate(db: Parameters<typeof listGuests>[0], rows: GuestRow[]) {
   const hh = await db.select({ id: households.id, name: households.name }).from(households).where(rows.length ? inArray(households.id, [...new Set(rows.map((r) => r.householdId))]) : eq(households.id, ''));
   const names = new Map(hh.map((h) => [h.id, h.name]));
   const bindings = await activeBindingsForGuests(db, rows.map((r) => r.id));
+  const contactMap = await listGuestContactsForGuests(db, rows.map((r) => r.id));
   return rows.map((g) => {
     const b = bindings.get(g.id);
     return {
@@ -95,6 +114,8 @@ async function decorate(db: Parameters<typeof listGuests>[0], rows: GuestRow[]) 
       claimedAt: b?.claimedAt.toISOString() ?? null,
       claimMethod: b?.claimMethod ?? null,
       updatedAt: g.updatedAt.toISOString(),
+      contacts: contactsToViews(contactMap.get(g.id) ?? []),
+      alternateNames: g.alternateNames ?? [],
     };
   });
 }
@@ -139,14 +160,31 @@ export const adminUpsertGuest = defineCapability({
     plusOneOfGuestId: z.string().max(64).nullable().optional(),
     managedByGuestId: z.string().max(64).nullable().optional(),
     notes: z.string().max(2000).nullable().optional(),
+    alternateNames: z.array(z.string().max(120)).optional(),
+    contacts: z.array(guestContactIn).optional(),
   }),
   output: z.object({ guest: guestOut }),
   async handler(ctx, i) {
     const guard = adminOf(ctx);
     if (!guard.ok) return err(guard.error);
     const { db } = appServices(ctx);
-    const r = await upsertGuest(db, i);
+  const { contacts, ...guestInput } = i;
+  const r = await upsertGuest(db, {
+      ...guestInput,
+      email: contacts !== undefined ? undefined : guestInput.email,
+      phone: contacts !== undefined ? undefined : guestInput.phone,
+    });
     if (!r.ok) return err(r.error);
+    let row = r.value;
+    if (contacts !== undefined) {
+      const merged: GuestContactInput[] = [...contacts];
+      const replace = await replaceGuestContacts(db, row.id, merged);
+      if (!replace.ok) return err(replace.error);
+      const refreshed = await getGuest(db, row.id);
+      if (refreshed) row = refreshed;
+    } else if (guestInput.email !== undefined || guestInput.phone !== undefined) {
+      // upsertGuest already synced primary contacts from email/phone columns.
+    }
     await ctx.audit.record({ actor: actorOf(ctx), action: 'content.updated', target: { type: 'guest', id: r.value.id }, outcome: 'success', requestId: ctx.requestId, metadata: { created: !i.id } });
     return ok({ data: { guest: (await decorate(db, [r.value]))[0]! }, sources: [] });
   },
@@ -475,7 +513,7 @@ export const adminImportGuestsCsv = defineCapability({
   ...adminBase,
   name: 'admin_import_guests_csv',
   title: 'Admin: import guests from CSV',
-  description: 'Imports households and guests from a CSV (columns: household, first_name, last_name, email, kind, is_minor, manager, plus_one_of, event_keys, notes, address_*). Existing rows match by household + name. Admin only.',
+  description: 'Imports households and guests from a CSV (columns: household, first_name, last_name, email, phone, kind, is_minor, manager, plus_one_of, event_keys, notes, address_*). Use semicolons in email or phone for more than one. Existing rows match by household + name. Admin only.',
   kind: 'action',
   confirmation: 'inline',
   idempotent: true,
@@ -515,8 +553,20 @@ export const adminImportGuestsCsv = defineCapability({
       }
       const existingRows = await db.select().from(guests).where(and(eq(guests.householdId, hid), eq(guests.firstName, r.firstName), eq(guests.lastName, r.lastName), isNull(guests.mergedIntoGuestId))).limit(1);
       const existing = existingRows[0];
-      const up = await upsertGuest(db, { id: existing?.id, householdId: hid, firstName: r.firstName, lastName: r.lastName, email: r.email ?? existing?.email ?? null, kind: r.kind, isMinor: r.isMinor, notes: r.notes ?? existing?.notes ?? null, managedByGuestId: existing?.managedByGuestId ?? null, plusOneOfGuestId: existing?.plusOneOfGuestId ?? null });
+      const up = await upsertGuest(db, { id: existing?.id, householdId: hid, firstName: r.firstName, lastName: r.lastName, email: r.email ?? existing?.email ?? null, phone: r.phone ?? existing?.phone ?? null, kind: r.kind, isMinor: r.isMinor, notes: r.notes ?? existing?.notes ?? null, managedByGuestId: existing?.managedByGuestId ?? null, plusOneOfGuestId: existing?.plusOneOfGuestId ?? null });
       if (!up.ok) { summary.issues.push({ line: r.line, message: up.error.message }); summary.skipped++; continue; }
+      const contactRows: GuestContactInput[] = [
+        ...r.emails.map((value, idx) => ({ kind: 'email' as const, value, isPrimary: idx === 0 })),
+        ...r.phones.map((value, idx) => ({ kind: 'phone' as const, value, isPrimary: idx === 0 })),
+      ];
+      if (contactRows.length > 0) {
+        const synced = await replaceGuestContacts(db, up.value.id, contactRows);
+        if (!synced.ok) {
+          summary.issues.push({ line: r.line, message: synced.error.message });
+          summary.skipped++;
+          continue;
+        }
+      }
       if (existing) summary.guestsUpdated++;
       else summary.guestsCreated++;
       byName.set(`${hid}:${[r.firstName, r.lastName].filter(Boolean).join(' ').toLowerCase()}`, up.value.id);
@@ -576,7 +626,7 @@ export const adminExportGuestsCsv = defineCapability({
       const h = byId.get(g.householdId);
       const a = h?.mailingAddress ?? {};
       return [
-        h?.name ?? '', g.firstName, g.lastName, g.email ?? '', g.kind, g.isMinor ? 'yes' : 'no', h?.managerGuestId === g.id ? 'yes' : '', g.plusOneOfGuestId ? (nameOf.get(g.plusOneOfGuestId) ?? '') : '', (invs.get(g.householdId)?.eventKeys ?? []).join(';'),
+        h?.name ?? '', g.firstName, g.lastName, g.email ?? '', g.phone ?? '', g.kind, g.isMinor ? 'yes' : 'no', h?.managerGuestId === g.id ? 'yes' : '', g.plusOneOfGuestId ? (nameOf.get(g.plusOneOfGuestId) ?? '') : '', (invs.get(g.householdId)?.eventKeys ?? []).join(';'),
         bindings.has(g.id) ? 'yes' : 'no',
         ...(includeNotes ? [g.notes ?? ''] : []),
         ...(includeAddress ? [a.line1 ?? '', a.line2 ?? '', a.city ?? '', a.region ?? '', a.postalCode ?? '', a.country ?? ''] : []),

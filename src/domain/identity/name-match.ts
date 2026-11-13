@@ -143,26 +143,94 @@ export function parseGuestRecord(firstName: string, lastName: string, alternateN
   return { given: [...given], family: [...family], tokens: primary.tokens };
 }
 
-/** True when every family token from `a` appears in `b`'s family set (maiden/hyphen tolerant). */
+/** First significant given token (middle names ignored for the core comparison). */
+function coreGiven(p: ParsedPersonName): string {
+  if (p.given.length) return p.given[0]!;
+  return p.tokens[0] ?? '';
+}
+
+/** Last significant family token (maiden / hyphen tokens still in family set). */
+function coreFamily(p: ParsedPersonName): string {
+  if (p.family.length) return p.family[p.family.length - 1]!;
+  if (p.tokens.length > 1) return p.tokens[p.tokens.length - 1]!;
+  return '';
+}
+
+function expandCore(token: string): string[] {
+  return token ? expandNicknames([token]) : [];
+}
+
+/** True when core family tokens overlap (maiden/hyphen tolerant). */
 function familyMatches(a: ParsedPersonName, b: ParsedPersonName): boolean {
-  if (a.family.length === 0 && b.family.length === 0) return true;
-  const aTokens = new Set([...a.family, ...a.tokens]);
-  const bTokens = new Set([...b.family, ...b.tokens]);
-  for (const f of aTokens) if (bTokens.has(f)) return true;
-  for (const f of bTokens) if (aTokens.has(f)) return true;
+  const af = coreFamily(a);
+  const bf = coreFamily(b);
+  if (!af && !bf) return true;
+  if (!af || !bf) {
+    const aTokens = new Set([...a.family, ...a.tokens]);
+    const bTokens = new Set([...b.family, ...b.tokens]);
+    for (const f of aTokens) if (bTokens.has(f)) return true;
+    return false;
+  }
+  const aSet = new Set([...expandCore(af), ...a.family, ...a.tokens]);
+  const bSet = new Set([...expandCore(bf), ...b.family, ...b.tokens]);
+  if (aSet.has(bf) || bSet.has(af)) return true;
+  for (const f of a.family) if (bSet.has(f)) return true;
+  for (const f of b.family) if (aSet.has(f)) return true;
   return false;
 }
 
-/** True when at least one given token overlaps after nickname expansion. */
+/** True when core given tokens overlap after nickname expansion (middle names ignored). */
 function givenMatches(a: ParsedPersonName, b: ParsedPersonName): boolean {
-  if (a.given.length === 0 && b.given.length === 0) return a.tokens.length > 0 && b.tokens.some((t) => a.tokens.includes(t) || b.tokens.includes(t));
-  return a.given.some((g) => b.given.includes(g));
+  const ag = coreGiven(a);
+  const bg = coreGiven(b);
+  if (!ag || !bg) return a.tokens.length > 0 && b.tokens.some((t) => a.tokens.includes(t) || b.tokens.includes(t));
+  const aExpanded = new Set(expandCore(ag));
+  const bExpanded = new Set(expandCore(bg));
+  for (const g of aExpanded) if (bExpanded.has(g)) return true;
+  return false;
+}
+
+const FUZZY_MAX_EDIT = 1;
+
+function editDistance(a: string, b: string): number {
+  if (a === b) return 0;
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+  const row = new Array<number>(b.length + 1);
+  for (let j = 0; j <= b.length; j++) row[j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    let prev = row[0]!;
+    row[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      const tmp = row[j]!;
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      row[j] = Math.min(row[j - 1]! + 1, row[j]! + 1, prev + cost);
+      prev = tmp;
+    }
+  }
+  return row[b.length]!;
+}
+
+function fuzzyNameMatch(profile: ProviderProfileName, guest: { firstName: string; lastName: string; alternateNames?: readonly string[] }): boolean {
+  const a = parseProviderProfile(profile);
+  const b = parseGuestRecord(guest.firstName, guest.lastName, guest.alternateNames ?? []);
+  const ag = coreGiven(a);
+  const bg = coreGiven(b);
+  const af = coreFamily(a);
+  const bf = coreFamily(b);
+  if (!ag || !bg) return false;
+  if (editDistance(ag, bg) > FUZZY_MAX_EDIT) return false;
+  if (af && bf && editDistance(af, bf) > FUZZY_MAX_EDIT) return false;
+  if ((af && !bf) || (!af && bf)) return false;
+  return true;
 }
 
 /** Whether a provider profile matches a guest's printed / alias names. */
 export function namesMatch(profile: ProviderProfileName, guest: { firstName: string; lastName: string; alternateNames?: readonly string[] }): boolean {
   const a = parseProviderProfile(profile);
   const b = parseGuestRecord(guest.firstName, guest.lastName, guest.alternateNames ?? []);
+  // A provider name with only a given token must not match a guest with a distinct family name (social false-positive guard).
+  if (a.family.length === 0 && coreFamily(b).length > 0) return false;
   if (!givenMatches(a, b)) return false;
   return familyMatches(a, b);
 }
@@ -174,8 +242,11 @@ export function matchGuestsByName<T extends { id: string; firstName: string; las
   profile: ProviderProfileName,
   candidates: readonly T[],
 ): { confidence: NameMatchConfidence; matches: T[] } {
-  const matches = candidates.filter((g) => namesMatch(profile, { ...g, alternateNames: g.alternateNames ?? [] }));
-  if (matches.length === 0) return { confidence: 'none', matches: [] };
-  if (matches.length === 1) return { confidence: 'one', matches };
-  return { confidence: 'ambiguous', matches };
+  const exact = candidates.filter((g) => namesMatch(profile, { ...g, alternateNames: g.alternateNames ?? [] }));
+  if (exact.length === 1) return { confidence: 'one', matches: exact };
+  if (exact.length > 1) return { confidence: 'ambiguous', matches: exact };
+  const fuzzy = candidates.filter((g) => fuzzyNameMatch(profile, { ...g, alternateNames: g.alternateNames ?? [] }));
+  if (fuzzy.length === 1) return { confidence: 'one', matches: fuzzy };
+  if (fuzzy.length > 1) return { confidence: 'ambiguous', matches: fuzzy };
+  return { confidence: 'none', matches: [] };
 }

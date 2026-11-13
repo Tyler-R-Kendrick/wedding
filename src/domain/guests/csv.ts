@@ -55,7 +55,7 @@ export function toCsv(rows: readonly (readonly unknown[])[]): string {
 }
 
 /** Column contract for imports and exports (order matters for exports; imports match by header). */
-export const GUEST_CSV_COLUMNS = ['household', 'first_name', 'last_name', 'email', 'kind', 'is_minor', 'manager', 'plus_one_of', 'event_keys'] as const;
+export const GUEST_CSV_COLUMNS = ['household', 'first_name', 'last_name', 'email', 'phone', 'kind', 'is_minor', 'manager', 'plus_one_of', 'event_keys'] as const;
 export const GUEST_CSV_OPTIONAL_COLUMNS = ['notes', 'address_line1', 'address_line2', 'address_city', 'address_region', 'address_postal_code', 'address_country'] as const;
 
 export interface GuestCsvRecord {
@@ -63,6 +63,10 @@ export interface GuestCsvRecord {
   firstName: string;
   lastName: string;
   email: string | null;
+  /** Every address from the email column (semicolon-separated); first is primary. */
+  emails: string[];
+  phone: string | null;
+  phones: string[];
   kind: 'adult' | 'child' | 'plus_one';
   isMinor: boolean;
   /** "yes" marks this row as the household manager. */
@@ -109,11 +113,24 @@ export function parseGuestCsv(text: string): { records: (GuestCsvRecord & { line
       issues.push({ line, message: `Unknown kind "${kindRaw}" (adult, child, plus_one).` });
       return;
     }
-    const email = col('email', row).toLowerCase() || null;
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      issues.push({ line, message: 'Invalid email address.' });
-      return;
+    const emailRaw = col('email', row);
+    const emails = emailRaw
+      .split(';')
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
+    for (const e of emails) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) {
+        issues.push({ line, message: `Invalid email address "${e}".` });
+        return;
+      }
     }
+    const email = emails[0] ?? null;
+    const phoneRaw = col('phone', row);
+    const phones = phoneRaw
+      .split(';')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const phone = phones[0] ?? null;
     const address = {
       line1: col('address_line1', row) || undefined,
       line2: col('address_line2', row) || undefined,
@@ -128,6 +145,9 @@ export function parseGuestCsv(text: string): { records: (GuestCsvRecord & { line
       firstName,
       lastName: col('last_name', row),
       email,
+      emails,
+      phone,
+      phones,
       kind,
       isMinor: kind === 'child' || truthy(col('is_minor', row)),
       manager: truthy(col('manager', row)),

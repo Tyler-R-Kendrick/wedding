@@ -1,7 +1,8 @@
-import { and, eq, isNull, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import type { Principal } from '@/contracts/principal';
 import type { Db } from '@/db/client';
-import { authUsers, guests } from '@/db/schema';
+import { authUsers } from '@/db/schema';
+import { findGuestsByEmail } from '@/domain/guests/repo';
 import { isPreviewPersonaGuestId } from './preview-personas';
 
 /**
@@ -17,13 +18,8 @@ export async function previewViewerFirstName(db: Db, principal: Principal): Prom
   if (!principal.viewedBy.previewRole && !isPreviewPersonaGuestId(principal.guestId)) return null;
   const [account] = await db.select({ email: authUsers.email, name: authUsers.name }).from(authUsers).where(eq(authUsers.id, String(principal.viewedBy.adminId))).limit(1);
   if (!account) return null;
-  const [self] = account.email
-    ? await db
-        .select({ firstName: guests.firstName })
-        .from(guests)
-        .where(and(sql`lower(${guests.email}) = ${account.email.toLowerCase()}`, isNull(guests.mergedIntoGuestId)))
-        .limit(1)
-    : [];
+  const matches = account.email ? await findGuestsByEmail(db, account.email) : [];
+  const self = matches[0];
   const first = self?.firstName?.trim() || firstWord(account.name);
   return first || null;
 }

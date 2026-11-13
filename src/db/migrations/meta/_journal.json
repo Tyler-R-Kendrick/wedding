@@ -169,6 +169,13 @@
       "when": 1794505052253,
       "tag": "0024_quiet_cannonball",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1794600000000,
+      "tag": "0025_guest_contacts",
+      "breakpoints": true
     }
   ]
 }
