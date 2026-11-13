@@ -65,6 +65,7 @@ Start URLs (linked from the sign-in page):
   - Case-insensitive exact match on the normalized address → admin session, redirect to `/admin` (or a safe `next`).
 - On first verified admin match, link the provider subject to that auth user for later sign-ins.
 - Console administrators must have a valid email on their `admin_roles` row (enforced in the schema and admin UI).
+- **Administrator also on the guest list (A-11):** verified social sign-in always takes the **admin path** (console redirect, not the guest portal). To preview the guest experience, use **Browse as a guest** on `/admin/guests` (`admin_browse_as_guest` in `src/capabilities/identity/browse_as_guest.ts`) — never a second social bind for the same person.
 
 ### Guests
 

@@ -25,6 +25,27 @@ describe('social sign-in', () => {
     sink = { setCookies: [] };
   });
 
+  it('S-13: ambiguous social name match queues review without session', async () => {
+    const db = await getDb();
+    const audit = await getAuditSink();
+    const a = await upsertGuest(db, { householdId: f.households.ruiz, firstName: 'Michael', lastName: 'Smith', email: null });
+    const b = await upsertGuest(db, { householdId: f.households.ruiz, firstName: 'Michael', lastName: 'Smith', email: null });
+    if (!a.ok || !b.ok) throw new Error('guests');
+    const r = await completeSocialSignIn(db, sink, {
+      provider: 'google',
+      profile: { providerAccountId: `g-s13-${Date.now()}`, givenName: 'Mike', familyName: 'Smith' },
+      accessToken: 't',
+      next: null,
+      ipHash: 'iphash',
+      requestId: 'req-s13',
+      audit,
+    });
+    expect(r.ok).toBe(false);
+    expect(sink.setCookies).toHaveLength(0);
+    const reviews = await db.select().from(socialAuthReviews).where(eq(socialAuthReviews.reason, 'ambiguous'));
+    expect(reviews.length).toBeGreaterThan(0);
+  });
+
   it('U-01 X-06 X-07: unknown social names fail with no session cookie; review queued', async () => {
     const db = await getDb();
     const audit = await getAuditSink();
@@ -208,7 +229,7 @@ describe('social sign-in', () => {
     expect(reviews.length).toBeGreaterThan(0);
   });
 
-  it('X-07 A-12: ambiguous social attempt opens review; admin can link guest', async () => {
+  it('X-07: ambiguous social attempt opens review; admin can link guest', async () => {
     const db = await getDb();
     const audit = await getAuditSink();
     const linkTarget = await upsertGuest(db, {
@@ -306,6 +327,48 @@ describe('social sign-in', () => {
     });
     expect(second.ok).toBe(false);
     expect(sink.setCookies).toHaveLength(0);
+  });
+
+  it('A-12: second provider links via admin after social review', async () => {
+    const db = await getDb();
+    const audit = await getAuditSink();
+    const providerAccountId = `fb-a12-review-${Date.now()}`;
+    const linkTarget = await upsertGuest(db, { householdId: f.households.ruiz, firstName: 'Second', lastName: 'Provider', email: null });
+    if (!linkTarget.ok) throw linkTarget.error;
+    await completeSocialSignIn(db, sink, {
+      provider: 'facebook',
+      profile: { providerAccountId, givenName: 'Mystery', familyName: 'Linker' },
+      accessToken: 't',
+      next: null,
+      ipHash: 'iphash',
+      requestId: 'req-a12',
+      audit,
+    });
+    const review = (await db.select().from(socialAuthReviews).where(eq(socialAuthReviews.providerAccountId, providerAccountId)))[0];
+    expect(review?.status).toBe('open');
+    const { adminLinkSocialReview } = await import('@/domain/identity/social/complete');
+    const linked = await adminLinkSocialReview(db, {
+      reviewId: review!.id,
+      guestId: linkTarget.value.id,
+      actor: { kind: 'system', component: 'test' },
+      requestId: 'req-a12-link',
+      audit,
+    });
+    expect(linked.ok).toBe(true);
+    sink = { setCookies: [] };
+    const again = await completeSocialSignIn(db, sink, {
+      provider: 'facebook',
+      profile: { providerAccountId, givenName: 'Renamed', familyName: 'Later' },
+      accessToken: 't2',
+      next: '/guests',
+      ipHash: 'iphash2',
+      requestId: 'req-a12-2',
+      audit,
+    });
+    expect(again.ok).toBe(true);
+    const rows = await db.select().from(authAccounts).where(eq(authAccounts.accountId, providerAccountId));
+    expect(rows).toHaveLength(1);
+    expect(sink.setCookies.some((c) => c.includes('session_token'))).toBe(true);
   });
 
   it('A-09 X-04 X-05: linked provider account signs in again without re-matching', async () => {

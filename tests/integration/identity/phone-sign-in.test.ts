@@ -109,14 +109,21 @@ describe('phone sign-in', () => {
     expectErr(await call('verify_phone_otp', { challenge: sent.data.challenge, code: '000000' }), 'validation');
   });
 
-  it('T-04: phone verify failures share validation and rate_limited codes with email OTP', async () => {
+  it('T-04: wrong phone code returns validation; phone send hits rate_limited like email OTP', async () => {
     await seed('ph6');
-    const sent = expectOk(await call<RequestPhoneOtpResult>('request_phone_otp', { phone: '+15550998877' }));
-    for (let i = 0; i < 6; i++) {
-      await call('verify_phone_otp', { challenge: sent.data.challenge, code: String(300000 + i) });
+    const phone = '+15550998877';
+    const sent = expectOk(await call<RequestPhoneOtpResult>('request_phone_otp', { phone }));
+    const first = await call('verify_phone_otp', { challenge: sent.data.challenge, code: '000001' });
+    expect(first.ok).toBe(false);
+    if (!first.ok) expect(first.error.code).toBe('validation');
+    let sawRateLimited = false;
+    for (let i = 0; i < 25; i++) {
+      const r = await call<RequestPhoneOtpResult>('request_phone_otp', { phone });
+      if (!r.ok && r.error.code === 'rate_limited') {
+        sawRateLimited = true;
+        break;
+      }
     }
-    const last = await call('verify_phone_otp', { challenge: sent.data.challenge, code: '000000' });
-    expect(last.ok).toBe(false);
-    if (!last.ok) expect(['validation', 'rate_limited']).toContain(last.error.code);
+    expect(sawRateLimited).toBe(true);
   });
 });

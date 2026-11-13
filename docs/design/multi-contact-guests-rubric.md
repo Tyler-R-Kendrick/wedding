@@ -127,7 +127,7 @@ Harnesses without CLI quota on this VM use **Cursor Task** reviewers on distinct
 | A-09 | Provider already linked | Sign-in without re-match | success | social linked account |
 | A-10 | Admin email + on guest list | **Admin first** → `/admin` | admin session | social admin google |
 | A-11 | Admin also guest | Admin path wins; browse-as for guest view | docs | social-auth.md |
-| A-12 | Second provider same guest | link account | success | integration link providers |
+| A-12 | Second provider via admin review | `adminLinkSocialReview` then sign-in | success | `social-sign-in.test.ts` A-12 |
 
 ### Social — OAuth transport (X)
 

@@ -89,6 +89,18 @@ describe('guest contacts (C, E)', { timeout: 30_000 }, () => {
     expect(isEmailShape(normalizeEmail(puny))).toBe(true);
   });
 
+  it('A-15: skipUniquenessForGuestId syncs legacy primary column without cross-guest steal', async () => {
+    const db = await getDb();
+    const hh = requireOk(await upsertHousehold(db, { name: `A15 ${Date.now()}` }));
+    const email = `legacy-a15+${Date.now()}@example.test`;
+    const g = requireOk(await upsertGuest(db, { householdId: hh.id, firstName: 'Legacy', lastName: 'Column', email }));
+    const resync = await syncPrimaryContactColumn(db, g.id, 'email', email, { skipUniquenessForGuestId: g.id });
+    expect(resync.ok).toBe(true);
+    const [row] = await db.select({ email: guests.email }).from(guests).where(eq(guests.id, g.id));
+    expect(row?.email).toBe(email);
+    await deleteGuest(db, g.id);
+  });
+
   it('C-05: delete guest cascades contact rows', async () => {
     const db = await getDb();
     const hh = requireOk(await upsertHousehold(db, { name: `Cascade ${Date.now()}` }));

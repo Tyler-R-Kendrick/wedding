@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { ERROR_COPY } from '@/app/(auth)/_lib/errors';
 import { SAVE_THE_DATE_COPY } from '@/app/(auth)/_lib/guest-auth-copy';
@@ -21,12 +22,11 @@ describe('session & UX rubric (U)', () => {
     }
   });
 
-  it('U-04: sign-in failure path is a valid guest route at mobile widths (smoke)', () => {
-    expect(GUEST_SIGN_IN_FAIL_PATH.startsWith('/sign-in')).toBe(true);
-    expect(GUEST_SIGN_IN_FAIL_PATH.length).toBeLessThan(64);
-  });
-
-  it('X-01: OAuth user denial maps to the same neutral save-the-date path', () => {
+  it('U-04: sign-in failure path is mobile-first auth shell (390px contract)', () => {
+    const kit = readFileSync('src/app/(auth)/_components/kit.tsx', 'utf8');
     expect(GUEST_SIGN_IN_FAIL_PATH).toBe('/sign-in/save-the-date');
+    expect(GUEST_SIGN_IN_FAIL_PATH.startsWith('/sign-in')).toBe(true);
+    expect(kit).toMatch(/390px first/i);
+    expect(kit).toContain('auth-shell');
   });
 });
