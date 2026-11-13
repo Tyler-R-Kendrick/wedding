@@ -169,6 +169,13 @@
       "when": 1794505052253,
       "tag": "0024_quiet_cannonball",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1794584830961,
+      "tag": "0025_foamy_alex_wilder",
+      "breakpoints": true
     }
   ]
 }

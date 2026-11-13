@@ -116,8 +116,8 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1127.0",
     "@aws-sdk/s3-request-presigner": "^3.1127.0",
-    "@better-auth/drizzle-adapter": "^1.7.7",
-    "@better-auth/passkey": "^1.7.2",
+    "@better-auth/drizzle-adapter": "^1.7.22",
+    "@better-auth/passkey": "^1.7.22",
     "@browser-ai/core": "^3.0.3",
     "@electric-sql/pglite": "^0.5.8",
     "@electric-sql/pglite-pgvector": "^0.0.9",
