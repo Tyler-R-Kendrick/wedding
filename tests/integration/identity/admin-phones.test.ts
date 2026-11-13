@@ -51,6 +51,7 @@ describe('administrators’ phone numbers', () => {
     expect(await seedAdminPhones(db, pairs)).toEqual({ updated: 0, created: 0, unchanged: 1, failed: 0 });
     // Once per process and value: the same setting is not seeded twice.
     const first = ensureAdminPhones(db, `${f.emails.chidi}=+15552010004`);
+    await first;
     expect(ensureAdminPhones(db, `${f.emails.chidi}=+15552010004`)).toBe(first);
   });
 });
