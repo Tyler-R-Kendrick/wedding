@@ -2,7 +2,23 @@
 
 ## Device login (in progress)
 
-**Grok Build** — open https://accounts.x.ai/oauth2/device?user_code=**TCG7-FFXP** and confirm code **TCG7-FFXP** (tmux session `grok-device-login-3`, started 2026-11-13). Do not share unless you initiated this login.
+**Grok Build** — open https://accounts.x.ai/oauth2/device?user_code=**G6KV-SPEN** and confirm code **G6KV-SPEN** (tmux `grok-device-login-4`, 2026-11-13). Use this **or** drop Tyler's shared auth files into `/cursor/stores/bot/uploads/` (see Round 4); do not share the code unless you started this login.
+
+---
+
+## Tyler shared auth install (Round 4)
+
+**Procedure run (no secrets logged):** copy `grok-auth.json` → `~/.grok/auth.json` (mode 600); copy `kimi-config.toml` → `~/.kimi-code/config.toml` and credentials JSON → `~/.kimi-code/credentials/` (and mirrored under `~/.kimi/` when present); delete source copies under `uploads/` after install.
+
+**Result (2026-11-13):** **Source files not on this VM.** Searched `/cursor/stores/bot/uploads`, `/agent/repos/wedding/uploads`, and agent store paths — expected filenames absent after 2+ minutes (background watcher still polls `bot/uploads` + wedding `uploads/`). **No auth files were committed, printed, or written into the repo.**
+
+### Auth verification (names only)
+
+| Harness | Probe | Result |
+|---------|-------|--------|
+| **Grok Build** | `grok whoami` | **fail** (not authed; device code active above) |
+| **Grok Build** | `grok -p 'say ok' -m grok-4.6` | **not run** (depends on auth) |
+| **Kimi Code** | `kimi -p 'say ok' -m …` | **fail** (no `~/.kimi-code/config.toml`) |
 
 ---
 
@@ -87,6 +103,24 @@ Identical rubric: `docs/design/multi-contact-guests-rubric.md` (**96 rows**, gat
 
 ---
 
+## Round 4 — multi-harness (Grok + Kimi + Cursor)
+
+**Rubric:** identical **96 rows**, gates **G1–G6** (`multi-contact-guests-rubric.md`).
+
+| Harness | Kind | Matrix | G1–G6 | Notes |
+|---------|------|--------|-------|-------|
+| **Grok Build** | CLI (`grok-4.6`) | — | — | **Auth fail** — Tyler auth files not mounted; device login pending |
+| **Kimi Code** | CLI (target **K3.1** when authed) | — | — | **Auth fail** — no config/credentials installed |
+| **Cursor** | Cursor harness (Sonnet reviewer, tests + spot-check) | **96/96** | all pass | `matrix-row-coverage` + rubric integration specs green locally |
+
+**Deductions / fixes:** none required for rubric rows after Round 3; Cursor Round 4 re-run confirms **96/96**.
+
+**Round 4 verdict:** **Incomplete multi-harness** — only **Cursor** scored. **Grok** and **Kimi** blocked until auth files appear in `bot/uploads/` or device/OAuth completes. Then re-run Round 4b with the same rubric until both CLIs report **96/96** and all gates pass.
+
+**Do not merge** without Tyler approval.
+
+---
+
 ## CI
 
-PR **#129**, branch `cursor/guest-multi-contacts-b3d2`, head **`01d9ea0d`**: GitHub **design-quality** (lint, typecheck, unit, integration, build, Playwright smoke) and **stages** workflow — **all green** (2026-11-13).
+PR **#129**, branch `cursor/guest-multi-contacts-b3d2`. Last fully green head **`425f70d5`**; new commits re-trigger checks (see GitHub).
