@@ -89,4 +89,4 @@ Identical rubric: `docs/design/multi-contact-guests-rubric.md` (**96 rows**, gat
 
 ## CI
 
-PR **#129**, branch `cursor/guest-multi-contacts-b3d2`. Playwright claim/e2e green on prior head `7450872`; re-run after this council commit.
+PR **#129**, branch `cursor/guest-multi-contacts-b3d2`, head **`01d9ea0d`**: GitHub **design-quality** (lint, typecheck, unit, integration, build, Playwright smoke) and **stages** workflow — **all green** (2026-11-13).
