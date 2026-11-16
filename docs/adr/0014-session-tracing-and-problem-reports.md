@@ -129,9 +129,9 @@ audit rows and idempotency keys, and "the database is down" is a report this mus
 - Nothing is required to run the site: both variables unset, the PostHog code is never loaded.
 
 **Negative / costs.**
-- **A third party now processes visit data.** Masked and anonymous, but it is a change of posture
-  from "no third-party telemetry". The privacy page says so when tracing is on
-  (`PrivacyDocument.tsx`); that copy is a draft for the couple to edit.
+- **A third party now processes visit data.** Masked, and identified only by an opaque account id,
+  but it is a change of posture from "no third-party telemetry". The privacy page says so when
+  tracing is on (`PrivacyDocument.tsx`).
 - **Two new dependencies** (`posthog-js`, `posthog-node`), against "packages are fixed". Chosen by
   the owner in this ADR.
 - **Proxy limits.** A Vercel function caps a request at 4.5 MB where PostHog asks for 64 MB. A
@@ -144,20 +144,31 @@ audit rows and idempotency keys, and "the database is down" is a report this mus
 - **The pass outlives a removed owner by up to thirty days**, for filing rate-limited reports only.
   Rotating `BETTER_AUTH_SECRET` voids every pass.
 
+**Decided on the couple's behalf (2026-11-16).** Tyler handed the remaining choices to the agent
+that built this. They are recorded here so they can be changed knowingly.
+
+- **PostHog is on in production by default.** The production deployment of this repository uses the
+  site's own project (organisation `wedding`, project `Wedding`) without any variable being set
+  (`src/lib/observe/site-project.ts`). The project token is public by design. Previews, local
+  checkouts, tests and forks stay off. The agents here cannot write the hosting settings, and this
+  removes the need to.
+- **The stricter settings stay.** All replay text masked, no location, and no concierge question or
+  answer text sent. Each is one setting in `src/lib/observe/posthog-client.ts` or `scrub-event.ts`.
+- **Linear without a key.** A Linear API key can only be made by someone signed in to Linear. So
+  every report is also recorded in PostHog as a `problem_report` event, and a daily scheduled task
+  files the ones no tracker took into the `wedding` team. `LINEAR_API_KEY` remains the faster route
+  (at once, with the screenshot) and needs nothing else changed.
+- **The privacy page copy ships as written.** It appears only when tracing is on.
+
 **Follow-ups.**
-- PostHog: decided 2026-11-16, a separate organisation for the wedding (the existing one belongs
-  to another product and its plan allows one project). It exists and is configured: organisation
-  `wedding`, project `Wedding`. `TODO(Tyler & Sara)`: set the two variables in Vercel (see the ops
-  guide). Nothing is sent from a deployment until then.
-- Tracker: decided 2026-11-16, Linear, in the `wedding` team (`WED`, the provider's default).
-  `TODO(Tyler & Sara)`: `LINEAR_API_KEY` in Vercel, and Triage switched on for the team.
 - Source maps. Stack traces in PostHog are minified until `@posthog/nextjs-config` uploads them. It
   supports Turbopack on Next ≥ 15.4.1 (read from the package), but it fails the build when an upload
   fails, and it could not be exercised without a personal API key, so it is not wired in.
-- `TODO(Tyler & Sara)`: confirm the three places this merge is stricter than #135 (text masking in
-  replays, no location, no concierge text). Each is one setting in
-  `src/lib/observe/posthog-client.ts` or `scrub-event.ts`.
-- Server logs still live in Vercel's runtime log. A log drain to PostHog needs Vercel Pro.
+- Triage is off for the Linear team, so reports land in Backlog.
+- The daily sync depends on a scheduled task in one Claude account. If that account's Linear or
+  PostHog connection lapses, reports stop reaching Linear (they are still recorded, emailed and
+  logged). `LINEAR_API_KEY` removes that dependency.
+- Server logs still live in Vercel's runtime log beyond what `src/lib/posthog-logs.ts` exports.
 
 ## Alternatives considered
 

@@ -11,6 +11,11 @@ import { reportBody, reportText, reportTitle, type FeedbackReport } from './repo
  *   3. an email to the couple, when the tracker could not take it now;
  *   4. the server log, always, with the whole report in it whenever rung 1 was not reached.
  *
+ * Beside the ladder, every report is recorded in PostHog as a `problem_report` event when PostHog
+ * is connected. That copy is what makes Linear work with no API key at all: a scheduled task reads
+ * the reports no tracker took and files them into the `wedding` team (docs/ops/observability.md).
+ * With a key, rung 1 files at once and the task finds nothing to do.
+ *
  * Every dependency is loaded inside a try: the provider registry, the queue, the database, the
  * mailer, even the logger. A report is most likely to be filed when something is broken, so none of
  * them is allowed to be the reason it is lost.
@@ -21,9 +26,12 @@ const MAX_QUEUED_SCREENSHOT_BYTES = 1_000_000;
 
 export type Delivery =
   | { via: 'tracker'; key: string; url: string; screenshotStored: boolean }
-  | { via: 'queue'; emailed: boolean }
-  | { via: 'email' }
-  | { via: 'log' };
+  | { via: 'queue'; emailed: boolean; recorded: boolean }
+  | { via: 'email'; recorded: boolean }
+  | { via: 'log'; recorded: boolean };
+
+/** The event a report is recorded as. The scheduled sync reads these. */
+export const PROBLEM_REPORT_EVENT = 'problem_report';
 
 export interface DeliverDeps {
   tracker?: IssueTrackerProvider;
@@ -32,6 +40,8 @@ export interface DeliverDeps {
   /** Returns true when at least one owner was written to. */
   email?: (subject: string, text: string) => Promise<boolean>;
   log?: (level: 'info' | 'warn' | 'error', fields: Record<string, unknown>, message: string) => void;
+  /** Returns true when the report was recorded in PostHog. */
+  record?: (properties: Record<string, unknown>) => Promise<boolean>;
 }
 
 export interface QueuedReport extends Record<string, unknown> {
@@ -92,11 +102,39 @@ function defaultLog(level: 'info' | 'warn' | 'error', fields: Record<string, unk
   );
 }
 
+async function defaultRecord(properties: Record<string, unknown>): Promise<boolean> {
+  try {
+    const { sendServerEvent } = await import('@/lib/observe/posthog-server');
+    return await sendServerEvent(PROBLEM_REPORT_EVENT, `owner:${String(properties.reporter)}`, properties);
+  } catch {
+    return false;
+  }
+}
+
+/** The report as the event's properties: everything the sync needs to file it, and no screenshot. */
+function recordOf(report: FeedbackReport, issue: NewIssue, filed: Delivery['via'], extra: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    ref: report.ref,
+    kind: report.kind,
+    title: issue.title,
+    body: issue.body.slice(0, 30_000),
+    page: report.page.path,
+    reporter: report.reporter.adminId,
+    filed,
+    has_screenshot: !!report.screenshot,
+    build: report.diagnostics?.build,
+    // Ties the report to the session it was made in, so it shows on that session's replay.
+    ...(report.diagnostics?.links?.session ? { $session_id: report.diagnostics.links.session } : {}),
+    ...extra,
+  };
+}
+
 const within = <T>(work: Promise<T>, ms: number, fallback: T): Promise<T> =>
   Promise.race([work, new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms).unref?.())]).catch(() => fallback);
 
 export async function deliverReport(report: FeedbackReport, deps: DeliverDeps = {}): Promise<Delivery> {
   const log = deps.log ?? defaultLog;
+  const record = deps.record ?? defaultRecord;
   const about = { ref: report.ref, kind: report.kind, page: report.page.path, reporter: report.reporter.adminId, via: report.reporter.via, build: report.diagnostics?.build, visit: report.diagnostics?.session };
   const issue = reportIssue(report);
   const tracker = deps.tracker ?? (await loadTracker());
@@ -106,7 +144,9 @@ export async function deliverReport(report: FeedbackReport, deps: DeliverDeps = 
     const created = await within(tracker.createIssue(issue), 20_000, null);
     if (created?.ok) {
       const screenshotStored = created.value.attachmentsStored > 0;
-      log('info', { feedback: about, tracker: tracker.name, issue: created.value.key }, 'problem report filed');
+      // Recorded too, with where it went: the sync leaves a report that already has an issue alone.
+      const recorded = await within(record(recordOf(report, issue, 'tracker', { issue_key: created.value.key, issue_url: created.value.url })), 4_000, false);
+      log('info', { feedback: about, tracker: tracker.name, issue: created.value.key, recorded }, 'problem report filed');
       return { via: 'tracker', key: created.value.key, url: created.value.url, screenshotStored };
     }
     failure = created ? `${tracker.name}: ${created.error.class}` : `${tracker.name}: timeout`;
@@ -132,11 +172,14 @@ export async function deliverReport(report: FeedbackReport, deps: DeliverDeps = 
     : false;
   const emailed = await within((deps.email ?? defaultEmail)(`[Site feedback] ${report.ref}: ${issue.title}`.slice(0, 180), reportText(report)), 12_000, false);
 
+  const via: Delivery['via'] = queued ? 'queue' : emailed ? 'email' : 'log';
+  const recorded = await within(record(recordOf(report, issue, via)), 4_000, false);
+
   // The whole report goes in the log whenever the tracker did not take it: the last copy.
-  log(queued || emailed ? 'warn' : 'error', { feedback: about, failure, queued, emailed, report: reportText(report) }, 'problem report not filed in the tracker');
-  if (queued) return { via: 'queue', emailed };
-  if (emailed) return { via: 'email' };
-  return { via: 'log' };
+  log(queued || emailed || recorded ? 'warn' : 'error', { feedback: about, failure, queued, emailed, recorded, report: reportText(report) }, 'problem report not filed in the tracker');
+  if (queued) return { via: 'queue', emailed, recorded };
+  if (emailed) return { via: 'email', recorded };
+  return { via: 'log', recorded };
 }
 
 /** The retry job's work: file a queued report. Throws on failure so the queue backs off and retries. */

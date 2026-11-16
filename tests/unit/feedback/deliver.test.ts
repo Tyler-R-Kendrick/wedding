@@ -20,6 +20,7 @@ function rig(overrides: Partial<DeliverDeps> = {}) {
   const logs: { level: string; fields: Record<string, unknown>; message: string }[] = [];
   const queued: QueuedReport[] = [];
   const emails: { subject: string; text: string }[] = [];
+  const records: Record<string, unknown>[] = [];
   const deps: DeliverDeps = {
     enqueue: async (payload) => {
       queued.push(payload);
@@ -30,9 +31,13 @@ function rig(overrides: Partial<DeliverDeps> = {}) {
       return true;
     },
     log: (level, fields, message) => logs.push({ level, fields, message }),
+    record: async (properties) => {
+      records.push(properties);
+      return true;
+    },
     ...overrides,
   };
-  return { deps, logs, queued, emails };
+  return { deps, logs, queued, emails, records };
 }
 
 describe('delivering a report', () => {
@@ -55,7 +60,7 @@ describe('delivering a report', () => {
     tracker.failNext = 1;
     const { deps, logs, queued, emails } = rig({ tracker });
     const delivery = await deliverReport(report({ screenshot: { filename: 'fb.png', contentType: 'image/png', bytes: PNG } }), deps);
-    expect(delivery).toEqual({ via: 'queue', emailed: true });
+    expect(delivery).toEqual({ via: 'queue', emailed: true, recorded: true });
     expect(queued[0]).toMatchObject({ ref: 'FB-ABC123', title: 'Bug: The seating page is blank.', screenshot: { filename: 'fb.png', contentType: 'image/png' } });
     expect(emails[0]!.subject).toBe('[Site feedback] FB-ABC123: Bug: The seating page is blank.');
     expect(logs[0]).toMatchObject({ level: 'warn', fields: { failure: 'mock: server', queued: true, emailed: true } });
@@ -64,7 +69,7 @@ describe('delivering a report', () => {
 
   it('does not queue a report no retry could file: emails it instead', async () => {
     const { deps, queued, emails } = rig({ tracker: new UnconfiguredIssueTracker() });
-    expect(await deliverReport(report(), deps)).toEqual({ via: 'email' });
+    expect(await deliverReport(report(), deps)).toEqual({ via: 'email', recorded: true });
     expect(queued).toHaveLength(0);
     expect(emails).toHaveLength(1);
   });
@@ -72,8 +77,8 @@ describe('delivering a report', () => {
   it('leaves the whole report in the log when nothing else would take it', async () => {
     const tracker = new MockIssueTracker();
     tracker.failNext = 1;
-    const { deps, logs } = rig({ tracker, enqueue: async () => false, email: async () => false });
-    expect(await deliverReport(report(), deps)).toEqual({ via: 'log' });
+    const { deps, logs } = rig({ tracker, enqueue: async () => false, email: async () => false, record: async () => false });
+    expect(await deliverReport(report(), deps)).toEqual({ via: 'log', recorded: false });
     expect(logs[0]!.level).toBe('error');
     expect(String(logs[0]!.fields.report)).toContain('FB-ABC123');
   });
@@ -86,8 +91,9 @@ describe('delivering a report', () => {
       tracker: { ...new MockIssueTracker(), kind: 'issue-tracker', capabilities: { createIssue: true, attachments: true }, createIssue: boom, validateConfig: () => ({ ok: true, missing: [], warnings: [] }), health: boom, name: 'broken', mode: 'live' },
       enqueue: boom,
       email: boom,
+      record: boom,
     });
-    expect(await deliverReport(report(), deps)).toEqual({ via: 'log' });
+    expect(await deliverReport(report(), deps)).toEqual({ via: 'log', recorded: false });
     expect(logs[0]!.fields.failure).toBe('broken: timeout');
   });
 
@@ -99,6 +105,37 @@ describe('delivering a report', () => {
     big.set(PNG);
     await deliverReport(report({ screenshot: { filename: 'fb.png', contentType: 'image/png', bytes: big } }), deps);
     expect(queued[0]!.screenshot).toBeUndefined();
+  });
+});
+
+describe('the PostHog record of a report', () => {
+  it('carries everything the sync needs to file it, tied to the session it was made in', async () => {
+    const { deps, records } = rig({ tracker: new UnconfiguredIssueTracker() });
+    const withSession = report({
+      screenshot: { filename: 'fb.png', contentType: 'image/png', bytes: PNG },
+      diagnostics: { session: 'abcdef0123456789', build: 'a1b2c3d', path: '/admin/seating', title: 'Seating', viewport: '', userAgent: '', language: '', timeZone: '', online: true, startedAt: 0, capturedAt: 0, errors: [], breadcrumbs: [], links: { session: '0195c1a2-aaaa-7bbb-8ccc-1234567890ab' } },
+    });
+    await deliverReport(withSession, deps);
+    expect(records).toHaveLength(1);
+    expect(records[0]).toMatchObject({ ref: 'FB-ABC123', kind: 'bug', title: 'Bug: The seating page is blank.', page: '/admin/seating', reporter: 'ADMIN_01HZX', filed: 'email', has_screenshot: true, build: 'a1b2c3d', $session_id: '0195c1a2-aaaa-7bbb-8ccc-1234567890ab' });
+    expect(String(records[0]!.body)).toContain('> The seating page is blank.');
+    // No picture in an event: the bytes stay out.
+    expect(JSON.stringify(records[0])).not.toContain('iVBOR');
+    expect(records[0]!.issue_key).toBeUndefined();
+  });
+
+  it('says where a filed report went, so the sync leaves it alone', async () => {
+    const { deps, records } = rig({ tracker: new MockIssueTracker() });
+    await deliverReport(report(), deps);
+    expect(records[0]).toMatchObject({ filed: 'tracker', issue_key: 'MOCK-1', issue_url: 'https://tracker.invalid/MOCK-1' });
+  });
+
+  it('counts as somewhere the report is kept: a recorded report is not an error in the log', async () => {
+    const tracker = new MockIssueTracker();
+    tracker.failNext = 1;
+    const { deps, logs } = rig({ tracker, enqueue: async () => false, email: async () => false });
+    expect(await deliverReport(report(), deps)).toEqual({ via: 'log', recorded: true });
+    expect(logs[0]!.level).toBe('warn');
   });
 });
 

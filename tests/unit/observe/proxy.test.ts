@@ -142,3 +142,35 @@ describe('what leaves the browser in an event', () => {
     expect(scrubEvent(null, ORIGIN)).toBeNull();
   });
 });
+
+describe('which builds use the site’s own PostHog project', () => {
+  const production = { VERCEL_ENV: 'production', VERCEL_GIT_REPO_OWNER: 'Tyler-R-Kendrick', VERCEL_GIT_REPO_SLUG: 'wedding' };
+
+  it('is the production deployment of this repository, and nothing else', async () => {
+    const { deployedPostHog, SITE_POSTHOG } = await import('@/lib/observe/site-project');
+    expect(deployedPostHog(production)).toEqual({ token: SITE_POSTHOG.token, host: 'https://us.i.posthog.com' });
+    // The platform may not say which repository; the production domain is enough.
+    expect(deployedPostHog({ VERCEL_ENV: 'production', VERCEL_PROJECT_PRODUCTION_URL: 'kendrick.wedding' })).not.toBeNull();
+    for (const env of [
+      {},
+      { NODE_ENV: 'production' },
+      { ...production, VERCEL_ENV: 'preview' },
+      { ...production, VERCEL_ENV: 'development' },
+      { VERCEL_ENV: 'production', VERCEL_GIT_REPO_OWNER: 'someone-else', VERCEL_GIT_REPO_SLUG: 'wedding' },
+      { VERCEL_ENV: 'production', VERCEL_PROJECT_PRODUCTION_URL: 'kendrick.wedding.example.com' },
+    ]) expect(deployedPostHog(env), JSON.stringify(env)).toBeNull();
+  });
+
+  it('never overrides a value set by hand, including one that switches tracing off', async () => {
+    const { deployedPostHog } = await import('@/lib/observe/site-project');
+    expect(deployedPostHog({ ...production, NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN: 'phc_someOtherProjectTokenEntirely000000' })).toBeNull();
+    expect(deployedPostHog({ ...production, NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN: 'off' })).toBeNull();
+    // And `off` is not a token, so the code that reads it does nothing.
+    expect(observeConfig('off', undefined)).toBeNull();
+  });
+
+  it('is a token the rest of the code accepts', async () => {
+    const { SITE_POSTHOG } = await import('@/lib/observe/site-project');
+    expect(observeConfig(SITE_POSTHOG.token, SITE_POSTHOG.host)).toMatchObject({ region: 'us' });
+  });
+});

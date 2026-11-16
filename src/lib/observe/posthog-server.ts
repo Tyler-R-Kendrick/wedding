@@ -40,3 +40,22 @@ export async function sendServerException(error: unknown, headers: Record<string
     // PostHog being unreachable is not this request's problem.
   }
 }
+
+/**
+ * One named event from the server, sent at once. Used for the couple's problem reports
+ * (src/lib/feedback/deliver.ts), which are recorded here so that a report always has a durable,
+ * queryable copy even when no issue tracker could take it. Returns whether it was sent.
+ */
+export async function sendServerEvent(event: string, distinctId: string, properties: Record<string, unknown>): Promise<boolean> {
+  try {
+    const posthog = await client();
+    if (!posthog) return false;
+    const sending = posthog.captureImmediate({ distinctId, event, properties: { ...properties, $process_person_profile: false } }).then(
+      () => true,
+      () => false,
+    );
+    return await Promise.race([sending, new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 3_000).unref?.())]);
+  } catch {
+    return false;
+  }
+}

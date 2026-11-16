@@ -2,6 +2,7 @@ import type { NextConfig } from 'next';
 import adventureSlugRedirects from './src/content/adventure-slug-redirects.json';
 import { REDIRECTS } from './src/lib/site-redirects';
 import { rightsHeaders } from './src/lib/rights';
+import { deployedPostHog } from './src/lib/observe/site-project';
 import { securityHeaders, stageFramingHeaders } from './src/lib/security-headers';
 import { STAGE_OR_HUB_HOST_VALUE, stageHeaders, stageRewrites } from './src/lib/stage-hosting';
 import { DEFAULT_THEME } from './src/themes/registry';
@@ -56,6 +57,8 @@ const STATIC_PUBLIC_REWRITES = STATIC_PUBLIC_ROUTES.map((source) => ({ source, m
 /** `missing` for a header rule that must not apply on a design-stage host (src/lib/stage-hosting.ts). */
 const NOT_A_STAGE_HOST = [{ type: 'host' as const, value: STAGE_OR_HUB_HOST_VALUE }];
 
+const sitePostHog = deployedPostHog(process.env);
+
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   // The browser suites run against `next dev` with NODE_ENV=test and compile every route in one
@@ -66,7 +69,13 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   // The deployed commit, for the browser: every error report and problem report says which build
   // it came from (src/lib/diagnostics/recorder.ts). Empty off Vercel, where the recorder says `dev`.
-  env: { NEXT_PUBLIC_BUILD_SHA: (process.env.VERCEL_GIT_COMMIT_SHA ?? '').slice(0, 7), ...(deploymentSiteUrl ? { NEXT_PUBLIC_SITE_URL: deploymentSiteUrl } : {}) },
+  env: {
+    NEXT_PUBLIC_BUILD_SHA: (process.env.VERCEL_GIT_COMMIT_SHA ?? '').slice(0, 7),
+    ...(deploymentSiteUrl ? { NEXT_PUBLIC_SITE_URL: deploymentSiteUrl } : {}),
+    // Session tracing on this site's own production deployment, with nothing to set by hand
+    // (src/lib/observe/site-project.ts). Anywhere else, only when the variables are set.
+    ...(sitePostHog ? { NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN: sitePostHog.token, NEXT_PUBLIC_POSTHOG_HOST: sitePostHog.host } : {}),
+  },
   // Loaded by Node at run time, not compiled into the server bundle. The first list has to be
   // (native, wasm or worker-based packages). The second is there for the dev and test servers'
   // memory only: every route reaches these libraries, and compiling them again for each route and

@@ -18,26 +18,24 @@ section.
 
 ## Session tracing (PostHog)
 
-Off until `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN` is set. With it, every visitor's session is recorded:
-replay, exceptions from the browser and the server, web vitals, network timing and the console.
+**On in production, with nothing to set.** The production deployment of this repository uses the
+site's own PostHog project by default (`src/lib/observe/site-project.ts`): organisation `wedding`,
+project `Wedding` (id 739544, US cloud). A PostHog project token is public, so it lives in the code.
+Every visitor's session is recorded: replay, exceptions from the browser and the server, web vitals,
+network timing and the console.
 
-### Switching it on
+Everywhere else (a preview, a local checkout, a test run, a fork) tracing is off unless the two
+variables are set:
 
-1. **The PostHog project exists.** Organisation `wedding`, project `Wedding` (id 739544, US
-   cloud), created 2026-11-16 and kept apart from the couple's other PostHog organisation, which
-   belongs to another product.
-2. **Its settings are done**: session replay on, client IP data discarded, exception and web-vitals
-   capture on, and replay masking set to the same rule as the code (all text and inputs masked;
-   pictures, video and `data-private` blocked). The code applies these as well, so neither side
-   depends on the other.
-3. Set the two variables in Vercel (Production and Preview), or install PostHog's Vercel
-   integration, which writes the same names:
-   - `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN`: the project token, `phc_…` (PostHog: project settings)
-   - `NEXT_PUBLIC_POSTHOG_HOST`: `https://us.i.posthog.com`
+- `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN`: a project token, `phc_…`. Set to `off` to switch tracing
+  off in production too.
+- `NEXT_PUBLIC_POSTHOG_HOST`: `https://us.i.posthog.com` or `https://eu.i.posthog.com`.
 
-   `TODO(Tyler & Sara)`: this is the one step left. The agents working in this repository cannot
-   write Vercel environment variables.
-4. Redeploy. Both are inlined at build time.
+Both are inlined at build time, so a change needs a redeploy.
+
+The project's own settings match the code: session replay on, client IP data discarded, exception
+and web-vitals capture on, and replay masking set to the same rule (all text and inputs masked;
+pictures, video and `data-private` blocked). Neither side depends on the other.
 
 ### Checking it
 
@@ -93,26 +91,40 @@ the shortcut works on that device for thirty days, including on a day sign-in do
 
 ### Where reports go
 
-Set one of these in Vercel:
+**Linear, in the `wedding` team (`WED`), with nothing to set.** Two routes lead there:
 
-| Tracker | Variables | Notes |
+| Route | When | How fast |
 |---|---|---|
-| **Linear** (chosen 2026-11-16) | `LINEAR_API_KEY`; optional `LINEAR_TEAM` (default `WED`) and `LINEAR_PROJECT_ID` | Private. Filed into the `wedding` team (`WED`). Takes the screenshot. `TODO(Tyler & Sara)`: add a Linear personal API key to Vercel as `LINEAR_API_KEY`; that is the only setting missing. |
-| **GitHub Issues** | `GITHUB_ISSUES_TOKEN` (fine-grained, Issues: read and write, one repository), `GITHUB_ISSUES_REPO` (`owner/name`) | Cannot store a screenshot. **This repository is public**, so point it at a private one; a public repository is refused unless `GITHUB_ISSUES_ALLOW_PUBLIC=1`. |
+| **The daily sync** (the default) | Always, while PostHog is on | Within a day |
+| **Directly** | When `LINEAR_API_KEY` is set (a Linear personal API key) | At once, with the screenshot |
+
+How the sync works: every report is recorded in PostHog as a `problem_report` event, with the whole
+issue text. Once a day a scheduled Claude task ("Wedding site: file problem reports in Linear")
+reads the reports that no tracker took and creates an issue for each in `WED`, checking first that
+the report's reference (`FB-…`) is not already there. It uses the Linear and PostHog connections of
+the Claude account that set it up, so the site itself holds no Linear credential. A screenshot does
+not travel this way; the replay link does.
+
+With a key set, the report is filed during the request, the screenshot is stored in Linear, and the
+sync finds nothing to do. `/admin/providers` shows which tracker is live.
 
 Reports arrive in the team's **Triage** inbox when triage is switched on for it (Linear: team
-settings, Triage), which is where unscoped work is accepted, prioritised or declined. The `wedding`
-team had triage off when it was created, so until it is switched on reports land in **Backlog**.
+settings, Triage). The team was created with triage off, so until then they land in **Backlog**.
 
-With neither tracker set, a report is emailed to `ADMIN_EMAILS` and written to the log. `/admin/providers`
-shows which tracker is live, and `/api/health` (as an admin) reports its mode.
+GitHub Issues is also supported (`GITHUB_ISSUES_TOKEN`, `GITHUB_ISSUES_REPO`), but it cannot store a
+screenshot and **this repository is public**, so a public repository is refused unless
+`GITHUB_ISSUES_ALLOW_PUBLIC=1`.
+
+To stop the sync: delete the scheduled task in Claude (it is listed with the account's scheduled
+tasks). Reports are then still recorded, emailed where the mailer is configured, and logged.
 
 ### When things are broken
 
 | Situation | What happens |
 |---|---|
-| The tracker does not answer | "Saved, will be filed in the next few minutes": queued as a `feedback.deliver` job (see `/admin/jobs`) and emailed to you both. |
-| Tracker, queue and email all fail | Written to the server log; you are shown a reference (`FB-…`) to quote. Search the log for it. |
+| No tracker is configured (the default) | "Saved. It will be on the to-do list in Linear within a day": recorded in PostHog for the daily sync, and emailed to you both where the mailer is configured. |
+| A configured tracker does not answer | Queued as a `feedback.deliver` job (see `/admin/jobs`) and retried by the cron; also recorded for the daily sync, which skips it once it is filed. |
+| Tracker, queue, email and PostHog all fail | Written to the server log; you are shown a reference (`FB-…`) to quote. Search the log for it. |
 | The site cannot be reached at all | The report is kept on your device and sent the next time a page loads there. "Copy the report" gives you the text to send another way. |
 | The page's own script is broken | The shortcut opens a plain form at `/api/feedback` instead of the dialog. |
 | Sign-in or the database is down | Still works, on a device you have used as an owner in the last thirty days. |

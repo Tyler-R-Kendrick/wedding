@@ -53,15 +53,16 @@ export async function GET(request: Request): Promise<Response> {
 
 /** What the reporter is told, by how far down the ladder the report went. */
 function outcome(delivery: Delivery): string {
+  if (delivery.via === 'tracker') return `Filed as ${delivery.key}.`;
+  // Recorded in PostHog: the daily sync files it in Linear whatever else happened.
+  const later = delivery.recorded ? ' It will be on the to-do list in Linear within a day.' : '';
   switch (delivery.via) {
-    case 'tracker':
-      return `Filed as ${delivery.key}.`;
     case 'queue':
-      return 'The to-do list did not answer just now, so the report is saved and will be filed in the next few minutes.';
+      return delivery.recorded ? `Saved.${later}` : 'The to-do list did not answer just now, so the report is saved and will be filed in the next few minutes.';
     case 'email':
-      return 'The to-do list could not take it, so the report was emailed to you both instead.';
+      return `Saved, and emailed to you both.${later}`;
     case 'log':
-      return 'The to-do list and email could not take it. The report is saved in the site’s log under this reference; tell Tyler the reference.';
+      return delivery.recorded ? `Saved.${later}` : 'The to-do list and email could not take it. The report is saved in the site’s log under this reference; tell Tyler the reference.';
   }
 }
 
