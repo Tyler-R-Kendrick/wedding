@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { isSafeReturnPath } from '@/domain/identity/routes';
 import { Actions, AuthShell, Notice } from '../../_components/kit';
 import { SAVE_THE_DATE_COPY } from '../../_lib/guest-auth-copy';
+import { SignInHelp } from '../../_components/SignInHelp';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Save the date', robots: { index: false, follow: false } };
@@ -19,7 +20,9 @@ export default async function SaveTheDatePage({ searchParams }: { searchParams: 
   return (
     <AuthShell eyebrow={SAVE_THE_DATE_COPY.eyebrow} title={SAVE_THE_DATE_COPY.title} lede={<p>{SAVE_THE_DATE_COPY.body}</p>}>
       <Notice tone="info" title="What to do next">
-        <p>{SAVE_THE_DATE_COPY.tryOther}</p>
+        <p>
+          {SAVE_THE_DATE_COPY.tryAgain} <SignInHelp lead="Still having trouble, or want to use a different one?" />
+        </p>
       </Notice>
       <Actions>
         <Link className="auth-button auth-button-primary" href={signInHref}>

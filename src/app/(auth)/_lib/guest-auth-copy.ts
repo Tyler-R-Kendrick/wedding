@@ -10,8 +10,8 @@ export { GUEST_SAVE_THE_DATE_PATH };
 export const SAVE_THE_DATE_COPY = {
   eyebrow: 'Thanks for stopping by',
   title: 'Keep an eye on your save-the-date',
-  body: "We're so glad you visited. Your save-the-date will arrive with everything you need to celebrate with us.",
-  tryOther: 'You can try signing in with a different email or mobile number anytime — we show everyone the same sign-in options.',
+  body: 'We’re so glad you’re here. Signing in works with the email address or mobile number we collected for your save-the-date.',
+  tryAgain: 'Try signing in again with that email address or mobile number.',
 } as const;
 
 /** Shown on /sign-in for every visitor (known or unknown). */
