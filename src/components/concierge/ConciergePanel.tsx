@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { decodeEvents, type ConciergeEvent } from "@/ai/events";
 import type { AnswerLink, AnswerSource, ConfirmationCard } from "@/ai/types";
+import { newId } from "@/contracts/ids";
 import { askOnDevice, isSupported, prepare, probe, warm } from "@/lib/ai/browser-model";
 import { publicEnv } from "@/lib/env.public";
 import { CHAT_ROUTE, MAX_DRAFT_CHARS, MAX_QUESTION_CHARS, MAX_TRANSCRIPT_TURNS } from "./constants";
@@ -267,6 +268,9 @@ export default function ConciergePanel({
           draft = await askOnDevice(userTurn, {
             systemPrompt: system,
             signal: AbortSignal.timeout(ON_DEVICE_TIMEOUT_MS),
+            ...(sessionId.current
+              ? { observability: { sessionId: sessionId.current, traceId: newId() } }
+              : {}),
           });
           // Only claim verification when there is something to verify. On a device that returned
           // nothing this would be indistinguishable, to a screen reader, from having succeeded.

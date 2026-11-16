@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import posthog from 'posthog-js';
 import { useEffect } from 'react';
 
 /**
@@ -11,6 +12,7 @@ import { useEffect } from 'react';
  */
 export default function AdminError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
+    posthog.captureException(error);
     console.error(error);
   }, [error]);
   return (

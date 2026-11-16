@@ -68,7 +68,9 @@ function useSession(
     known === undefined
       ? null
       : {
+          resolved: false,
           signedIn: known,
+          distinctId: null,
           admin: known && knownAdmin,
           viewAs: null,
           viewRole: null,

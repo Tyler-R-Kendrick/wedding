@@ -1,10 +1,17 @@
 'use client';
 
+import posthog from 'posthog-js';
+import { useEffect } from 'react';
+
 /**
  * The last resort: the root layout itself failed, so nothing of the site's design is loaded and this
  * page brings its own <html>. Plain on purpose — system type at a readable size, one way back.
  */
 export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  useEffect(() => {
+    posthog.captureException(error);
+  }, [error]);
+
   return (
     <html lang="en">
       <body style={{ margin: 0, padding: '2rem 1rem', fontSize: '1.0625rem', lineHeight: 1.5, maxWidth: '36rem' }}>

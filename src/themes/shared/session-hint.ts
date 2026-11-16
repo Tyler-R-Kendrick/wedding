@@ -3,7 +3,11 @@
  * account menu (`AccountMenu`) and the preview band (`GuestViewBand`), so a page asks once.
  */
 export interface SessionHint {
+  /** Whether the session endpoint answered successfully (rather than falling back after a failed request). */
+  resolved: boolean;
   signedIn: boolean;
+  /** Opaque, immutable authenticated account id for analytics; never a guest name or email. */
+  distinctId: string | null;
   admin: boolean;
   /** An administrator browsing as a specific guest profile (legacy inspect flow). */
   viewAs: { name: string; household: string; readOnly: boolean } | null;
@@ -15,7 +19,7 @@ export interface SessionHint {
   portals: { label: string; href: string }[];
 }
 
-export const SIGNED_OUT: SessionHint = { signedIn: false, admin: false, viewAs: null, viewRole: null, viewing: false, portals: [] };
+export const SIGNED_OUT: SessionHint = { resolved: false, signedIn: false, distinctId: null, admin: false, viewAs: null, viewRole: null, viewing: false, portals: [] };
 
 let probe: Promise<SessionHint> | null = null;
 
@@ -53,13 +57,16 @@ export function sessionProbe(fresh = false): Promise<SessionHint> {
   const asked: Promise<SessionHint> = fetch('/api/session', { credentials: 'same-origin', cache: 'no-store', headers: { accept: 'application/json' } })
     .then(async (r) => {
       if (!r.ok) throw new Error(`session probe: ${r.status}`);
-      const body = (await r.json()) as { signedIn?: unknown; admin?: unknown; viewAs?: unknown; viewRole?: unknown; portals?: unknown };
+      const body = (await r.json()) as { signedIn?: unknown; distinctId?: unknown; admin?: unknown; viewAs?: unknown; viewRole?: unknown; portals?: unknown };
       const signedIn = body.signedIn === true;
+      const distinctId = signedIn && typeof body.distinctId === 'string' && body.distinctId.length > 0 ? body.distinctId : null;
       const viewAs = signedIn ? viewAsOf(body.viewAs) : null;
       const viewRole = signedIn ? viewRoleOf(body.viewRole) : null;
       const portals = signedIn ? portalsOf(body.portals) : [];
       return {
+        resolved: true,
         signedIn,
+        distinctId,
         admin: signedIn && body.admin === true,
         viewAs,
         viewRole,
