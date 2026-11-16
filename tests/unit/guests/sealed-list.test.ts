@@ -21,6 +21,8 @@ describe('the sealed guest list', () => {
     expect(a.publicKey).not.toContain(SECRET);
     expect(sealKeyFingerprint(a.publicKey)).toMatch(/^[0-9a-f]{16}$/);
     expect(() => sealKeyFromSecret('short')).toThrow();
+    // A secret a person might have typed derives no key: the public key would let anyone test guesses at it.
+    expect(() => sealKeyFromSecret('x'.repeat(31))).toThrow();
   });
 
   it('shows nothing of the list, and no two sealings are alike', () => {
@@ -43,6 +45,9 @@ describe('the sealed guest list', () => {
     expect(openGuestList({ ...sealed, iv: flip(sealed.iv) }, keys)).toEqual({ ok: false, reason: 'damaged' });
     expect(openGuestList({ ...sealed, epk: flip(sealed.epk) }, keys)).toEqual({ ok: false, reason: 'damaged' });
     expect(openGuestList({ ...sealed, ct: sealed.ct.slice(0, 10) }, keys)).toEqual({ ok: false, reason: 'damaged' });
+    // A tag cut down to a few bytes is refused outright, right or wrong: a short tag can be guessed.
+    const shortTag = Buffer.from(sealed.tag, 'base64url').subarray(0, 4).toString('base64url');
+    expect(openGuestList({ ...sealed, tag: shortTag }, keys)).toEqual({ ok: false, reason: 'damaged' });
     for (const junk of [null, undefined, {}, [], 'text', 7, { v: 2 }, { ...sealed, alg: 'none' }, { ...sealed, ct: 5 }]) expect(openGuestList(junk, keys)).toEqual({ ok: false, reason: 'not_sealed' });
   });
 

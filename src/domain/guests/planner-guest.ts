@@ -1,88 +1,47 @@
 import { eq, isNull } from 'drizzle-orm';
-import type { AuditSink } from '@/contracts/audit';
 import type { Db } from '@/db/client';
 import { guestAccessBindings, guests, invitations } from '@/db/schema';
-import { upsertGuest } from '@/domain/guests/repo';
-import { upsertHousehold } from '@/domain/households/repo';
 import { normalizeNamePart } from '@/domain/identity/name-match';
 import { invitationLifecycle } from '@/domain/identity/tokens';
-import { issueInvitation } from '@/domain/invitations/repo';
 
 /**
- * The wedding planner's guest sign-in.
+ * Whether the wedding planner can sign in as a guest.
  *
  * She is not on the couple's planning sheet, and she has to be able to see the site as a guest
- * does. This keeps that true on every production deploy, whatever a guest-list upload did: she has
- * a guest record, the names she may be signed in under online are on it, and her household has an
- * invitation marked as sent (which is what lets a guest sign in with Google or Facebook by name).
- * It only adds what is missing. An existing record of hers is never renamed, moved or re-issued.
+ * does. Her guest record is the couple's to keep (/admin/guests), like anyone's: a guest-list
+ * upload never removes, renames or moves it (src/domain/guests/sheet-sync.ts only adds), and this
+ * says, on every production deploy, whether it is still in place: that she has one record, that
+ * her household's invitation is marked sent (which is what lets a guest sign in with Google or
+ * Facebook by name), and whether she has signed in.
  *
- * Her name and her business are on the public site already (src/domain/contact/copy.ts); nothing
- * else about her is kept here.
+ * It reports and changes nothing. Her name is on the public site (src/domain/contact/copy.ts), so
+ * a record made here with its invitation marked sent would let anyone who read that page sign in
+ * under her name before she did; and a record put back on every deploy would undo the couple's
+ * own edits. Sign-in under her name works as it does for every guest: by a verified email on her
+ * record, or by her name as her Google or Facebook profile gives it, in any of the ways
+ * src/domain/identity/name-match.ts allows. A profile named only for her business matches nobody
+ * and goes to the couple's review list, where one approval links it.
  */
-export const PLANNER_GUEST = {
-  firstName: 'Michelle Elaine',
-  lastName: 'Sunder',
-  /** Her business, which a Google or Facebook profile may be named for instead of her. */
-  alternateNames: ['Bustle & Lace'],
-  household: 'Michelle Sunder',
-} as const;
+export const PLANNER_GUEST = { firstName: 'Michelle Elaine', lastName: 'Sunder' } as const;
 
 export interface PlannerGuestStatus {
-  /** Guest records that are hers. More than one means a name sign-in cannot tell them apart. */
+  /** Guest records that are hers. None: she cannot sign in. More than one: a name sign-in cannot tell them apart. */
   records: number;
   invitationSent: boolean;
   hasSignedIn: boolean;
-  /** What this run added, if anything. */
-  added: ('record' | 'names' | 'invitation')[];
 }
 
 const isHers = (g: { firstName: string; lastName: string }) => normalizeNamePart(g.lastName) === normalizeNamePart(PLANNER_GUEST.lastName) && normalizeNamePart(g.firstName).split(' ')[0] === normalizeNamePart(PLANNER_GUEST.firstName).split(' ')[0];
 
-async function usableSentInvitation(db: Db, householdId: string, now: Date): Promise<boolean> {
-  const rows = await db.select().from(invitations).where(eq(invitations.householdId, householdId));
-  return rows.some((i) => i.sentAt && ['active', 'claimed'].includes(invitationLifecycle(i, now)));
-}
-
-export async function plannerGuestStatus(db: Db, now: Date = new Date()): Promise<Omit<PlannerGuestStatus, 'added'>> {
+export async function plannerGuestStatus(db: Db, now: Date = new Date()): Promise<PlannerGuestStatus> {
   const hers = (await db.select().from(guests).where(isNull(guests.mergedIntoGuestId))).filter(isHers);
   let invitationSent = false;
   let hasSignedIn = false;
   for (const g of hers) {
-    if (await usableSentInvitation(db, g.householdId, now)) invitationSent = true;
+    const sent = await db.select().from(invitations).where(eq(invitations.householdId, g.householdId));
+    if (sent.some((i) => i.sentAt && ['active', 'claimed'].includes(invitationLifecycle(i, now)))) invitationSent = true;
     const bound = await db.select({ revokedAt: guestAccessBindings.revokedAt }).from(guestAccessBindings).where(eq(guestAccessBindings.guestId, g.id));
     if (bound.some((b) => !b.revokedAt)) hasSignedIn = true;
   }
   return { records: hers.length, invitationSent, hasSignedIn };
-}
-
-export async function ensurePlannerGuest(db: Db, deps: { audit: AuditSink; now?: Date }): Promise<PlannerGuestStatus> {
-  const now = deps.now ?? new Date();
-  const added: PlannerGuestStatus['added'] = [];
-  let hers = (await db.select().from(guests).where(isNull(guests.mergedIntoGuestId))).filter(isHers);
-  // Two records are the couple's to sort out (/admin/guests, Merge): adding to either would be a guess.
-  if (hers.length > 1) return { ...(await plannerGuestStatus(db, now)), added };
-  if (hers.length === 0) {
-    const home = await upsertHousehold(db, { name: PLANNER_GUEST.household });
-    if (!home.ok) throw new Error(home.error.message);
-    const made = await upsertGuest(db, { householdId: home.value.id, firstName: PLANNER_GUEST.firstName, lastName: PLANNER_GUEST.lastName, alternateNames: [...PLANNER_GUEST.alternateNames] });
-    if (!made.ok) throw new Error(made.error.message);
-    hers = [made.value];
-    added.push('record');
-  }
-  const her = hers[0]!;
-  const have = new Set(her.alternateNames.map((n) => normalizeNamePart(n)));
-  const missing = PLANNER_GUEST.alternateNames.filter((n) => !have.has(normalizeNamePart(n)));
-  if (missing.length) {
-    const named = await upsertGuest(db, { id: her.id, householdId: her.householdId, firstName: her.firstName, alternateNames: [...her.alternateNames, ...missing] });
-    if (!named.ok) throw new Error(named.error.message);
-    if (!added.includes('record')) added.push('names');
-  }
-  if (!(await usableSentInvitation(db, her.householdId, now))) {
-    const issued = await issueInvitation(db, { householdId: her.householdId, eventKeys: [], issuedBy: { kind: 'system', component: 'planner_guest' }, requestId: 'deploy:planner-guest', audit: deps.audit, now });
-    if (!issued.ok) throw new Error(issued.error.message);
-    await db.update(invitations).set({ sentAt: now }).where(eq(invitations.id, issued.value.invitation.id));
-    added.push('invitation');
-  }
-  return { ...(await plannerGuestStatus(db, now)), added };
 }

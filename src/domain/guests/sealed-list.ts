@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, createHash, createPrivateKey, createPublicKey, diffieHellman, generateKeyPairSync, hkdfSync, randomBytes, type KeyObject } from 'node:crypto';
+import { createCipheriv, createDecipheriv, createHash, createPrivateKey, createPublicKey, diffieHellman, generateKeyPairSync, hkdfSync, randomBytes, scryptSync, type KeyObject } from 'node:crypto';
 
 /**
  * The guest list, sealed so that only the production deployment can read it.
@@ -12,8 +12,16 @@ import { createCipheriv, createDecipheriv, createHash, createPrivateKey, createP
  *
  * X25519, HKDF-SHA256 and AES-256-GCM, all from node:crypto. A fresh key pair is made for every
  * sealing, so two sealings of the same list share nothing.
+ *
+ * The public key, and the sealed file beside it in a public repository, let anyone test a guess at
+ * the secret. So the key pair is derived through scrypt, which makes each guess cost tens of
+ * megabytes and a good fraction of a second, and a secret shorter than 32 characters derives no
+ * key at all. A secret made the way the docs say (32 random bytes) is far out of reach either way.
  */
-const INFO = 'kendrick.wedding guest-list seal v1';
+const INFO = 'kendrick.wedding guest-list seal v2';
+/** The shortest secret a sealing key is derived from. */
+export const SEAL_SECRET_MIN = 32;
+const SCRYPT = { N: 2 ** 16, r: 8, p: 1, maxmem: 160 * 1024 * 1024 } as const;
 const PKCS8_X25519 = Buffer.from('302e020100300506032b656e04220420', 'hex');
 const SPKI_X25519 = Buffer.from('302a300506032b656e032100', 'hex');
 
@@ -37,8 +45,8 @@ export const sealKeyFingerprint = (publicKey: string) => createHash('sha256').up
 
 /** The deployment's sealing key pair, from its auth secret. The same secret always gives the same pair. */
 export function sealKeyFromSecret(secret: string): { privateKey: KeyObject; publicKey: string } {
-  if (secret.length < 16) throw new Error('the secret is too short to derive a sealing key from');
-  const scalar = Buffer.from(hkdfSync('sha256', Buffer.from(secret, 'utf8'), Buffer.alloc(0), Buffer.from(INFO, 'utf8'), 32));
+  if (secret.length < SEAL_SECRET_MIN) throw new Error('the secret is too short to derive a sealing key from');
+  const scalar = scryptSync(Buffer.from(secret, 'utf8'), Buffer.from(INFO, 'utf8'), 32, SCRYPT);
   const privateKey = createPrivateKey({ key: Buffer.concat([PKCS8_X25519, scalar]), format: 'der', type: 'pkcs8' });
   return { privateKey, publicKey: b64(rawPublic(createPublicKey(privateKey))) };
 }
@@ -55,7 +63,7 @@ export function sealGuestList(plaintext: string, publicKey: string): SealedGuest
   const key = contentKey(diffieHellman({ privateKey: mine.privateKey, publicKey: publicFromRaw(recipient) }), epk, recipient);
   const iv = randomBytes(12);
   const to = sealKeyFingerprint(publicKey);
-  const cipher = createCipheriv('aes-256-gcm', key, iv);
+  const cipher = createCipheriv('aes-256-gcm', key, iv, { authTagLength: 16 });
   cipher.setAAD(header(to, b64(epk)));
   const ct = Buffer.concat([cipher.update(Buffer.from(plaintext, 'utf8')), cipher.final()]);
   return { v: 1, alg: 'x25519-hkdf-sha256-aes-256-gcm', to, epk: b64(epk), iv: b64(iv), tag: b64(cipher.getAuthTag()), ct: b64(ct) };
@@ -70,10 +78,14 @@ export function openGuestList(sealed: unknown, keys: { privateKey: KeyObject; pu
   if (s.to !== sealKeyFingerprint(keys.publicKey)) return { ok: false, reason: 'other_key' };
   try {
     const epk = raw(s.epk);
+    const iv = raw(s.iv);
+    const tag = raw(s.tag);
+    // A whole tag or none: a shortened one would make a forgery a matter of a few thousand tries.
+    if (epk.length !== 32 || iv.length !== 12 || tag.length !== 16) return { ok: false, reason: 'damaged' };
     const key = contentKey(diffieHellman({ privateKey: keys.privateKey, publicKey: publicFromRaw(epk) }), epk, raw(keys.publicKey));
-    const decipher = createDecipheriv('aes-256-gcm', key, raw(s.iv));
+    const decipher = createDecipheriv('aes-256-gcm', key, iv, { authTagLength: 16 });
     decipher.setAAD(header(s.to, s.epk));
-    decipher.setAuthTag(raw(s.tag));
+    decipher.setAuthTag(tag);
     return { ok: true, plaintext: Buffer.concat([decipher.update(raw(s.ct)), decipher.final()]).toString('utf8') };
   } catch {
     return { ok: false, reason: 'damaged' };

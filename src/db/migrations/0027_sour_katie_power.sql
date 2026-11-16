@@ -1,0 +1,1 @@
+ALTER TABLE "guest_sheet_copies" ADD COLUMN "upload_digest" text;

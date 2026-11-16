@@ -89,4 +89,35 @@ describe('the people on a line of the planning sheet', () => {
   it('an empty or meaningless line names nobody and throws nothing', () => {
     for (const name of ['', '   ', 'and', '&', ',', '...']) expect(line(name, 2).named, JSON.stringify(name)).toEqual([]);
   });
+
+  it('a title is not a name, and a word that stands for someone names nobody', () => {
+    expect(names('Dr. Ana Ruizdale', 1)).toEqual(['Ana|Ruizdale']);
+    // "Mr and Mrs Tom Bakewell": Tom, and a head counted. Never a guest called "Mrs Tom".
+    expect(names('Mr and Mrs Tom Bakewell', 2)).toEqual(['Tom|Bakewell']);
+    expect(line('Mr and Mrs Tom Bakewell', 2).unnamedAdults).toBe(1);
+    for (const written of ['Ana Ruizdale and Guest', 'Ana Ruizdale + 1', 'Ana Ruizdale & family', 'Ana Ruizdale and plus one']) expect(names(written, 2), written).toEqual(['Ana|Ruizdale']);
+    expect(line('Ana Ruizdale + 1', 1, 0, 1)).toMatchObject({ unnamedAdults: 0, unnamedPlusOnes: 1 });
+  });
+
+  it('a family’s name alone names nobody, and says so', () => {
+    for (const written of ['The Bakewell Family', 'Bakewell family', 'The Bakewells']) {
+      const l = line(written, 2);
+      expect(l.named, written).toEqual([]);
+      expect(l).toMatchObject({ unnamedAdults: 2, notes: ['not_a_given_name'] });
+    }
+    expect(line('The Bakewell Family', 2).householdName).toBe('The Bakewell Family');
+    // With a person in front of it, that person is named.
+    expect(names('Tom Bakewell family', 3)).toEqual(['Tom|Bakewell']);
+  });
+
+  it('a father and son keep what tells them apart', () => {
+    expect(names('Corwin Zarkov Sr.', 1)).toEqual(['Corwin|Zarkov Sr.']);
+    expect(names('Corwin Zarkov Jr', 1)).toEqual(['Corwin|Zarkov Jr']);
+    expect(names('Corwin Zarkov III and Dana Zarkov', 2)).toEqual(['Corwin|Zarkov III', 'Dana|Zarkov']);
+  });
+
+  it('a surname that is also a particle is a surname', () => {
+    expect(names('Linh Le', 1)).toEqual(['Linh|Le']);
+    expect(names('Minh Van and Thu Van', 2)).toEqual(['Minh|Van', 'Thu|Van']);
+  });
 });

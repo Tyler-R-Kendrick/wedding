@@ -10,19 +10,22 @@
  * How strongly a profile fits a guest is a tier (`matchRank`); the strongest tier that anyone
  * reaches decides, and only if exactly one guest reaches it:
  *
- *   0  the whole profile name is one of the guest's other names ("Bustle & Lace")
  *   1  their given name as listed, with their own surname or a surname among their other names
- *      (a maiden name), wherever it sits in the profile ("Jane Doe Smith")
+ *      (a maiden name) as the profile's surname; or the whole profile name is one of their other
+ *      names ("Bustle & Lace")
  *   2  a short form of their given name ("Mike" for Michael) with their own surname; or their
  *      given name as listed with the surname of another adult in their household: a couple on
  *      the list under two surnames, where either may go by the other's online, and a guest
  *      listed with no surname ("Neal Kendall and Tilly"), who is known by the household's
- *   3  a short form with the household's surname; or a middle name used as the given name, with
- *      their own surname
- *   4  one letter out in the given name and at most one in the surname (a typo), never on a
- *      short name
+ *   3  a short form with the household's surname; their own surname found only after the given
+ *      name, where a maiden name is often kept ("Jane Doe Smith"); a middle name used as the
+ *      given name; one of their other names as decoration around another name
+ *   4  a short form, with their surname only after the given name
+ *   5  one letter out in the surname (a slip), never on a short name
+ *   6  one letter out in the given name: offered to the couple, and never signed in, because one
+ *      letter is often another person (Frances and Francis)
  *
- * A profile with no surname at all never matches by tier 1 to 4: a given name alone is not a
+ * A profile with no surname at all never matches by its given name: a given name alone is not a
  * person. Nothing here reads an email address; `social/complete.ts` weighs that separately.
  */
 
@@ -275,7 +278,11 @@ export function tokenizeName(raw: string): string[] {
 
 /** Words of a surname that are not the surname: "Le Marchand", "van der Berg", "De La Cruz". */
 const PARTICLES = new Set(['le', 'la', 'de', 'del', 'della', 'di', 'da', 'du', 'des', 'van', 'von', 'der', 'den', 'ter', 'st', 'san', 'al', 'el', 'bin', 'ibn', 'mac', 'mc', 'o', 'and']);
-const weighty = (tokens: readonly string[]) => tokens.filter((t) => !PARTICLES.has(t) && t.length > 1);
+const weighty = (tokens: readonly string[]) => {
+  const kept = tokens.filter((t) => !PARTICLES.has(t) && t.length > 1);
+  // A surname that is only such a word is the surname ("Linh Le", "Minh Van").
+  return kept.length ? kept : tokens.filter((t) => t.length > 1);
+};
 
 /**
  * What a display name is once the decoration around it is gone: "Jane Doe | Acme Events",
@@ -283,26 +290,27 @@ const weighty = (tokens: readonly string[]) => tokens.filter((t) => !PARTICLES.h
  * could be, most likely first; the pieces cut away are kept as candidates of their own, since the
  * decoration is sometimes the name a guest is listed under (a business).
  */
-function displayCandidates(raw: string): string[] {
+function displayNames(raw: string): { heads: string[]; decor: string[] } {
   const text = raw.replace(EMOJI, ' ').replace(/\s+/g, ' ').trim();
-  if (!text) return [];
-  const out: string[] = [];
-  const add = (s: string) => {
+  if (!text) return { heads: [], decor: [] };
+  const heads: string[] = [];
+  const decor: string[] = [];
+  const add = (to: string[], s: string) => {
     const v = s.replace(/\s+/g, ' ').trim();
-    if (v && !out.includes(v)) out.push(v);
+    if (v && !heads.includes(v) && !decor.includes(v)) to.push(v);
   };
   const noBrackets = text.replace(/[([{][^)\]}]*[)\]}]/g, ' ');
   const pieces = noBrackets.split(/\s[|·•@/:]\s|\s[-–—]\s|\s[-–—]{2,}\s?/).map((s) => s.trim()).filter(Boolean);
   const head = pieces[0] ?? noBrackets;
   // "Doe, Jane" is the surname first; "Jane Doe, CPA" is a credential, already stripped as a suffix.
   const comma = /^([^,]+),\s*([^,]+)$/.exec(head);
-  if (comma && tokenizeName(comma[1]!).length >= 1 && tokenizeName(comma[2]!).length >= 1) add(`${comma[2]} ${comma[1]}`);
-  add(head);
-  for (const p of pieces.slice(1)) add(p);
-  for (const m of text.matchAll(/[([{]([^)\]}]*)[)\]}]/g)) add(m[1]!);
-  add(text);
-  return out;
+  if (comma && tokenizeName(comma[1]!).length >= 1 && tokenizeName(comma[2]!).length >= 1) add(heads, `${comma[2]} ${comma[1]}`);
+  add(heads, head);
+  for (const p of pieces.slice(1)) add(decor, p);
+  for (const m of text.matchAll(/[([{]([^)\]}]*)[)\]}]/g)) add(decor, m[1]!);
+  return { heads, decor };
 }
+const displayCandidates = (raw: string): string[] => displayNames(raw).heads;
 
 /** A profile's given and family names, from its own fields where it has them, else from its display name. */
 export function parseProviderProfile(input: ProviderProfileName): ParsedPersonName {
@@ -392,26 +400,57 @@ export function householdSurnamesOf<T extends { id: string; householdId: string;
   return out;
 }
 
-export type MatchRank = 0 | 1 | 2 | 3 | 4;
+/**
+ * How strongly a profile fits a guest: 1 is strongest. Up to `SIGN_IN_MAX_RANK` a lone match signs
+ * the guest in; beyond it (a slip in the given name) the match is only offered to the couple.
+ */
+export type MatchRank = 1 | 2 | 3 | 4 | 5 | 6;
+export const SIGN_IN_MAX_RANK = 5;
 
-/** How strongly a profile fits a guest (0 strongest), or null when it does not. See the tiers at the top. */
+/** Names are short. A provider field longer than this is not a name, and is not worth the work of reading as one. */
+const MAX_NAME_LENGTH = 200;
+const str = (v: string | null | undefined) => (v ?? '').trim().slice(0, MAX_NAME_LENGTH);
+
+/** A profile, read once: its names, and the whole names it might be listed under. */
+interface PreparedProfile {
+  p: ParsedPersonName;
+  /** The profile's name as a whole (and "Surname, Given" turned round), for a guest's other names. */
+  heads: string[];
+  /** What was cut from around the name ("| Acme Events"), which is sometimes what a guest is listed under. */
+  decor: string[];
+}
+
+function prepareProfile(profile: ProviderProfileName): PreparedProfile {
+  const capped = { givenName: str(profile.givenName), familyName: str(profile.familyName), name: str(profile.name) };
+  const shown = displayNames(capped.name);
+  const whole = (v: string) => tokenizeName(v).join(' ');
+  const heads = [...shown.heads, [capped.givenName, capped.familyName].filter(Boolean).join(' ')].map(whole).filter(Boolean);
+  const decor = shown.decor.map(whole).filter((d) => d && !heads.includes(d));
+  return { p: parseProviderProfile(capped), heads: [...new Set(heads)], decor: [...new Set(decor)] };
+}
+
+/** How strongly a profile fits a guest, or null when it does not. See the tiers at the top. */
 export function matchRank(profile: ProviderProfileName, guest: GuestNameRecord): MatchRank | null {
+  return rankOf(prepareProfile(profile), guest);
+}
+
+function rankOf({ p, heads, decor }: PreparedProfile, guest: GuestNameRecord): MatchRank | null {
   const alternates = (guest.alternateNames ?? []).map((a) => tokenizeName(a)).filter((t) => t.length > 0);
+  const wholeNames = alternates.filter((alt) => alt.length >= 2).map((alt) => alt.join(' '));
+  let best: MatchRank | null = null;
+  const reach = (rank: MatchRank) => {
+    if (best === null || rank < best) best = rank;
+  };
 
-  // 0: the whole name as given, or any part of a decorated display name, is one of their other names.
-  const wholes = [
-    ...displayCandidates(str(profile.name)),
-    [str(profile.givenName), str(profile.familyName)].filter(Boolean).join(' '),
-  ]
-    .map((s) => tokenizeName(s).join(' '))
-    .filter(Boolean);
-  const aliasHit = alternates.some((alt) => alt.length >= 2 && wholes.includes(alt.join(' ')));
+  // One of their other names, whole: as the profile's own name it is as good as their listed name;
+  // as decoration around another name it is weaker than anyone that name itself fits.
+  if (wholeNames.some((w) => heads.includes(w))) reach(1);
+  else if (wholeNames.some((w) => decor.includes(w))) reach(3);
 
-  const p = parseProviderProfile(profile);
   const coreGiven = p.given[0] ?? '';
-  // A given name alone is not a person: with no surname on the profile only a whole-name alias counts.
-  if (!coreGiven || weighty(p.family).length === 0) return aliasHit ? 0 : null;
-  if (aliasHit) return 0;
+  const saidFamily = surnameForms(p.family);
+  // A given name alone is not a person: with no surname on the profile only a whole name of theirs counts.
+  if (!coreGiven || saidFamily.length === 0) return best;
 
   const first = tokenizeName(guest.firstName);
   const altGiven = alternates.flatMap((t) => (t.length >= 2 ? [t[0]!] : t));
@@ -419,27 +458,33 @@ export function matchRank(profile: ProviderProfileName, guest: GuestNameRecord):
   const theirs = [...surnameForms(tokenizeName(guest.lastName)), ...altFamily.flatMap(surnameForms)];
   const household = (guest.householdSurnames ?? []).flatMap((s) => surnameForms(tokenizeName(s)));
 
-  // Where a surname may sit in the profile: its family name, or after the given name (a maiden name kept as a middle name).
-  const saidFamily = surnameForms(p.family);
-  const said = [...saidFamily, ...weighty(p.given.slice(1))];
   const knownAs = [...(first[0] ? [first[0]] : []), ...altGiven];
   // The given name exactly as listed outranks a short form of it: "Janet" is Janet before she is Jan.
-  const givenLevel = knownAs.includes(coreGiven) ? 0 : knownAs.some((g) => sameGivenName(coreGiven, g)) ? 1 : null;
-  const familyOwn = theirs.some((f) => said.includes(f));
-  // The household's surname: only through the profile's own family name, never a middle name.
-  const familyHousehold = household.some((f) => saidFamily.includes(f));
+  const short = knownAs.includes(coreGiven) ? 0 : knownAs.some((g) => sameGivenName(coreGiven, g)) ? 1 : null;
+  // Their surname as the profile's surname; or only after the given name, where a maiden name is
+  // often kept. The second is weaker: "James Scott Harlowe" is a Harlowe before he is a Scott.
+  const ownAsFamily = theirs.some((f) => saidFamily.includes(f));
+  const ownAsMiddle = !ownAsFamily && theirs.some((f) => weighty(p.given.slice(1)).includes(f));
+  // The household's surname: only as the profile's own surname.
+  const householdAsFamily = household.some((f) => saidFamily.includes(f));
 
-  if (givenLevel !== null && familyOwn) return givenLevel === 0 ? 1 : 2;
-  if (givenLevel !== null && familyHousehold) return givenLevel === 0 ? 2 : 3;
+  if (short !== null) {
+    if (ownAsFamily) reach(short === 0 ? 1 : 2);
+    if (householdAsFamily) reach(short === 0 ? 2 : 3);
+    if (ownAsMiddle) reach(short === 0 ? 3 : 4);
+  }
+  // They go by their middle name: the profile's given name is a middle name of theirs.
+  if (ownAsFamily && first.slice(1).some((m) => sameGivenName(coreGiven, m))) reach(3);
+  if (best !== null) return best;
 
-  // They go by a middle name.
-  const middles = first.slice(1);
-  if (familyOwn && middles.some((m) => p.given.some((g) => sameGivenName(g, m)))) return 3;
-
-  // A typo, in the given name, the surname, or one letter in each.
-  const givenClose = knownAs.some((g) => oneOff(coreGiven, g));
+  // A slip. In the surname alone, under the given name exactly as listed, it is still plainly them.
+  // In the given name it may be someone else (Frances and Francis, Mario and Maria), and so may a
+  // slip on top of a short form or another spelling (Karen Larson is not Karin Larsen): those are
+  // only ever offered to the couple, never signed in.
   const familyClose = theirs.some((f) => saidFamily.some((x) => oneOff(x, f)));
-  if ((givenLevel !== null || givenClose) && (familyOwn || familyClose)) return 4;
+  if (short === 0 && familyClose) return 5;
+  if (short === 1 && familyClose) return 6;
+  if (knownAs.some((g) => oneOff(coreGiven, g)) && (ownAsFamily || familyClose)) return 6;
   return null;
 }
 
@@ -450,12 +495,10 @@ function surnameForms(tokens: readonly string[]): string[] {
   return out;
 }
 
-const str = (v: string | null | undefined) => (v ?? '').trim();
-
-/** Whether a profile plainly is this guest: any tier but a typo's. */
+/** Whether a profile plainly is this guest: any tier but a slip's. */
 export function namesMatch(profile: ProviderProfileName, guest: GuestNameRecord): boolean {
   const rank = matchRank(profile, guest);
-  return rank !== null && rank < 4;
+  return rank !== null && rank < 5;
 }
 
 export type NameMatchConfidence = 'none' | 'one' | 'ambiguous';
@@ -465,13 +508,15 @@ type Candidate = { id: string; firstName: string; lastName: string; alternateNam
 /**
  * The guest a profile is, among `candidates`: the strongest tier anyone reaches, and only when one
  * guest alone reaches it. Two guests at the same tier are `ambiguous` (both are returned, for the
- * couple to sort out), whatever weaker matches exist.
+ * couple to sort out), whatever weaker matches exist. `rank` says how strong the fit was: a caller
+ * that signs someone in must not do so past `SIGN_IN_MAX_RANK`.
  */
 export function matchGuestsByName<T extends Candidate>(profile: ProviderProfileName, candidates: readonly T[]): { confidence: NameMatchConfidence; matches: T[]; rank: MatchRank | null } {
+  const prepared = prepareProfile(profile);
   let best: MatchRank | null = null;
   let matches: T[] = [];
   for (const g of candidates) {
-    const rank = matchRank(profile, g);
+    const rank = rankOf(prepared, g);
     if (rank === null) continue;
     if (best === null || rank < best) {
       best = rank;

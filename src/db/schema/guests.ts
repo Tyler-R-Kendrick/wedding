@@ -210,6 +210,11 @@ export const guestSheetCopies = pgTable(
     source: text('source'),
     /** The administrator who uploaded it (admin id), or null for a copy loaded by the operator. */
     uploadedBy: text('uploaded_by'),
+    /**
+     * For a copy loaded from a sealed upload on deploy: a digest of that upload, so the same upload
+     * is applied once and not again on every later deploy (over whatever the couple did since).
+     */
+    uploadDigest: text('upload_digest'),
     uploadedAt: timestamp('uploaded_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   },
   (t) => [index('guest_sheet_copies_uploaded_at_idx').on(t.uploadedAt)],

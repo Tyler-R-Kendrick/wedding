@@ -50,13 +50,22 @@ const SPLIT = /\s*,\s*|\s+(?:and|&|\+)\s+/i;
 const PARTICLES = new Set(['le', 'la', 'de', 'del', 'della', 'di', 'da', 'du', 'des', 'van', 'von', 'der', 'den', 'ter', 'st', 'st.', 'san', 'mac', 'mc']);
 /** A name that begins with one of these is one word, however it is capitalised inside ("McDonald", "DeAngelo"). */
 const JOINED_PREFIX = /^(mc|mac|de|di|da|du|la|le|lo|van|von|fitz|o|st|san|del|des|ap|ab)$/i;
-const RELATION = /^(grandma|grandpa|granny|grandmother|grandfather|nana|papa|aunt|auntie|uncle|mom|mum|dad|mother|father|cousin|mr|mrs|ms|miss|dr)\.?$/i;
+const RELATION = /^(grandma|grandpa|granny|grandmother|grandfather|nana|papa|aunt|auntie|uncle|mom|mum|dad|mother|father|cousin)\.?$/i;
+/** A title before a name is not part of it: "Mr and Mrs Tom Bakewell" names Tom, and counts his wife. */
+const TITLE = /^(mr|mrs|ms|miss|mx|dr|prof|rev)\.?$/i;
+/** "Corwin Zarkov Jr." is a different person from "Corwin Zarkov Sr.": the suffix stays with the surname. */
+const SUFFIX = /^(jr|sr|ii|iii|iv)\.?$/i;
+/** Words that stand for a head the line does not name: "Ana Ruiz and guest", "+ 1", "& family". */
+const PLACEHOLDER = /^(guests?|plus[- ]?ones?|\+?\d+|family|kids?|children|child|date|partner|friends?|tbd|tba|spouse|wife|husband|so|others?)$/i;
+
+/** "The Bakewell Family": the word that makes a surname a household, not a person. */
+const FAMILY = /^(family|fam|household|house|clan|crew|s)$/i;
 
 const tidy = (s: string) => s.replace(/\s+/g, ' ').trim();
 /** A name typed all in lower case is capitalised; anything else is left as the couple wrote it ("AJ", "McDonald"). */
 const proper = (word: string) => (word && word === word.toLowerCase() && /[a-z]/.test(word) ? word.replace(/(^|[-'’])([a-z])/g, (_m, lead: string, c: string) => lead + c.toUpperCase()) : word);
 
-type Chunk = { words: string[]; alternates: string[]; cutShort: boolean; described: boolean };
+type Chunk = { words: string[]; alternates: string[]; cutShort: boolean; described: boolean; familyOnly: boolean };
 
 function readChunk(raw: string): Chunk {
   let text = tidy(raw);
@@ -78,26 +87,47 @@ function readChunk(raw: string): Chunk {
   const cutShort = /(\.{2,}|…)\s*$/.test(text);
   text = tidy(text.replace(/(\.{2,}|…)/g, ' '));
   let words = text.split(' ').filter((w) => w && !/^(and|&|\+|[.,…-]+)$/i.test(w));
+  // Titles in front of the name are dropped; a chunk that is only a title, or only stands for
+  // someone ("guest", "family", "1"), names nobody: that head is counted, not named.
+  while (words.length && TITLE.test(words[0]!)) words = words.slice(1);
+  if (words.length && (words.every((w) => PLACEHOLDER.test(w)) || PLACEHOLDER.test(words.join(' ')))) words = [];
+  // "The Bakewell Family", "Bakewell family": a surname and no person. "Tom Bakewell family" still names Tom.
+  let familyOnly = false;
+  if (words.length > 1 && (/^the$/i.test(words[0]!) || FAMILY.test(words.at(-1)!))) {
+    const inner = words.filter((w, i) => !(i === 0 && /^the$/i.test(w)) && !(i === words.length - 1 && FAMILY.test(w)));
+    if (inner.length <= 1) {
+      familyOnly = true;
+      words = [];
+    } else words = inner;
+  }
   // "CoralieRosemont": two names run together.
   if (words.length === 1) {
     const m = /^([A-Z][a-z]+)([A-Z][a-z]+.*)$/.exec(words[0]!);
     if (m && !JOINED_PREFIX.test(m[1]!)) words = [m[1]!, m[2]!];
   }
   // A particle keeps its case ("van der Berg"); a given name never is one.
-  return { words: words.map((w, i) => (i > 0 && PARTICLES.has(w.toLowerCase()) ? w : proper(w))), alternates, cutShort, described };
+  return { words: words.map((w, i) => (i > 0 && PARTICLES.has(w.toLowerCase()) ? w : proper(w))), alternates, cutShort, described, familyOnly };
 }
 
 /** A person's words as a given name and a surname: the last word, with any particle before it, is the surname. */
 function splitName(words: readonly string[]): { firstName: string; lastName: string } {
   if (words.length <= 1) return { firstName: words[0] ?? '', lastName: '' };
+  // A generational suffix belongs to the surname before it.
+  if (words.length >= 3 && SUFFIX.test(words.at(-1)!)) {
+    const base = splitName(words.slice(0, -1));
+    return { firstName: base.firstName, lastName: `${base.lastName} ${words.at(-1)}`.trim() };
+  }
   let cut = words.length - 1;
   while (cut > 1 && PARTICLES.has(words[cut - 1]!.toLowerCase())) cut--;
   return { firstName: words.slice(0, cut).join(' '), lastName: words.slice(cut).join(' ') };
 }
 
 export function peopleOfLine(row: Pick<GuestSheetRow, 'name' | 'adults' | 'kids' | 'plusOnes'>): SheetLinePeople {
-  const chunks = tidy(row.name).split(SPLIT).map(readChunk).filter((c) => c.words.length > 0);
+  const read = tidy(row.name).split(SPLIT).map(readChunk);
+  const chunks = read.filter((c) => c.words.length > 0);
   const notes = new Set<SheetLineNote>();
+  // A line that is a family's name and nobody's own: nobody on it can be found by name.
+  if (read.some((c) => c.familyOnly)) notes.add('not_a_given_name');
   const people = chunks.map((c) => ({ ...splitName(c.words), chunk: c }));
 
   // "Bram and Nora Fitzwilliam": a person with one word takes the surname of the next person who has one.
@@ -140,7 +170,7 @@ export function peopleOfLine(row: Pick<GuestSheetRow, 'name' | 'adults' | 'kids'
   }));
 
   return {
-    householdName: chunks.length ? tidy(row.name).split(' ').map((w) => (/^(and|&|\+)$/i.test(w) ? w.toLowerCase() : proper(w))).join(' ') : '',
+    householdName: read.length ? tidy(row.name).split(' ').map((w) => (/^(and|&|\+)$/i.test(w) ? w.toLowerCase() : proper(w))).join(' ') : '',
     named,
     unnamedAdults: Math.max(0, adults - named.filter((p) => p.kind === 'adult').length),
     unnamedPlusOnes: Math.max(0, plusOnes - named.filter((p) => p.kind === 'plus_one').length),

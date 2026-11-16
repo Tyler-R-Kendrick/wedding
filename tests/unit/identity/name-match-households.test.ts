@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { householdSurnamesOf, matchGuestsByName, matchRank, namesMatch, parseProviderProfile, sameGivenName, type ProviderProfileName } from '@/domain/identity/name-match';
+import { householdSurnamesOf, matchGuestsByName, matchRank, namesMatch, parseProviderProfile, sameGivenName, SIGN_IN_MAX_RANK, type ProviderProfileName } from '@/domain/identity/name-match';
 
 /**
  * A guest list shaped like the couple's planning sheet, with invented names: couples under one
@@ -47,10 +47,18 @@ const LIST: G[] = [
 ];
 const surnames = householdSurnamesOf(LIST);
 const CANDIDATES = LIST.map((g) => ({ ...g, householdSurnames: surnames.get(g.id) ?? [] }));
-const find = (profile: ProviderProfileName) => {
-  const r = matchGuestsByName(profile, CANDIDATES);
-  return r.confidence === 'one' ? r.matches[0]!.id : r.confidence === 'ambiguous' ? `ambiguous:${r.matches.map((m) => m.id).sort().join('+')}` : 'none';
+/** Who a profile signs in as, the way sign-in decides it: one person, well enough matched. `review:` is offered to the couple and signs in nobody. */
+const findIn = (list: G[]) => {
+  const names = householdSurnamesOf(list);
+  const candidates = list.map((g) => ({ ...g, householdSurnames: names.get(g.id) ?? [] }));
+  return (profile: ProviderProfileName) => {
+    const r = matchGuestsByName(profile, candidates);
+    if (r.confidence === 'none') return 'none';
+    if (r.confidence === 'ambiguous') return `ambiguous:${r.matches.map((m) => m.id).sort().join('+')}`;
+    return r.rank !== null && r.rank > SIGN_IN_MAX_RANK ? `review:${r.matches[0]!.id}` : r.matches[0]!.id;
+  };
 };
+const find = findIn(LIST);
 /** A profile as Google and Facebook send it (given and family fields), and as a display name only. */
 const both = (given: string, family: string): ProviderProfileName[] => [{ givenName: given, familyName: family, name: `${given} ${family}` }, { name: `${given} ${family}` }];
 
@@ -175,7 +183,8 @@ describe('short forms, spellings and slips', () => {
   it('one letter out, on our side or theirs', () => {
     // The list has "Bondrell"; her profile has it spelled right.
     expect(find({ name: 'Dinah Boudrell' })).toBe('dinah');
-    expect(find({ name: 'Dinnah Bondrell' })).toBe('dinah');
+    // A given name one letter out is offered to the couple and signs in nobody: it is as often another person.
+    expect(find({ name: 'Dinnah Bondrell' })).toBe('review:dinah');
     expect(find({ name: 'Colleen Rockwel' })).toBe('colleen');
   });
 
@@ -183,7 +192,9 @@ describe('short forms, spellings and slips', () => {
     for (const name of ['Dan Fitzwilliam', 'Jon Fitzwilliam', 'Sara Fax', 'Sara Fang', 'Brom Fitzwilliam', 'Mora Barnaby']) expect(find({ name }), name).toBe('none');
     // Another spelling of the given name is the same name, with or without a slip in the surname.
     expect(find({ name: 'Neil Kendall' })).toBe('neal');
-    expect(find({ name: 'Neil Kendal' })).toBe('neal');
+    // Another spelling and a slip in the surname together are two doubts: offered to the couple, not signed in.
+    expect(find({ name: 'Neil Kendal' })).toBe('review:neal');
+    expect(find({ name: 'Neal Kendal' })).toBe('neal');
   });
 
   it('two letters out is somebody else', () => {
@@ -272,5 +283,94 @@ describe('the surnames of a household', () => {
     expect(surnames.get('neal')).toEqual([]);
     expect(surnames.get('mick')).toEqual([]);
     expect(surnames.get('bram')).toEqual(['Fitzwilliam']);
+  });
+});
+
+describe('names that must not sign in the wrong person', () => {
+  it('S-19 S-22: a maiden name on one record never outranks the guest listed under that very name', () => {
+    const who = findIn([
+      { id: 'jane-smythe', householdId: 'a', firstName: 'Jane', lastName: 'Smythe', alternateNames: ['Jane Dorrow'] },
+      { id: 'jane-dorrow', householdId: 'b', firstName: 'Jane', lastName: 'Dorrow' },
+    ]);
+    // Two people answer to it equally: neither is signed in. Each is still found under a name only they have.
+    expect(who({ name: 'Jane Dorrow' })).toBe('ambiguous:jane-dorrow+jane-smythe');
+    expect(who({ givenName: 'Jane', familyName: 'Dorrow' })).toBe('ambiguous:jane-dorrow+jane-smythe');
+    expect(who({ name: 'Jane Smythe' })).toBe('jane-smythe');
+    expect(who({ name: 'Jane Dorrow Smythe' })).toBe('jane-smythe');
+  });
+
+  it('S-25: what sits in brackets after a name that already fits someone is ignored', () => {
+    const who = findIn([
+      { id: 'kim', householdId: 'a', firstName: 'Kim', lastName: 'Parkes' },
+      { id: 'florist', householdId: 'b', firstName: 'Petra', lastName: 'Lindqvist', alternateNames: ['Petal & Twine'] },
+    ]);
+    expect(who({ name: 'Kim Parkes (Petal & Twine)' })).toBe('kim');
+    expect(who({ name: 'Kim Parkes | Petal & Twine' })).toBe('kim');
+    // Alone, or after a name that fits nobody, the other name is whose it is.
+    expect(who({ name: 'Petal & Twine' })).toBe('florist');
+    expect(who({ name: 'Petal and Twine' })).toBe('florist');
+  });
+
+  it('S-22: a middle name that is someone else’s surname does not beat the profile’s own surname', () => {
+    const who = findIn([
+      { id: 'jim', householdId: 'a', firstName: 'Jim', lastName: 'Harlowe' },
+      { id: 'james-scott', householdId: 'b', firstName: 'James', lastName: 'Scott' },
+    ]);
+    expect(who({ givenName: 'James Scott', familyName: 'Harlowe' })).toBe('jim');
+    expect(who({ name: 'James Scott Harlowe' })).toBe('jim');
+    expect(who({ name: 'James Scott' })).toBe('james-scott');
+  });
+
+  it('S-24: a given name one letter out is another person as often as a slip: offered to the couple, never signed in', () => {
+    const who = findIn([
+      { id: 'frances', householdId: 'a', firstName: 'Frances', lastName: 'Doyland' },
+      { id: 'maria', householdId: 'b', firstName: 'Maria', lastName: 'Quenby' },
+      { id: 'karin', householdId: 'c', firstName: 'Karin', lastName: 'Larsen' },
+    ]);
+    expect(who({ name: 'Francis Doyland' })).toBe('review:frances');
+    expect(who({ name: 'Mario Quenby' })).toBe('review:maria');
+    // Another spelling of the given name and a slip in the surname: two doubts, so offered, not signed in.
+    expect(who({ name: 'Karen Larson' })).toBe('review:karin');
+    expect(who({ name: 'Karin Larson' })).toBe('karin');
+    // A surname one letter out, with the given name right, is still a slip.
+    expect(who({ name: 'Frances Doylend' })).toBe('frances');
+  });
+
+  it('a shared middle name is not a shared person', () => {
+    const who = findIn([{ id: 'mary', householdId: 'a', firstName: 'Mary Katherine', lastName: 'Doyland' }]);
+    expect(who({ name: 'Anne Katherine Doyland' })).toBe('none');
+    expect(who({ givenName: 'Anne Katherine', familyName: 'Doyland' })).toBe('none');
+    // Going by her middle name is her.
+    expect(who({ name: 'Katherine Doyland' })).toBe('mary');
+    expect(who({ name: 'Mary Doyland' })).toBe('mary');
+  });
+
+  it('a surname that is also a particle is still a surname', () => {
+    const who = findIn([
+      { id: 'linh', householdId: 'a', firstName: 'Linh', lastName: 'Le' },
+      { id: 'minh', householdId: 'b', firstName: 'Minh', lastName: 'Van' },
+    ]);
+    expect(who({ name: 'Linh Le' })).toBe('linh');
+    expect(who({ givenName: 'Minh', familyName: 'Van' })).toBe('minh');
+    expect(who({ name: 'Linh Van' })).toBe('none');
+  });
+
+  it('a father and son are two people', () => {
+    const who = findIn([
+      { id: 'senior', householdId: 'a', firstName: 'Corwin', lastName: 'Zarkov Sr.' },
+      { id: 'junior', householdId: 'b', firstName: 'Corwin', lastName: 'Zarkov Jr.' },
+    ]);
+    // A profile rarely carries the suffix: without it, it could be either, and signs in neither.
+    expect(who({ name: 'Corwin Zarkov' })).toBe('ambiguous:junior+senior');
+  });
+
+  it('a very long or bracket-heavy name costs nothing and matches nobody', () => {
+    const many: G[] = Array.from({ length: 200 }, (_v, i) => ({ id: `g${i}`, householdId: `h${i}`, firstName: `Given${i}`, lastName: `Surname${i}` }));
+    const who = findIn(many);
+    const started = Date.now();
+    expect(who({ name: '('.repeat(3000) })).toBe('none');
+    expect(who({ name: `${'x'.repeat(50_000)} Surname7` })).toBe('none');
+    expect(who({ givenName: 'Given7'.padEnd(5000, ' '), familyName: 'Surname7' })).toBe('g7');
+    expect(Date.now() - started).toBeLessThan(1500);
   });
 });
