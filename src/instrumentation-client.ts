@@ -12,6 +12,9 @@ if (token && host) {
     debug: process.env.NODE_ENV === 'development',
   });
 } else if (process.env.NODE_ENV !== 'production') {
+  // Say so, never throw: this file runs before the app's own scripts, so an error here stops every
+  // page from becoming interactive wherever the variables are not set (a local checkout, the test
+  // server, CI). `src/lib/posthog-logs.ts` reports the same gap the same way.
   const missingVariable = token ? 'NEXT_PUBLIC_POSTHOG_HOST' : 'NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN';
-  throw new Error(`${missingVariable} variable required by PostHog is missing or un-configured, this causes events to be silently missed. This error stops appearing once ${missingVariable} is configured`);
+  console.warn(`${missingVariable} is not set, so PostHog is off and no events are sent. Set it to turn PostHog on.`);
 }
