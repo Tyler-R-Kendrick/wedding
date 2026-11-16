@@ -96,14 +96,6 @@ jobs:
           npm run db:generate
           git diff --exit-code -- src/db/migrations || { echo "::error::run npm run db:generate and commit the result"; exit 1; }
 
-      # The one place bun's download cache is saved, and only from main: every other job and every
-      # pull request restores it (.github/actions/setup).
-      - if: github.ref == 'refs/heads/main'
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
-        with:
-          path: ~/.bun/install/cache
-          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
-
   unit:
     name: unit · ui · stage tests
     runs-on: ubuntu-latest
@@ -131,22 +123,25 @@ jobs:
       # here; the merge queue and main always run it (scripts/ci/reach.mjs, scripts/ci/affected.mjs).
       - name: Can this change reach the integration suite?
         id: reach
+        # Asked only where the answer can be no. Everywhere else the step is skipped, its output is
+        # empty, and every later step runs (they test for `!= 'false'`).
+        if: github.event_name == 'pull_request' && vars.CI_SELECTION == 'on'
         run: node scripts/ci/reach.mjs integration
         env:
           GITHUB_TOKEN: ${{ github.token }}
           CI_SELECTION: ${{ vars.CI_SELECTION }}
       - uses: ./.github/actions/setup
-        if: steps.reach.outputs.run == 'true'
+        if: steps.reach.outputs.run != 'false'
 
       # Five shards of about equal recorded time (scripts/ci/vitest-plan.mjs). In one job the 83
       # files took 3.8 minutes at the median, the longest step outside Playwright.
       - name: Integration tests (vitest + PGlite), shard ${{ matrix.shard }} of 5
-        if: steps.reach.outputs.run == 'true'
+        if: steps.reach.outputs.run != 'false'
         run: npm run test:integration -- --reporter=default --reporter=json --outputFile.json=test-results/integration-${{ matrix.shard }}.json $(node scripts/ci/vitest-plan.mjs integration ${{ matrix.shard }}/5)
 
       # Each file's time, for `npm run test:durations`, which the shard plan is built from.
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        if: always() && steps.reach.outputs.run == 'true'
+        if: always() && steps.reach.outputs.run != 'false'
         with:
           name: integration-${{ matrix.shard }}
           path: test-results/integration-${{ matrix.shard }}.json
@@ -186,33 +181,36 @@ jobs:
       # here; the merge queue and main always run it (scripts/ci/reach.mjs, scripts/ci/affected.mjs).
       - name: Can this change reach the e2e suite?
         id: reach
+        # Asked only where the answer can be no. Everywhere else the step is skipped, its output is
+        # empty, and every later step runs (they test for `!= 'false'`).
+        if: github.event_name == 'pull_request' && vars.CI_SELECTION == 'on'
         run: node scripts/ci/reach.mjs e2e
         env:
           GITHUB_TOKEN: ${{ github.token }}
           CI_SELECTION: ${{ vars.CI_SELECTION }}
       - uses: ./.github/actions/setup
-        if: steps.reach.outputs.run == 'true'
+        if: steps.reach.outputs.run != 'false'
 
       # The key is the resolved Playwright version, so a version bump misses once. Headless shell
       # only: the specs never open a headed browser, and it is a third of the download.
       - name: Playwright version
-        if: steps.reach.outputs.run == 'true'
+        if: steps.reach.outputs.run != 'false'
         id: pw
         run: echo "v=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
       - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
-        if: steps.reach.outputs.run == 'true'
+        if: steps.reach.outputs.run != 'false'
         with:
           path: ~/.cache/ms-playwright
           key: pw-shell-${{ runner.os }}-${{ steps.pw.outputs.v }}
       # No `--with-deps`: the runner image already has Chromium's libraries, and installing them
       # again from Ubuntu's mirrors took 12 s at the median and 25 at p95 in every job.
       - run: npx playwright install chromium --only-shell
-        if: steps.reach.outputs.run == 'true'
+        if: steps.reach.outputs.run != 'false'
 
       # Turbopack's build cache, seeded by main (the `build-cache` job) and only restored here.
       # With it the compile is a few seconds instead of half a minute.
       - uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
-        if: steps.reach.outputs.run == 'true'
+        if: steps.reach.outputs.run != 'false'
         with:
           path: .next/cache
           key: next-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ github.sha }}
@@ -221,14 +219,14 @@ jobs:
       # Each shard builds for itself: with the cache that is quicker than waiting for a build job
       # and downloading its 480 MB. The typecheck `next build` repeats is the `static` job's.
       - name: Build
-        if: steps.reach.outputs.run == 'true'
+        if: steps.reach.outputs.run != 'false'
         run: npm run build
         env:
           PGLITE_MEMORY: '1'
           BUILD_SKIP_TYPECHECK: '1'
 
       - name: Production-build specs against `next start`
-        if: steps.reach.outputs.run == 'true' && matrix.kind == 'production'
+        if: steps.reach.outputs.run != 'false' && matrix.kind == 'production'
         # These assert production behaviour, including the proxy's `private, no-store` on
         # cookie-resolved public URLs. Phone and desktop are the review viewports.
         run: node scripts/ci/e2e-shard.mjs production ${{ matrix.shard }}/${{ matrix.of }}
@@ -254,7 +252,7 @@ jobs:
           TRUSTED_PROXY_HOPS: '1'
 
       - name: Identity, RSVP and security specs against a NODE_ENV=test server
-        if: steps.reach.outputs.run == 'true' && matrix.kind == 'test-server'
+        if: steps.reach.outputs.run != 'false' && matrix.kind == 'test-server'
         # Two things exist only on this server, and both are deliberate:
         #   * the dev inbox and fixtures route, refused outright under NODE_ENV=production
         #     (security review S5); on a hosted runner they also require the DEV_INBOX_TOKEN
@@ -272,7 +270,7 @@ jobs:
       # The JSON report carries each test's time; `npm run e2e:durations` turns a run's reports
       # into tests/e2e/durations.json, which the shard plan reads. The HTML report rides along.
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        if: always() && steps.reach.outputs.run == 'true'
+        if: always() && steps.reach.outputs.run != 'false'
         with:
           name: playwright-${{ matrix.kind }}-${{ matrix.shard }}
           path: |

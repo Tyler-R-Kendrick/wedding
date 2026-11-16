@@ -52,9 +52,9 @@ Setup is the same in every job (`.github/actions/setup`): Node from `.nvmrc`, bu
 
 ## Caches
 
-- bun's download cache and Turbopack's build cache (`.next/cache`) are saved only from `main` and
-  restored everywhere else. With the build cache a shard's `next build` takes about 12 s; without
-  it, 30 to 60.
+- Turbopack's build cache (`.next/cache`) is saved only from `main` and restored everywhere else.
+  With it a shard's `next build` takes about 12 s; without it, 30 to 60.
+- Dependencies are not cached: `bun install` fetches them in about 5 s.
 - The browser shards set `BUILD_SKIP_TYPECHECK=1` (`next.config.ts`), because the typecheck job
   covers what `next build` would repeat. A deploy build never sets it.
 - Playwright's headless shell is cached by Playwright version.
