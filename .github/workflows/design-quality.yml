@@ -207,25 +207,6 @@ jobs:
           RATE_LIMIT_BACKEND: db
           TRUSTED_PROXY_HOPS: '1'
 
-      - name: Swap, as a cushion for the dev server over a long run
-        # The warm-up no longer needs this (see the next step). What still grows is the dev
-        # server's own JavaScript heap: over the run it climbs from about 0.6 GB to several GB (the
-        # script lets it use up to 8 GB, because at Node's default 4 GB it died near the end of the
-        # run), and with the compiler's share and the browsers beside it a 16 GB runner has little
-        # to spare. Out of memory, the kernel takes the runner agent ("the runner has
-        # received a shutdown signal"). Production does not do this: `next start` holds about
-        # 225 MB of heap across 3,000 requests. Until the dev server's growth is understood, the
-        # swap file stays; it costs a few seconds and is only touched if the run needs it.
-        run: |
-          dir=/mnt
-          [ "$(df --output=avail -BG "$dir" | tail -1 | tr -dc 0-9)" -ge 20 ] || dir="$RUNNER_TEMP"
-          sudo swapoff -a || true
-          sudo fallocate -l 16G "$dir/ci-swapfile"
-          sudo chmod 600 "$dir/ci-swapfile"
-          sudo mkswap "$dir/ci-swapfile"
-          sudo swapon "$dir/ci-swapfile"
-          free -m
-
       - name: Identity, RSVP and security specs against a NODE_ENV=test server
         # Two things exist only on this server, and both are deliberate:
         #   * the dev inbox and fixtures route, refused outright under NODE_ENV=production
@@ -235,20 +216,15 @@ jobs:
         # tests/security/** never ran in CI before this step existed, which is how a
         # cross-origin sign-out reached main with a passing suite asserting it was blocked.
         #
-        # The script is the whole step: it starts `next dev` with the test settings, warms every
-        # route a spec navigates to (WARM_ROUTES, with the reason each is there), runs the
-        # TEST_SERVER_SPECS, and stops the server. It is the same command a developer runs
-        # (`npm run test:e2e:server`), so the two cannot drift.
+        # The script is the whole step: it starts `next start` on the build above with the test
+        # settings, runs the TEST_SERVER_SPECS, and stops the server. It is the same command a
+        # developer runs (`npm run test:e2e:server`), so the two cannot drift.
         #
-        # Warming eighty routes back to back used to take the dev server past 13 GB. Three changes
-        # brought that to about 6 GB: the test server builds no source maps and no longer bundles the
-        # server libraries (next.config.ts), and the warm-up pauses whenever the server has grown
-        # 2.5 GB, which is when Turbopack lets go of what it compiled. The script prints the
-        # server's peak for the warm-up and for the whole run.
-        #
-        # Once per project, each with a fresh server and warm-up: a dev server slows down as it
-        # ages, and after forty minutes of requests one page took over a minute to answer.
-        run: node scripts/test-server-specs.mjs --project=mobile && node scripts/test-server-specs.mjs --project=desktop
+        # The server is the production build, not `next dev`: every gate these specs need reads the
+        # environment at start-up, so the build that ships is the build under test. On `next dev`
+        # this step compiled eighty routes before its first spec, once per project, and took 22
+        # minutes at the median and 30 at p95 over 150 runs, with a 16 GB swap file to survive it.
+        run: node scripts/test-server-specs.mjs --no-build --project=mobile --project=desktop
         env:
           CI: 'true'
           PORT: '3000'

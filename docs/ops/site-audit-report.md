@@ -87,7 +87,7 @@ Personas, and how many HTML routes each opens:
 | Administrator | 68 | Every page row, including the console. Redirects and the theme tree are not repeated. |
 | View-role | 40, four times | A real administrator session (the injector would skip the resolver the cookie lives in), then each of `guest`, `plus_one`, `household_manager`, and `party` from `src/domain/identity/view-role.ts`. Admin screens are not part of this walk: the preview does not apply there. |
 
-`tests/unit/site-inventory.test.ts` reads the spec as text and fails when a crawl path or a probe path is not quoted in it. `scripts/test-server-specs.mjs` uses those quotes to warm the dev server before a named run, and the same paths are in the CI warm-up in `.github/workflows/design-quality.yml`. `tests/unit/agent/test-server-specs.test.ts` fails when those two lists drift. The spec is registered in `scripts/check-spec-coverage.mjs` as a test-server spec, not a production-build spec.
+`tests/unit/site-inventory.test.ts` reads the spec as text and fails when a crawl path or a probe path is not quoted in it. The crawler runs on the production build started in test mode (`scripts/test-server-specs.mjs`), so no route needs warming first. The spec is registered in `scripts/check-spec-coverage.mjs` as a test-server spec, not a production-build spec.
 
 ## Adding a route
 

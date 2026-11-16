@@ -2,13 +2,15 @@ import { expect, test } from '@playwright/test';
 import { callCapability, IDS, key } from './helpers/principal';
 
 test.describe('phone sign-in', () => {
-  test('SMS code with mock Verify signs a guest in', async ({ page, request }) => {
-    const phone = '+15551234001';
+  test('SMS code with mock Verify signs a guest in', async ({ page, request }, testInfo) => {
+    // One number per project: the projects share a server, and a phone belongs to one guest.
+    const local = `555123400${['mobile', 'tablet', 'desktop'].indexOf(testInfo.project.name) + 1}`;
+    const phone = `+1${local}`;
     const upsert = await callCapability(
       request,
       'admin_upsert_guest',
       'admin',
-      { householdId: IDS.householdA, firstName: 'SMS', lastName: 'Guest', phone, email: 'sms-guest@example.test' },
+      { householdId: IDS.householdA, firstName: 'SMS', lastName: 'Guest', phone, email: `sms-guest-${testInfo.project.name}@example.test` },
       { idempotencyKey: key() },
     );
     expect(upsert.status).toBe(200);
@@ -23,7 +25,7 @@ test.describe('phone sign-in', () => {
     await expect(page.getByRole('textbox', { name: 'Email address' })).toBeVisible();
     await tabs.getByRole('link', { name: 'Text', exact: true }).click();
     await expect(page.getByRole('link', { name: 'Text', exact: true })).toHaveAttribute('aria-current', 'page');
-    await page.getByLabel('Mobile number').fill('5551234001');
+    await page.getByLabel('Mobile number').fill(local);
     await page.getByRole('button', { name: 'Text me a code' }).click();
     await expect(page).toHaveURL(/\/claim\/verify/);
     await page.locator('#code').fill('000000');

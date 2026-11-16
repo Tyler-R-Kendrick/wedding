@@ -17,12 +17,17 @@ export default defineConfig({
   testMatch: /.*\.spec\.ts$/,
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 1 : 0,
+  // One worker per core in CI. The default is half the cores, which left two of a runner's four idle
+  // while the production server the specs talk to used a fraction of one.
+  workers: process.env.CI ? '100%' : undefined,
+  // No retries, here or in CI. A test that passes on its second attempt has a bug, in the test or in
+  // the page, and a retry reports it as green: two of three green runs on 2026-11-16 had one.
+  retries: 0,
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'list',
   use: {
     baseURL,
     launchOptions,
-    trace: 'on-first-retry',
+    trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
   webServer: external

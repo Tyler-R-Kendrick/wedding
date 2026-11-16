@@ -20,9 +20,8 @@ import { WEDDING_DETAILS } from './helpers/wedding-details';
  * and nothing about the wedding: every page the anonymous walk opens is checked
  * for the date and the venue, and every guest page for its redirect to sign-in.
  *
- * The warm-up in scripts/test-server-specs.mjs reads this file as text. Every
- * path the crawl requests is quoted below so a named run compiles it first.
- * tests/unit/site-inventory.test.ts fails when a new crawl path is missing here.
+ * Every path the crawl requests is quoted below, so the list of what it walks can be
+ * read here. tests/unit/site-inventory.test.ts fails when a new crawl path is missing.
  *
  * '/'
  * '/admin'

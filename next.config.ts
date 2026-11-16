@@ -61,11 +61,6 @@ const sitePostHog = deployedPostHog(process.env);
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
-  // The browser suites run against `next dev` with NODE_ENV=test and compile every route in one
-  // burst. Nothing in that run reads a source map, and building them was a third of the compiler's
-  // memory (8.9 GB -> 5.9 GB over the same 34 routes, measured cold). A developer's own `next dev`
-  // keeps them.
-  ...(process.env.NODE_ENV === 'test' ? { experimental: { turbopackSourceMaps: false, turbopackInputSourceMaps: false, serverSourceMaps: false } } : {}),
   reactStrictMode: true,
   // The deployed commit, for the browser: every error report and problem report says which build
   // it came from (src/lib/diagnostics/recorder.ts). Empty off Vercel, where the recorder says `dev`.
@@ -77,7 +72,7 @@ const nextConfig: NextConfig = {
     ...(sitePostHog ? { NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN: sitePostHog.token, NEXT_PUBLIC_POSTHOG_HOST: sitePostHog.host } : {}),
   },
   // Loaded by Node at run time, not compiled into the server bundle. The first list has to be
-  // (native, wasm or worker-based packages). The second is there for the dev and test servers'
+  // (native, wasm or worker-based packages). The second is there for the dev server's
   // memory only: every route reaches these libraries, and compiling them again for each route and
   // layer was another third of the compiler's footprint (5.9 GB -> 4.2 GB over the same 34
   // routes). A production build bundles them instead, because a cold server start has to read every
