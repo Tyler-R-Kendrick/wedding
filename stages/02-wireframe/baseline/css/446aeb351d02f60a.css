@@ -1191,6 +1191,10 @@
   }
 }
 
+html:has(.adm-bar) {
+  scroll-padding-block-start: calc(var(--adm-bar, 3.5rem) + 1rem);
+}
+
 /* [project]/src/components/provenance/provenance.css [app-client] (css) */
 .prov {
   gap: var(--spacing-sm, 8px);
@@ -2070,9 +2074,8 @@
   margin: 0;
 }
 
-.det-shown__label {
+.det-value {
   color: var(--color-primary);
-  font-weight: 500;
 }
 
 .det-copy {
@@ -2158,7 +2161,7 @@
   display: flex;
 }
 
-@media not (min-width: 60rem) {
+@media not (min-width: 80rem) {
   .ag-row {
     grid-template-columns: minmax(0, 1fr);
   }
