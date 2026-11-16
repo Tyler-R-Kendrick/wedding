@@ -145,9 +145,10 @@ audit rows and idempotency keys, and "the database is down" is a report this mus
   Rotating `BETTER_AUTH_SECRET` voids every pass.
 
 **Follow-ups.**
-- PostHog: decided 2026-11-16, a separate organisation for the wedding. The existing one belongs
-  to another product and its plan allows one project. `TODO(Tyler & Sara)`: create it and set the
-  two variables (see the ops guide). Nothing is sent until then.
+- PostHog: decided 2026-11-16, a separate organisation for the wedding (the existing one belongs
+  to another product and its plan allows one project). It exists and is configured: organisation
+  `wedding`, project `Wedding`. `TODO(Tyler & Sara)`: set the two variables in Vercel (see the ops
+  guide). Nothing is sent from a deployment until then.
 - Tracker: decided 2026-11-16, Linear, in the `wedding` team (`WED`, the provider's default).
   `TODO(Tyler & Sara)`: `LINEAR_API_KEY` in Vercel, and Triage switched on for the team.
 - Source maps. Stack traces in PostHog are minified until `@posthog/nextjs-config` uploads them. It

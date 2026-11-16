@@ -23,18 +23,20 @@ replay, exceptions from the browser and the server, web vitals, network timing a
 
 ### Switching it on
 
-1. **Create a PostHog organisation for the wedding, with one project in it.** Decided
-   2026-11-16: a separate organisation, not a second project in the existing one. That organisation
-   belongs to another product and its plan allows a single project, which is taken; a separate one
-   keeps guest data and billing apart and has its own free allowance. `TODO(Tyler & Sara)`: create
-   it in PostHog (the organisation menu, "New organization"). It cannot be created through the API
-   access this repository's agents have.
-2. In the project's settings, switch **Session replay** on, and under IP data choose **Discard
-   client IP data**. (The proxy already withholds the address; this is the second lock.)
+1. **The PostHog project exists.** Organisation `wedding`, project `Wedding` (id 739544, US
+   cloud), created 2026-11-16 and kept apart from the couple's other PostHog organisation, which
+   belongs to another product.
+2. **Its settings are done**: session replay on, client IP data discarded, exception and web-vitals
+   capture on, and replay masking set to the same rule as the code (all text and inputs masked;
+   pictures, video and `data-private` blocked). The code applies these as well, so neither side
+   depends on the other.
 3. Set the two variables in Vercel (Production and Preview), or install PostHog's Vercel
    integration, which writes the same names:
-   - `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN`: the project token, `phc_…`
-   - `NEXT_PUBLIC_POSTHOG_HOST`: `https://us.i.posthog.com` or `https://eu.i.posthog.com`
+   - `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN`: the project token, `phc_…` (PostHog: project settings)
+   - `NEXT_PUBLIC_POSTHOG_HOST`: `https://us.i.posthog.com`
+
+   `TODO(Tyler & Sara)`: this is the one step left. The agents working in this repository cannot
+   write Vercel environment variables.
 4. Redeploy. Both are inlined at build time.
 
 ### Checking it
@@ -45,6 +47,10 @@ In the browser's Network panel on the deployed site, a few seconds after a page 
 - `POST /api/observe/flags?v=2` answers 200;
 - `POST /api/observe/e` and, after some scrolling, `POST /api/observe/s` answer 200;
 - nothing is requested from a `posthog.com` host, and the console shows no CSP refusal.
+
+This path was exercised once for real on 2026-11-16, from a local server pointed at the project:
+a page view, a deliberate test exception and a recording all arrived through the proxy, with no
+address or location on them. That session is from `localhost` and is safe to delete.
 
 PostHog drops everything from automated browsers. A Playwright run that shows no events is its bot
 filter, not a broken proxy; add `?__posthog_debug=true` to see "likely bot" in the console.
