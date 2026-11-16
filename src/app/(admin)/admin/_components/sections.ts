@@ -41,6 +41,7 @@ export const ADMIN_SECTIONS: readonly AdminSection[] = [
     label: 'Guests',
     screens: [
       { href: '/admin/guests', label: 'Guests', blurb: 'People, their households, sign-in resets.', entitlement: 'admin_guest_ops', icon: 'guests', words: 'people person list import add' },
+      { href: '/admin/guests/sheet', label: 'Guest sheet', blurb: 'Sync the planning spreadsheet and see what differs from the site.', entitlement: 'admin_guest_ops', icon: 'sheet', words: 'spreadsheet sync planning sheet google csv import reconcile head count' },
       { href: '/admin/households', label: 'Households', blurb: 'Who is invited together, and mailing addresses.', entitlement: 'admin_guest_ops', icon: 'household', words: 'family address' },
       { href: '/admin/invitations', label: 'Invitations', blurb: 'Issue, rotate and revoke invitation links.', entitlement: 'admin_guest_ops', icon: 'invitation', words: 'invite link send' },
       { href: '/admin/rsvp', label: 'RSVPs', blurb: 'Who has replied, meals, overrides, exports.', entitlement: 'admin_guest_ops', icon: 'rsvp', words: 'replies coming meal headcount export' },
@@ -51,7 +52,7 @@ export const ADMIN_SECTIONS: readonly AdminSection[] = [
     id: 'weekend',
     label: 'Weekend',
     screens: [
-      { href: '/admin/events', label: 'Events', blurb: 'Events, meal options, notices, the RSVP window.', entitlement: 'admin_content', icon: 'events', words: 'schedule ceremony reception meals notices rsvp window' },
+      { href: '/admin/events', label: 'Schedule', blurb: 'The weekend day by day: events, times, rooms, menus, notices, the RSVP window.', entitlement: 'admin_content', icon: 'schedule', words: 'events calendar itinerary agenda ceremony reception times meals notices rsvp window' },
       { href: '/admin/travel', label: 'Travel & stay', blurb: 'Hotels, links, the room block.', entitlement: 'admin_content', icon: 'travel', words: 'hotel room block flights' },
       { href: '/admin/transport', label: 'Transport', blurb: 'Ride benefits and voucher codes.', entitlement: 'admin_guest_ops', icon: 'transport', words: 'rides uber vouchers shuttle' },
       { href: '/admin/gifts', label: 'Gifts', blurb: 'Registry and gift links.', entitlement: 'admin_content', icon: 'gifts', words: 'registry funds' },
@@ -62,6 +63,7 @@ export const ADMIN_SECTIONS: readonly AdminSection[] = [
     id: 'site',
     label: 'Site',
     screens: [
+      { href: '/admin/details', label: 'Details', blurb: 'Dates and facts that show on several pages, changed once.', entitlement: 'admin_content', icon: 'details', words: 'date dates deadline venue address valet rate dress code block facts info central wedding date reply by' },
       { href: '/admin/lifecycle', label: 'Lifecycle', blurb: 'The state guests see, the calendar, previews.', entitlement: 'admin_lifecycle', icon: 'lifecycle', words: 'publish state preview teaser rsvp open' },
       { href: '/admin/content', label: 'Content', blurb: 'Records with provenance and freshness.', entitlement: 'admin_content', icon: 'content', words: 'copy story faq venue verify stale' },
       { href: '/admin/flags', label: 'Flags', blurb: 'Feature gates, and the legal switches that stay shut.', entitlement: 'admin_lifecycle', icon: 'flags', words: 'feature toggle switch' },

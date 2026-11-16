@@ -190,6 +190,13 @@
       "when": 1794786886952,
       "tag": "0027_visit_telemetry",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1794794488894,
+      "tag": "0028_household_sheet_label",
+      "breakpoints": true
     }
   ]
 }

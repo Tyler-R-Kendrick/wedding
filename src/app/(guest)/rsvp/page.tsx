@@ -8,6 +8,7 @@ import { Placeholder } from '@/components/provenance/Placeholder';
 import { RsvpClosed, RsvpForm } from '@/components/rsvp/RsvpForm';
 import { RsvpTaskList } from '@/components/rsvp/RsvpTaskList';
 import { formatDeadline } from '@/domain/events/format';
+import { getSiteFacts } from '@/domain/lifecycle';
 import { GuestNotice, GuestSection } from '@/themes/guest';
 import { getRequestTheme } from '@/themes/server';
 import { uiContext } from '../_shared/principal';
@@ -36,6 +37,7 @@ export default async function RsvpPage() {
     return <FriendlyFailure what="RSVP" />;
   }
   const data = result.value.data;
+  const site = await getSiteFacts();
   const self = data.guests.find((g) => g.isSelf);
   const household = data.guests.length > 1;
   const anyOpen = data.parts.some((p) => p.state === 'open');
@@ -56,7 +58,11 @@ export default async function RsvpPage() {
               ? `${self.firstName}, your RSVP`
               : 'Your RSVP'}
       </h1>
-      <p className="page__lede">Saturday, July 17, 2027, at the Chicago Athletic Association Hotel.</p>
+      {/* The day and the place, from the site's own record (Admin, Details), not typed here: this line
+          said "Saturday, July 17, 2027, at the Chicago Athletic Association Hotel" as a literal. */}
+      <p className="page__lede">
+        {site.date.long}, at the {site.venue.name}.
+      </p>
       {/* Branches the same way /your-weekend does, and on the same field: a closed window with no
           deadline is the seeded default, so "…while RSVPs are open" above a closed notice was the
           first thing a guest read. */}

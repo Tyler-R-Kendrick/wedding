@@ -3,6 +3,7 @@
 import { AdminFlow, type FlowContext, type FlowStep } from '@/components/admin/flow/AdminFlow';
 import { CheckField, ChoiceField, Consequences, GuestPreview, ReviewList, SelectField, TextField } from '@/components/admin/flow/fields';
 import { callCapability, newIdempotencyKey, type CapabilityResponse } from '@/components/handoff/client';
+import { WEDDING_DATE_ISO } from '@/contracts/lifecycle';
 import { chicagoLocalToIso, formatDeadline, formatEventDate, formatEventWindow, isoToChicagoLocal } from '@/domain/events/format';
 
 type Option = { value: string; label: string };
@@ -28,6 +29,19 @@ export interface EventSummary {
 const TZ = 'America/Chicago';
 const CHICAGO_HINT = 'Chicago time. Leave it empty until it is confirmed.';
 
+/** The time of day of an instant, in Chicago, as a time field takes it ("16:30"); empty when unset. */
+const timeOf = (iso: string | null | undefined) => isoToChicagoLocal(iso).slice(11, 16);
+/** A day and a time of day in Chicago as an instant, or null while the time is not set. */
+const instantOn = (dateIso: string, time: string) => (time ? chicagoLocalToIso(`${dateIso}T${time}`) : null);
+/** The end of an event that starts at `start`: on the same day, or the next when it runs past midnight. */
+function endInstant(dateIso: string, start: string, end: string): string | null {
+  if (!end) return null;
+  if (!start || end > start) return instantOn(dateIso, end);
+  const next = new Date(`${dateIso}T12:00:00Z`);
+  next.setUTCDate(next.getUTCDate() + 1);
+  return instantOn(next.toISOString().slice(0, 10), end);
+}
+
 /* ---------------------------------------------------------------- event ------------------- */
 
 interface EventValues extends Record<string, unknown> {
@@ -45,9 +59,9 @@ interface EventValues extends Record<string, unknown> {
 
 const eventValues = (e: EventSummary | undefined): EventValues => ({
   name: e?.name ?? '',
-  dateIso: e?.dateIso ?? '2027-07-17',
-  startsAt: isoToChicagoLocal(e?.startsAt),
-  endsAt: isoToChicagoLocal(e?.endsAt),
+  dateIso: e?.dateIso ?? WEDDING_DATE_ISO,
+  startsAt: timeOf(e?.startsAt),
+  endsAt: timeOf(e?.endsAt),
   venueSpaceRef: e?.venueSpaceRef ?? '',
   dressCode: e?.dressCode ?? '',
   description: e?.description ?? '',
@@ -74,8 +88,10 @@ export function EventFlow({ event, rooms, label, variant = 'primary' }: { event?
         <>
           <TextField ctx={ctx} name="name" label="Name" hint="As guests read it: “Welcome drinks”, “Ceremony”." />
           <TextField ctx={ctx} name="dateIso" label="Date" type="date" />
-          <TextField ctx={ctx} name="startsAt" label="Starts" type="datetime-local" optional hint={CHICAGO_HINT} />
-          <TextField ctx={ctx} name="endsAt" label="Ends" type="datetime-local" optional hint={CHICAGO_HINT} />
+          {/* A time of day, on the date above: three fields that each took a full date and time let an
+              event start on a different day from its own date. */}
+          <TextField ctx={ctx} name="startsAt" label="Starts" type="time" optional hint={CHICAGO_HINT} />
+          <TextField ctx={ctx} name="endsAt" label="Ends" type="time" optional hint="Chicago time. An end earlier than the start is read as after midnight." />
         </>
       ),
       ready: (v) => v.name.trim().length >= 2 && /^\d{4}-\d{2}-\d{2}$/.test(v.dateIso),
@@ -107,13 +123,13 @@ export function EventFlow({ event, rooms, label, variant = 'primary' }: { event?
       title: 'Check and save',
       render: (ctx) => {
         const v = ctx.values;
-        const starts = chicagoLocalToIso(v.startsAt);
+        const starts = instantOn(v.dateIso, v.startsAt);
         return (
           <ReviewList
             items={[
               { label: 'Name', value: v.name.trim() },
               { label: 'Date', value: v.dateIso ? formatEventDate(v.dateIso, TZ) : '' },
-              { label: 'Time', value: starts ? formatEventWindow(starts, chicagoLocalToIso(v.endsAt), TZ) : '' },
+              { label: 'Time', value: starts ? formatEventWindow(starts, endInstant(v.dateIso, v.startsAt, v.endsAt), TZ) : '' },
               { label: 'Room', value: room(v.venueSpaceRef) },
               { label: 'Dress code', value: v.dressCode.trim() },
               { label: 'What happens', value: v.description.trim() },
@@ -144,8 +160,8 @@ export function EventFlow({ event, rooms, label, variant = 'primary' }: { event?
           name: v.name.trim(),
           description: v.description.trim() || null,
           dateIso: v.dateIso,
-          startsAt: chicagoLocalToIso(v.startsAt),
-          endsAt: chicagoLocalToIso(v.endsAt),
+          startsAt: instantOn(v.dateIso, v.startsAt),
+          endsAt: endInstant(v.dateIso, v.startsAt, v.endsAt),
           venueSpaceRef: v.venueSpaceRef || null,
           dressCode: v.dressCode.trim() || null,
           accessibilityNote: v.accessibilityNote.trim() || null,

@@ -1,5 +1,6 @@
 import type { AnyCapability } from '@/contracts/capability';
 import { adminAssistantAnswer } from './admin_assistant';
+import { adminSiteDetails, adminUpdateSiteDetails } from './admin_site_details';
 import { adminCancelJob, adminJobsOverview, adminRetryJob } from './admin_jobs';
 import { adminDisableFlagReadiness, adminFlagStatus } from './admin_flags';
 import { adminLifecycleStatus } from './admin_lifecycle_status';
@@ -27,10 +28,13 @@ export const opsCapabilities: readonly AnyCapability[] = [
   adminSessionDetail,
   adminSiteErrors,
   adminAssistantAnswer,
+  adminSiteDetails,
+  adminUpdateSiteDetails,
 ];
 
-export { adminAssistantAnswer, adminLifecycleStatus, draftLifecycleTransition, adminPublishLifecycle, adminSearchAudit, adminJobsOverview, adminRetryJob, adminCancelJob, adminOpsMetrics, adminProviderStatus, adminFlagStatus, adminDisableFlagReadiness, adminSiteTraffic, adminListSessions, adminSessionDetail, adminSiteErrors };
+export { adminAssistantAnswer, adminSiteDetails, adminUpdateSiteDetails, adminLifecycleStatus, draftLifecycleTransition, adminPublishLifecycle, adminSearchAudit, adminJobsOverview, adminRetryJob, adminCancelJob, adminOpsMetrics, adminProviderStatus, adminFlagStatus, adminDisableFlagReadiness, adminSiteTraffic, adminListSessions, adminSessionDetail, adminSiteErrors };
 export type { AssistantAnswer } from './admin_assistant';
+export type { SiteDetailsView } from './admin_site_details';
 export type { LifecycleStatus } from './admin_lifecycle_status';
 export type { AuditSearchView } from './admin_search_audit';
 export type { JobsOverviewView } from './admin_jobs';

@@ -3,13 +3,15 @@ import { adminListEvents } from '@/capabilities/rsvp';
 import { moveCalls } from '@/components/admin/flow/order';
 import { QuickAction } from '@/components/admin/flow/QuickAction';
 import { RecordList, RecordRow } from '@/components/admin/flow/records';
+import { WEDDING_TIMEZONE } from '@/contracts/lifecycle';
+import { agendaDays, undecided } from '@/domain/events/agenda';
 import { formatDeadline, formatEventDate, formatEventWindow } from '@/domain/events/format';
 import { adminInvoke, adminPrincipal } from '../../_shared/admin';
 import { ConsoleGate, ConsolePage, DataTable, Denied, Note, Pill, Section } from '../_components/console';
 import { DeleteEventFlow, DeleteNoticeFlow, EventFlow, InvitationsFlow, MenuFlow, NoticeFlow, WindowFlow, type Policy } from './_components/EventFlows';
 
 export const dynamic = 'force-dynamic';
-export const metadata: Metadata = { title: 'Events (admin)', robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: 'Schedule', robots: { index: false, follow: false } };
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
@@ -39,13 +41,13 @@ const move = (list: readonly Ordered[], index: number, direction: 'up' | 'down')
  */
 export default async function AdminEventsPage({ searchParams }: { searchParams: SearchParams }) {
   const { principal } = await adminPrincipal();
-  if (principal.kind !== 'admin') return <ConsoleGate what="Events and the RSVP window" />;
+  if (principal.kind !== 'admin') return <ConsoleGate what="The schedule" />;
   const sp = await searchParams;
   const notice = { ok: one(sp.ok), error: one(sp.error) };
   const r = await adminInvoke(adminListEvents, {});
   if (!r.ok) {
     return (
-      <ConsolePage title="Events, menu, invitations, RSVP window" notice={notice}>
+      <ConsolePage title="Schedule" notice={notice}>
         <Denied message={r.error.message} />
       </ConsolePage>
     );
@@ -59,11 +61,70 @@ export default async function AdminEventsPage({ searchParams }: { searchParams: 
 
   return (
     <ConsolePage
-      title="Events, menu, invitations, RSVP window"
-      lede="The events guests are invited to, what they choose to eat, who is invited to what, and when they can answer."
+      title="Schedule"
+      lede="The weekend’s events day by day, what guests choose to eat, who is invited to what, when they can answer, and the notices on their dashboard."
       notice={notice}
       actions={<EventFlow rooms={rooms} label="Add an event" />}
     >
+      <Section title="The weekend, day by day" id="events" note="Each day in the order things happen. An event with no time yet follows the timed ones; Up and Down set the order among those.">
+        {d.events.length === 0 ? <p className="flow-empty">No events yet. Add the first one.</p> : null}
+        {agendaDays(d.events).map((day) => (
+          <div key={day.dateIso} className="ag-day">
+            <h3 className="ag-day__title">
+              {formatEventDate(day.dateIso, WEDDING_TIMEZONE)}
+              <span className="ag-day__count">
+                {day.timed.length + day.untimed.length} {day.timed.length + day.untimed.length === 1 ? 'event' : 'events'}
+              </span>
+            </h3>
+            <ol className="ag-list">
+              {[...day.timed, ...day.untimed].map((e) => {
+                const loose = day.untimed.indexOf(e);
+                const open = undecided(e);
+                return (
+                  <li key={e.id} className="ag-row" data-event-id={e.id}>
+                    <p className={e.startsAt ? 'ag-row__time' : 'ag-row__time ag-row__time--unset'}>{e.startsAt ? formatEventWindow(e.startsAt, e.endsAt, e.timezone) : 'Time not set'}</p>
+                    <div className="ag-row__body">
+                      <p className="ag-row__name">
+                        {e.name} {e.rsvpRequired ? null : <Pill>No RSVP</Pill>}
+                      </p>
+                      <p className="ag-row__meta">
+                        {roomName(e.venueSpaceRef) ?? 'Room not set'} · {e.invitedCount} invited · {e.mealOptions.length ? `menu version ${e.mealOptionsVersion}, ${e.mealOptions.length} choices` : 'no meal choice'}
+                      </p>
+                      {open.length || e.placeholder ? (
+                        <p className="ag-row__open">
+                          <Pill tone="warn">{open.length ? 'To decide' : 'Marked not confirmed'}</Pill> {open.length ? open.join(', ') : 'Guests read these details as not final.'}
+                        </p>
+                      ) : null}
+                      {e.responseCount > 0 ? (
+                        <p className="ag-row__meta" data-testid="event-kept">
+                          {e.responseCount === 1 ? 'One guest has' : `${e.responseCount} guests have`} answered its RSVP, so it cannot be deleted. Edit it instead.
+                        </p>
+                      ) : d.events.length === 1 ? (
+                        <p className="ag-row__meta" data-testid="event-kept">
+                          It is the only event, so it cannot be deleted: a wedding has at least one. Edit it instead.
+                        </p>
+                      ) : null}
+                    </div>
+                    <div className="ag-row__actions">
+                      <EventFlow event={e} rooms={rooms} label="Edit" variant="quiet" />
+                      <MenuFlow event={e} />
+                      <InvitationsFlow event={{ id: e.id, name: e.name }} guests={guests} current={policyOf(e.id)} />
+                      {loose >= 0 && day.untimed.length > 1 ? (
+                        <>
+                          <QuickAction label="Up" busyLabel="Moving…" done={`Moved ${e.name} up.`} unavailable={loose === 0} accessibleName={`Move ${e.name} up`} calls={move(d.events, d.events.indexOf(e), 'up')} />
+                          <QuickAction label="Down" busyLabel="Moving…" done={`Moved ${e.name} down.`} unavailable={loose === day.untimed.length - 1} accessibleName={`Move ${e.name} down`} calls={move(d.events, d.events.indexOf(e), 'down')} />
+                        </>
+                      ) : null}
+                      {e.responseCount === 0 && d.events.length > 1 ? <DeleteEventFlow event={{ id: e.id, name: e.name, invitedCount: e.invitedCount, mealOptionsVersion: e.mealOptionsVersion }} /> : null}
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+        ))}
+      </Section>
+
       <Section title="RSVP window" id="window">
         <p className="flow-copy">
           RSVPs are <strong>{d.window.open ? 'open' : 'closed'}</strong> right now. Setting: {MODE[d.settings.mode] ?? d.settings.mode}
@@ -72,53 +133,6 @@ export default async function AdminEventsPage({ searchParams }: { searchParams: 
         <WindowFlow settings={d.settings} />
       </Section>
 
-      <Section title="Events" id="events">
-        <RecordList label="Events" empty={d.events.length === 0 ? 'No events yet. Add the first one.' : null}>
-          {d.events.map((e, i) => {
-            const prev = d.events[i - 1];
-            const next = d.events[i + 1];
-            return (
-              <RecordRow
-                key={e.id}
-                data-event-id={e.id}
-                title={e.name}
-                status={
-                  <>
-                    {e.placeholder ? <Pill tone="warn">Not confirmed yet</Pill> : <Pill tone="good">Confirmed</Pill>}
-                    {e.rsvpRequired ? null : <Pill>No RSVP</Pill>}
-                  </>
-                }
-                meta={
-                  <>
-                    {formatEventDate(e.dateIso, e.timezone)} · {formatEventWindow(e.startsAt, e.endsAt, e.timezone)} · {roomName(e.venueSpaceRef) ?? 'room not confirmed'} · {e.invitedCount} invited ·{' '}
-                    {e.mealOptions.length ? `menu version ${e.mealOptionsVersion}, ${e.mealOptions.length} choices` : 'no meal choice'}
-                  </>
-                }
-                actions={
-                  <>
-                    <EventFlow event={e} rooms={rooms} label="Edit" variant="quiet" />
-                    <MenuFlow event={e} />
-                    <InvitationsFlow event={{ id: e.id, name: e.name }} guests={guests} current={policyOf(e.id)} />
-                    <QuickAction label="Up" busyLabel="Moving…" done={`Moved ${e.name} up.`} unavailable={!prev} accessibleName={`Move ${e.name} up`} calls={move(d.events, i, 'up')} />
-                    <QuickAction label="Down" busyLabel="Moving…" done={`Moved ${e.name} down.`} unavailable={!next} accessibleName={`Move ${e.name} down`} calls={move(d.events, i, 'down')} />
-                    {e.responseCount === 0 && d.events.length > 1 ? <DeleteEventFlow event={{ id: e.id, name: e.name, invitedCount: e.invitedCount, mealOptionsVersion: e.mealOptionsVersion }} /> : null}
-                  </>
-                }
-              >
-                {e.responseCount > 0 ? (
-                  <p className="flow-row__meta" data-testid="event-kept">
-                    {e.responseCount === 1 ? 'One guest has' : `${e.responseCount} guests have`} answered its RSVP, so it cannot be deleted. Edit it instead.
-                  </p>
-                ) : d.events.length === 1 ? (
-                  <p className="flow-row__meta" data-testid="event-kept">
-                    It is the only event, so it cannot be deleted: a wedding has at least one. Edit it instead.
-                  </p>
-                ) : null}
-              </RecordRow>
-            );
-          })}
-        </RecordList>
-      </Section>
 
       <Section title="Who is invited to what" id="entitlements" note="To change it, use Invitations on the event above.">
         <DataTable

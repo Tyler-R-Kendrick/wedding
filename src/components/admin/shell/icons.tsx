@@ -46,6 +46,9 @@ const PATHS = {
   down: 'M12 5v13M6.5 12.5L12 18l5.5-5.5',
   pin: 'M9 4h6l-1 6 3 3H7l3-3zM12 13v7',
   new: 'M12 5v14M5 12h14',
+  sheet: 'M4 5h16v14H4zM4 10h16M4 14.5h16M9.5 5v14M15 5v14',
+  details: 'M5 4h14v16H5zM8.5 8.5h7M8.5 12h7M8.5 15.5h4M3 8h2M3 12h2M3 16h2',
+  schedule: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4M8 13.5h2M8 16.5h2M12.5 13.5h3.5M12.5 16.5h3.5',
 } as const;
 
 export type AdminIconName = keyof typeof PATHS;

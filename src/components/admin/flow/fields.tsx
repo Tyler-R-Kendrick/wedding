@@ -54,7 +54,7 @@ export function TextField<V extends Values>({
   label: string;
   hint?: ReactNode;
   /** Values stay strings in the flow; convert in `submit.input` (`Number(v.seats)`, an ISO date). */
-  type?: 'text' | 'url' | 'email' | 'tel' | 'number' | 'date' | 'datetime-local';
+  type?: 'text' | 'url' | 'email' | 'tel' | 'number' | 'date' | 'time' | 'datetime-local';
   multiline?: boolean;
   /** For `multiline`: how tall the box starts. A CSV import wants more than a note. */
   rows?: number;

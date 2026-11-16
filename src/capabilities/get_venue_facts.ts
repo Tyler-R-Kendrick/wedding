@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { getSiteSettings } from '@/db/repos/site';
+import { SEED_SITE } from '@/db/seed/site';
 import { defineCapability } from '@/contracts/capability';
 import { ok } from '@/contracts/result';
 import type { Db } from '@/db/client';
@@ -48,6 +50,8 @@ export const getVenueFacts = defineCapability<z.infer<typeof input>, OurVenuePag
     const db = requireService<Db>(ctx, 'db');
     const rctx = await createReadContext(db, ctx.principal, ctx.surface ?? 'ui', ctx.now);
     const { history, lookForThis, spaces, outlets, gettingHere, roomsNotConfirmed, sources } = await readVenueFacts(rctx, { category: i?.category, includeExpired: i?.includeExpired });
-    return ok({ data: { route: ROUTES.ourVenue, venueName: 'Chicago Athletic Association Hotel', history, lookForThis, spaces, outlets, gettingHere, roomsNotConfirmed }, sources });
+    // The venue's name is the site record's (Admin, Details), so a correction there reaches the concierge and agents too.
+    const site = await getSiteSettings(db);
+    return ok({ data: { route: ROUTES.ourVenue, venueName: site?.venueName ?? SEED_SITE.venueName, history, lookForThis, spaces, outlets, gettingHere, roomsNotConfirmed }, sources });
   },
 });

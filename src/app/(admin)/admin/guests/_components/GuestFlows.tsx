@@ -715,12 +715,19 @@ interface SheetValues extends Record<string, unknown> {
   summary: string;
   notes: string[];
 }
+interface SheetCounts {
+  adults: number;
+  kids: number;
+  plusOnes: number;
+}
 interface SheetResult {
   dryRun: boolean;
   lines: number;
   people: number;
   withheldColumns: string[];
   missingColumns: string[];
+  changes: { added: { label: string; people: number }[]; removed: { label: string; people: number }[]; changed: { label: string; before: SheetCounts; after: SheetCounts }[] } | null;
+  site: { lines: number; matched: number; differing: number; onlyOnSheet: number; onlyOnSite: number; sheetPeople: number; sitePeople: number };
 }
 
 /**
@@ -730,27 +737,86 @@ interface SheetResult {
  *
  * `secret`: the pasted tab (with those columns in it) is never kept on this device.
  */
-export function UpdatePlanningSheetFlow({ hasCopy }: { hasCopy: boolean }) {
+/**
+ * A file instead of a paste: the tab downloaded from the sheet (File, Download, CSV or TSV). It is
+ * read in the browser into the same field a paste fills, so the rest of the flow is one path.
+ */
+function SheetFile({ onText }: { onText: (text: string) => void }) {
+  const [name, setName] = useState<string | null>(null);
+  const [problem, setProblem] = useState<string | null>(null);
+  return (
+    <div className="flow-field">
+      <label htmlFor="sheet-file">A downloaded copy of the tab (optional)</label>
+      <span className="flow-hint">In the sheet: File, Download, Comma-separated values. Or paste the tab below.</span>
+      <input
+        id="sheet-file"
+        type="file"
+        accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain"
+        onChange={async (event) => {
+          const file = event.target.files?.[0];
+          setProblem(null);
+          if (!file) return;
+          if (file.size > REQUEST_LIMIT_BYTES) return setProblem('That file is too large to send in one go. Download only the Guests tab.');
+          try {
+            onText(await file.text());
+            setName(file.name);
+          } catch {
+            setProblem('That file could not be read. Paste the tab instead.');
+          }
+        }}
+      />
+      {name ? (
+        <span className="flow-hint" role="status">
+          Read {name}. Continue to check it.
+        </span>
+      ) : null}
+      {problem ? (
+        <span className="flow-field-error" role="alert">
+          {problem}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+export function UpdatePlanningSheetFlow({ hasCopy, variant }: { hasCopy: boolean; variant?: 'primary' | 'ghost' }) {
   return (
     <AdminFlow<SheetValues>
       id="guests:planning-sheet"
       secret
       title="Update the planning sheet"
-      trigger={{ label: hasCopy ? 'Update from the sheet' : 'Add the planning sheet', variant: hasCopy ? 'ghost' : 'primary' }}
+      trigger={{ label: hasCopy ? 'Update from the sheet' : 'Add the planning sheet', variant: variant ?? (hasCopy ? 'ghost' : 'primary') }}
       initial={{ text: '', source: 'Guests tab', summary: '', notes: [] }}
       steps={[
         {
           title: 'Paste the Guests tab',
           lede: 'In the sheet, open the Guests tab, select everything (Ctrl or Cmd + A), copy it, and paste it here. A CSV export of the tab works too.',
           fields: ['text'],
-          render: (ctx) => <TextField ctx={ctx} name="text" label="The Guests tab" multiline rows={10} spellCheck={false} hint="Header row first. Addresses, emails, phones, dietary needs and notes are dropped before anything is saved." />,
+          render: (ctx) => (
+            <>
+              <SheetFile onText={(text) => ctx.set({ text })} />
+              <TextField ctx={ctx} name="text" label="The Guests tab" multiline rows={8} spellCheck={false} hint="Header row first. Addresses, emails, phones, dietary needs and notes are dropped before anything is saved." />
+            </>
+          ),
           ready: (v) => v.text.trim().length > 0,
           readyHint: { field: 'text', message: 'Paste the tab first.' },
           next: async (v) => {
             if (new Blob([JSON.stringify({ input: { text: v.text, source: v.source, dryRun: true }, idempotencyKey: 'X'.repeat(26) })]).size > REQUEST_LIMIT_BYTES) return { errors: { text: 'That is too long to send in one go. Paste only the Guests tab.' } };
             const res = await callCapability<SheetResult>('admin_upload_guest_sheet', { input: { text: v.text, source: v.source, dryRun: true }, idempotencyKey: newIdempotencyKey() });
             if (!res.ok || !res.data) return { errors: { text: res.error?.message ?? 'The tab could not be read.' } };
+            const { changes, site } = res.data;
+            const list = (items: { label: string }[]) => `${items.slice(0, 6).map((i) => i.label).join(', ')}${items.length > 6 ? `, and ${items.length - 6} more` : ''}`;
             const notes = [
+              // What this copy changes, first: that is what the person pasting it is checking.
+              ...(changes
+                ? [
+                    ...(changes.added.length ? [`New since the last copy (${changes.added.length}): ${list(changes.added)}.`] : []),
+                    ...(changes.removed.length ? [`No longer on the sheet (${changes.removed.length}): ${list(changes.removed)}.`] : []),
+                    ...(changes.changed.length ? [`Head counts changed (${changes.changed.length}): ${list(changes.changed)}.`] : []),
+                    ...(changes.added.length + changes.removed.length + changes.changed.length === 0 ? ['Nothing changed since the last copy.'] : []),
+                  ]
+                : ['This is the first copy.']),
+              `Against the site: ${site.matched} of ${site.lines} lines are households here, ${site.onlyOnSheet} are not yet, ${site.differing} have different head counts.`,
               ...(res.data.missingColumns.length ? [`Columns not found, so shown blank: ${res.data.missingColumns.join(', ')}.`] : []),
               ...(res.data.withheldColumns.length ? [`Dropped, on purpose: ${res.data.withheldColumns.join(', ')}.`] : []),
             ];

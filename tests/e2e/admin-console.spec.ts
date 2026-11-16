@@ -24,6 +24,9 @@ const CONSOLE_PAGES = [
   { path: '/admin/assistant', heading: 'Assistant' },
   { path: '/admin/sessions', heading: 'Sessions' },
   { path: '/admin/errors', heading: 'Errors' },
+  { path: '/admin/details', heading: 'Details' },
+  { path: '/admin/guests/sheet', heading: 'Guest sheet' },
+  { path: '/admin/events', heading: 'Schedule' },
   { path: '/admin/lifecycle', heading: 'Lifecycle' },
   { path: '/admin/audit', heading: 'Audit trail' },
   { path: '/admin/jobs', heading: 'Jobs' },
@@ -163,6 +166,47 @@ test('the assistant proposes a lifecycle change and does nothing until it is con
   await expect(proposal.getByRole('button', { name: 'Publish Wedding week' })).toBeVisible();
   await proposal.getByRole('button', { name: 'Not now' }).click();
   await expect(proposal.getByRole('button', { name: 'Review' })).toBeVisible();
+  await ctx.close();
+});
+
+test('Details lists each shared fact with where it shows, and changing one is a step and a check that names its reach', async ({ browser }) => {
+  const ctx = await contextAs(browser, 'admin');
+  const page = await ctx.newPage();
+  await page.goto('/admin/details');
+  const date = page.locator('[data-fact="wedding.date"]');
+  await expect(date).toContainText('Saturday, July 17, 2027');
+  await expect(date.getByRole('link', { name: 'RSVP', exact: true })).toHaveAttribute('href', '/rsvp');
+  // The reply-by time is undecided in the seed: marked, with a Set action rather than an Edit.
+  const deadline = page.locator('[data-fact="rsvp.deadline"]');
+  await expect(deadline).toContainText('To decide');
+  // An event's time is changed on the screen that owns it; the row links there.
+  await expect(page.locator('[data-fact^="event."]').first().getByRole('link', { name: 'Change on Schedule' })).toHaveAttribute('href', '/admin/events#events');
+
+  // Open the venue-website edit and stop at the check: saving would change state other specs share.
+  await page.locator('[data-fact="venue.url"]').getByRole('button', { name: /venue website/i }).click();
+  const sheet = page.getByRole('dialog');
+  await sheet.getByRole('textbox', { name: 'Venue website' }).fill('https://example.com/venue');
+  await sheet.getByRole('button', { name: 'Continue' }).click();
+  await expect(sheet).toContainText('Becomes');
+  await expect(sheet).toContainText('Changes on: The footer of every guest page, Our Venue.');
+  await expect(sheet.getByRole('button', { name: 'Save venue website' })).toBeVisible();
+  await ctx.close();
+});
+
+test('the schedule reads as an agenda: a day heading, then each event with its time or "Time not set"', async ({ browser }) => {
+  const ctx = await contextAs(browser, 'admin');
+  const page = await ctx.newPage();
+  await page.goto('/admin/events');
+  await expect(page.locator('.ag-day__title').first()).toContainText('July 17, 2027');
+  const rows = page.locator('.ag-row');
+  expect(await rows.count()).toBeGreaterThanOrEqual(3);
+  // Every row leads with a time, decided or not.
+  for (const time of await page.locator('.ag-row__time').allInnerTexts()) expect(time.trim()).not.toBe('');
+  // Adding an event asks for a time of day, not a second date.
+  await page.getByRole('button', { name: 'Add an event' }).click();
+  const sheet = page.getByRole('dialog');
+  await expect(sheet.getByLabel('Starts')).toHaveAttribute('type', 'time');
+  await expect(sheet.getByLabel('Ends')).toHaveAttribute('type', 'time');
   await ctx.close();
 });
 

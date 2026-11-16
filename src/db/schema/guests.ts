@@ -32,6 +32,12 @@ export const households = pgTable('households', {
   mailingAddress: jsonb('mailing_address').$type<{ line1?: string; line2?: string; city?: string; region?: string; postalCode?: string; country?: string }>(),
   /** Admin-only notes (never shown to guests, never in default exports). */
   notes: text('notes'),
+  /**
+   * The planning-sheet line this household is, as written there ("Mom/Dad Fitz"), when an
+   * administrator has said so. The sheet names groups its own way; this is what lets a re-synced
+   * sheet find the household again after either name changes (src/domain/guests/sheet-reconcile).
+   */
+  sheetLabel: text('sheet_label'),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 });

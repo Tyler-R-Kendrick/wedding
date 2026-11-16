@@ -613,3 +613,125 @@
     min-height: 2.75rem;
   }
 }
+
+/* What a new copy of the sheet changed: one line each, the kind of change first. */
+.con-changes {
+  display: grid;
+  gap: var(--spacing-sm);
+  max-width: 80ch;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Details: under each fact, the pages that print it, and any copy that does not follow it. */
+.det-shown,
+.det-copy {
+  max-width: 80ch;
+  margin: 0;
+  color: var(--ops-muted);
+}
+
+.det-shown__label {
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+.det-copy {
+  color: var(--ops-error);
+}
+
+/*
+ * The schedule as an agenda: a day heading, then each event on one ruled row with its time in a
+ * fixed left column, so the eye runs down the times the way it does down a printed run-of-day.
+ */
+.ag-day {
+  display: grid;
+  gap: var(--spacing-sm);
+}
+
+.ag-day + .ag-day {
+  margin-top: var(--spacing-lg);
+}
+
+.ag-day__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--spacing-sm) var(--spacing-md);
+  margin: 0;
+  padding-bottom: var(--spacing-sm);
+  font-size: var(--text-body-md);
+  font-weight: 500;
+  border-bottom: 1px solid var(--color-primary);
+}
+
+.ag-day__count {
+  color: var(--ops-muted);
+  font-weight: 400;
+}
+
+.ag-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ag-row {
+  display: grid;
+  grid-template-columns: 11rem minmax(0, 1fr) auto;
+  gap: var(--spacing-xs) var(--spacing-md);
+  align-items: start;
+  padding-block: 0.75rem;
+  border-bottom: 1px solid var(--ops-outline);
+}
+
+.ag-row__time {
+  margin: 0;
+  font-variant-numeric: tabular-nums lining-nums;
+  font-weight: 500;
+}
+
+.ag-row__time--unset {
+  color: var(--ops-muted);
+  font-weight: 400;
+}
+
+.ag-row__body {
+  display: grid;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.ag-row__name {
+  margin: 0;
+  font-weight: 500;
+}
+
+.ag-row__meta,
+.ag-row__open {
+  margin: 0;
+  color: var(--ops-muted);
+}
+
+.ag-row__open {
+  color: var(--color-primary);
+}
+
+.ag-row__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0 var(--spacing-xs);
+}
+
+@media (width < 60rem) {
+  .ag-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ag-row__actions {
+    justify-content: flex-start;
+    margin-left: calc(var(--spacing-sm) * -1);
+  }
+}

@@ -216,7 +216,10 @@ describe('principal resolver', () => {
     // 95 -> 99: first-party visit telemetry (`admin_site_traffic`, `admin_list_sessions`,
     // `admin_session_detail`, `admin_site_errors`), ui-only reads behind `admin_integrations`.
     // 99 -> 100: `admin_assistant_answer` (ui-only read), the admin console's assistant.
-    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(100);
+    // 100 -> 103: the planning sheet against the guest list (`admin_guest_sheet_sync`, `admin_link_sheet_line`,
+    // `admin_add_household_from_sheet`).
+    // 103 -> 105: the Details screen (`admin_site_details`, `admin_update_site_details`).
+    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(105);
     expect(names({ principal: ap, exposure: 'ai' }).filter((n) => n.startsWith('admin_'))).toEqual([]);
     // Level 15. The counts above are of the `admin_` namespace, so nothing here ever pinned the
     // GUEST-facing capabilities an admin's list also contains — and `meetsAuthLevel('guest', admin)`

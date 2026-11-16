@@ -27,6 +27,24 @@ and read through four capabilities: `admin_site_traffic`, `admin_list_sessions`,
 `docs/ops/admin-guide.md` under Telemetry. The console's own pages are not
 recorded as views.
 
+## One place for shared facts
+
+`/admin/details` reads `admin_site_details`, which builds its list in `src/domain/site-details`: for
+each fact, its value, the pages that print it, and how it is changed (a capability call the screen
+makes in place, or a link to the screen that owns it). Where the code keeps its own copy of a fact
+(the wedding date constant the trip planner reads, the address and valet sentence in
+`src/domain/travel/facts.ts`, the room-block dates in `stay-copy.ts`), the copy is compared with the
+record and the fact is marked out of step when they differ. Adding a shared fact is adding it to
+`buildSiteDetails`; making a page follow one is making it read the record.
+
+`admin_update_site_details` is the one writer of `site_settings` after the seed.
+
+## The schedule
+
+`/admin/events` groups events by day and orders each day by start time (`src/domain/events/agenda.ts`).
+Events with no time follow, in their hand-set order. The event flow takes a date and times of day,
+so a start cannot land on a different day from the event's own date.
+
 ## The assistant
 
 One capability, `admin_assistant_answer` (`src/capabilities/ops/admin_assistant.ts`),
