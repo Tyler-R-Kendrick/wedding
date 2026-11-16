@@ -19,6 +19,7 @@ from [`../design/brief.md`](../design/brief.md); unknowns are `TODO(Tyler & Sara
 | [0011](0011-content-provenance-and-freshness.md) | Content provenance and freshness | Accepted | `sourceId`/`sourceType`/`verifiedAt`/`validFrom|validUntil`/`trustClass`/`contentVersion`; stale-data UI; CAA closed outlets as the canonical example |
 | [0012](0012-site-lifecycle-state-machine.md) | Site lifecycle state machine | Accepted | TEASER → … → ARCHIVE; manual override beats wall clock; admin preview |
 | [0013](0013-gifts-of-money-go-person-to-person.md) | Gifts of money go person to person | Proposed | Funds (honeymoon, home, adoption, next adventures) hand off to the couple's own Zelle / Venmo / PayPal / Cash App / mailed check; no processor, no escrow, no guest fee from a bank or balance; Zelle and address shown only to invited guests |
+| [0014](0014-session-tracing-and-problem-reports.md) | Session tracing for everyone, problem reports from the couple | Proposed | A first-party flight recorder for every visitor plus PostHog (replay, exceptions, vitals) behind a same-origin proxy that strips cookies; an owners-only reporter (`Alt+Shift+B`) that files to Linear or GitHub and works with sign-in, the database or the page's own script down |
 
 ## Adding an ADR
 

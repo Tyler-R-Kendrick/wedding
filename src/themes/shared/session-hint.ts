@@ -13,11 +13,27 @@ export interface SessionHint {
   viewing: boolean;
   /** Guest Portal / Admin Portal links for the account menu. */
   portals: { label: string; href: string }[];
+  /**
+   * Whether this reader is one of the couple and may use the problem reporter
+   * (src/components/feedback). Present only when `/api/session` answered: a failed request leaves
+   * it out, and the reporter treats "no answer" as "no change".
+   */
+  reporter?: boolean;
 }
 
 export const SIGNED_OUT: SessionHint = { signedIn: false, admin: false, viewAs: null, viewRole: null, viewing: false, portals: [] };
 
 let probe: Promise<SessionHint> | null = null;
+
+const hintListeners = new Set<(hint: SessionHint) => void>();
+
+/** Hears every answer `/api/session` gives on this page, whoever asked. Returns the unsubscribe. */
+export function onSessionHint(listener: (hint: SessionHint) => void): () => void {
+  hintListeners.add(listener);
+  return () => {
+    hintListeners.delete(listener);
+  };
+}
 
 function viewAsOf(v: unknown): SessionHint['viewAs'] {
   if (!v || typeof v !== 'object') return null;
@@ -53,19 +69,22 @@ export function sessionProbe(fresh = false): Promise<SessionHint> {
   const asked: Promise<SessionHint> = fetch('/api/session', { credentials: 'same-origin', cache: 'no-store', headers: { accept: 'application/json' } })
     .then(async (r) => {
       if (!r.ok) throw new Error(`session probe: ${r.status}`);
-      const body = (await r.json()) as { signedIn?: unknown; admin?: unknown; viewAs?: unknown; viewRole?: unknown; portals?: unknown };
+      const body = (await r.json()) as { signedIn?: unknown; admin?: unknown; viewAs?: unknown; viewRole?: unknown; portals?: unknown; reporter?: unknown };
       const signedIn = body.signedIn === true;
       const viewAs = signedIn ? viewAsOf(body.viewAs) : null;
       const viewRole = signedIn ? viewRoleOf(body.viewRole) : null;
       const portals = signedIn ? portalsOf(body.portals) : [];
-      return {
+      const hint: SessionHint = {
         signedIn,
         admin: signedIn && body.admin === true,
         viewAs,
         viewRole,
         viewing: viewAs !== null || viewRole !== null,
         portals,
+        reporter: signedIn && body.reporter === true,
       };
+      for (const listener of hintListeners) listener(hint);
+      return hint;
     })
     .catch(() => {
       if (probe === asked) probe = null;

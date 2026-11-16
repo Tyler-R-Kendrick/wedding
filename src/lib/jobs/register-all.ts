@@ -2,6 +2,7 @@ import { registerAiPurgeJob } from '@/ai/session';
 import { registerMediaJobs } from '@/domain/media/jobs';
 import { registerMediaAiJobs } from '@/domain/mediaai/jobs';
 import { registerRsvpJobs } from '@/domain/rsvp/email';
+import { registerFeedbackJobs } from '@/lib/feedback/jobs';
 import { listJobTypes } from './handlers';
 import { registerHousekeeping } from './housekeeping';
 
@@ -26,6 +27,7 @@ export function registerAllJobHandlers(): readonly string[] {
   registerRsvpJobs();
   registerMediaJobs();
   registerMediaAiJobs();
+  registerFeedbackJobs();
   return listJobTypes();
 }
 

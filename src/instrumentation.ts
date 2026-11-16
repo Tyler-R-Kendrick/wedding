@@ -85,3 +85,14 @@ export async function register() {
 }
 
 type LocationSuggestionResolver = import('@/domain/travel/profile').LocationSuggestionResolver;
+
+/**
+ * Every server-side failure Next catches, on every route: logged with its digest (the reference the
+ * error page shows), and sent to the hosted error tracker when one is connected. Loaded on first
+ * use so a start that never fails pays nothing for it.
+ */
+export const onRequestError: import('next').Instrumentation.onRequestError = async (error, request, context) => {
+  if (process.env.NEXT_RUNTIME !== 'nodejs') return;
+  const { recordRequestError } = await import('@/lib/observe/request-error');
+  await recordRequestError(error, request, context);
+};

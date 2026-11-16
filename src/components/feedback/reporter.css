@@ -1,0 +1,103 @@
+/*
+ * The problem reporter's dialog (ReporterDialog.tsx). A working surface for two people, so it is
+ * the site's form vocabulary (`.fld`, `.inp`, `.choice`, `.btn` from rsvp/recipes.css) in a plain
+ * panel, with no ornament of its own. Every value is a token: the dialog carries `data-theme`
+ * itself, because it is rendered from the root layout, outside the element that normally does.
+ */
+.reporter {
+  box-sizing: border-box;
+  inline-size: min(100% - var(--spacing-lg), 36rem);
+  max-block-size: calc(100dvh - var(--spacing-xl));
+  margin: auto;
+  padding: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  font-family: var(--font-text);
+  font-size: var(--type-body-md-size);
+  line-height: var(--type-body-md-line);
+  color: var(--color-on-surface);
+  background: var(--color-surface);
+  border: 1px solid var(--color-outline);
+  border-radius: var(--rounded-md);
+}
+
+.reporter::backdrop {
+  background: var(--color-primary);
+  opacity: 0.6;
+}
+
+.reporter__panel {
+  display: grid;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+}
+
+.reporter__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+}
+
+.reporter__title {
+  margin: 0;
+  font-family: var(--type-h3-family);
+  font-size: var(--type-h3-size);
+  font-weight: var(--type-h3-weight);
+  line-height: var(--type-h3-line);
+}
+
+/* The ghost button's padding would push the title off its line at 390px. */
+.reporter__close.btn {
+  min-height: 44px;
+  padding: var(--spacing-sm);
+}
+
+.reporter__note,
+.reporter__hint {
+  margin: 0;
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  color: var(--color-on-surface-muted);
+}
+
+.reporter__file {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.reporter__file input[type='file'] {
+  max-inline-size: 100%;
+  min-height: 44px;
+  font: inherit;
+  font-size: var(--type-body-sm-size);
+}
+
+.reporter__alert {
+  margin: 0;
+  padding: var(--spacing-md);
+  font-weight: 600;
+  color: var(--color-error);
+  border: 2px solid var(--color-error);
+  border-radius: var(--rounded-sm);
+}
+
+.reporter__done {
+  margin: 0;
+}
+
+.reporter__ref {
+  margin: 0;
+  color: var(--color-on-surface-muted);
+}
+
+.reporter .actions {
+  margin-top: 0;
+}
+
+.reporter kbd {
+  font: inherit;
+  font-weight: 600;
+}

@@ -2,6 +2,7 @@ import { getDb } from '@/db/client';
 import { getGuest, guestDisplayName } from '@/domain/guests/repo';
 import { getHousehold } from '@/domain/households/repo';
 import { accountPortalLinks } from '@/domain/lifecycle/account-portals';
+import { ownerAdminId, reporterPassHeader } from '@/lib/feedback/reporter';
 import { getPrincipal } from '@/lib/principal';
 import { getRequestId, jsonResponse } from '@/lib/request';
 
@@ -17,6 +18,9 @@ export const dynamic = 'force-dynamic';
  * The one exception to "no name": an administrator browsing as a guest (`viewedBy`) is told whose
  * view it is, for the band that says so on every page. They chose that guest in the console, where
  * the same name is already on screen; a real guest's session never carries it.
+ *
+ * `reporter` says whether the reader is an owner (Tyler or Sara), which is all the problem
+ * reporter needs to decide whether to arm its shortcut on this device.
  */
 export async function GET(request: Request) {
   const principal = await getPrincipal(request);
@@ -35,6 +39,11 @@ export async function GET(request: Request) {
   }
   const db = await getDb();
   const portals = signedIn ? await accountPortalLinks(db, principal) : [];
+  // One of the couple: tell the chrome the problem reporter is theirs, and hand this browser the
+  // signed pass the reporter's endpoint reads, so a report can still be filed on a day this route
+  // cannot answer (src/lib/feedback/pass.ts). Renewed on every signed-in page.
+  const owner = ownerAdminId(principal);
+  const pass = owner ? reporterPassHeader(request, owner) : null;
   return jsonResponse(
     {
       signedIn,
@@ -42,7 +51,8 @@ export async function GET(request: Request) {
       viewAs,
       viewRole,
       portals,
+      reporter: owner !== null,
     },
-    { requestId: getRequestId(request.headers) },
+    { requestId: getRequestId(request.headers), ...(pass ? { headers: { 'Set-Cookie': pass } } : {}) },
   );
 }

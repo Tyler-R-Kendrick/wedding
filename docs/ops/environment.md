@@ -79,6 +79,14 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 | `MEDIA_PART_SIZE_MB` | `8` | media: multipart part size (S3/R2 require >= 5) | no |
 | `MEDIA_MULTIPART_THRESHOLD_MB` | `8` | media: files above this use multipart | no |
 | `NEXT_TURBOPACK_ROOT` | unset | `next.config.ts`: Turbopack filesystem root for sandboxes whose `node_modules` is a symlink outside the project (set to the parent directory). Never needed in CI or normal checkouts | no |
+| `ISSUE_TRACKER` | unset: Linear if configured, else GitHub | where the couple's problem reports are filed (`src/providers/issue-tracker`): `linear`, `github`, `off` | no |
+| `LINEAR_API_KEY`, `LINEAR_TEAM` | unset | problem reporter: a Linear personal API key and the team's key (`WED`) or id. Reports arrive in the team's Triage state when it has one | no |
+| `LINEAR_PROJECT_ID` | unset | problem reporter: optional Linear project for every report | no |
+| `GITHUB_ISSUES_TOKEN`, `GITHUB_ISSUES_REPO` | unset | problem reporter: a fine-grained token (Issues: read and write) and `owner/name`. Used when Linear is not configured | no |
+| `GITHUB_ISSUES_LABELS` | `site-feedback` | problem reporter: comma-separated labels for a GitHub report | no |
+| `GITHUB_ISSUES_ALLOW_PUBLIC` | `false` | problem reporter: allow filing into a public repository. Off, the adapter refuses one | no |
+| `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN` | unset: session tracing off | PostHog project token (`phc_…`) for `src/lib/observe`. Public by design | **yes** |
+| `NEXT_PUBLIC_POSTHOG_HOST` | US | PostHog ingestion host; only its region is read (`us` or `eu`) | **yes** |
 
 ## Public variables (inlined into the browser bundle)
 

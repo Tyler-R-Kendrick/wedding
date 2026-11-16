@@ -24,6 +24,7 @@ or if the activation matrix drifts from the code that switches things on.
 | [Local development](ops/local-dev.md) | Clone to running site. No accounts, no keys. |
 | [Deploying](ops/deploy-vercel-supabase.md) | Vercel + Supabase + R2, in the order that works. |
 | [Environment variables](ops/environment.md) | Every variable, its default and who reads it. |
+| [Observability](ops/observability.md) | Session tracing for every visitor, the couple's problem reporter, and how to switch each on. |
 | [Activation matrix](ops/activation-matrix.md) | What is switched off, and exactly what turns it on. Generated from the code. |
 | [Asset licensing](ops/asset-licensing.md) | Where every image came from and what we owe for it. |
 | [Professional media rights](ops/professional-media-rights.md) | The photographer/videographer gate on AI processing. |

@@ -138,6 +138,8 @@
     "pino": "^10.3.1",
     "postcss": "^8.5.28",
     "postgres": "^3.4.9",
+    "posthog-js": "^1.450.0",
+    "posthog-node": "^5.74.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "server-only": "^0.0.1",

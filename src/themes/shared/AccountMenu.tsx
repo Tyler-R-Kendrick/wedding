@@ -1,7 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { openReporter } from '@/components/feedback/reporter-client';
 import { ADMIN_PORTAL, GUEST_PORTAL, SIGN_IN, SIGN_OUT } from '@/domain/lifecycle/account';
+import { FEEDBACK_PATH, REPORTER_GLOBAL } from '@/lib/feedback/constants';
 import type { NavItem, NavModel } from '@/themes/types';
 import { sessionProbe, SIGNED_OUT, type SessionHint } from './session-hint';
 
@@ -31,6 +33,11 @@ const TRIGGER_LABEL = 'Your account';
 
 /** Where an administrator opens view-role preview (admin layout switcher). */
 const VIEW_AS_ROLE: NavItem = { label: 'View as role…', href: '/admin#view-as' };
+/**
+ * The couple only (`session.reporter`): the problem reporter (src/components/feedback). The link
+ * goes to its plain form; when the widget is on the page the click opens the dialog instead.
+ */
+const REPORT_PROBLEM: NavItem = { label: 'Report a problem', href: FEEDBACK_PATH };
 /** Owners only: inspect a specific guest profile (separate from role preview). */
 const INSPECT_GUEST: NavItem = { label: 'Inspect a guest profile', href: '/admin/guests#inspect-guest' };
 
@@ -127,9 +134,10 @@ export function AccountMenu({ nav, variant, classNames }: AccountMenuProps) {
   }
   const portals = portalItems(session, nav, signedIn, admin, viewing);
   const guestMenu = viewing || (!admin && signedIn);
+  const report = session.reporter ? [REPORT_PROBLEM] : [];
   const items = admin && !viewing
-    ? [...portals, VIEW_AS_ROLE, INSPECT_GUEST, SIGN_OUT]
-    : [...portals, ...(guestMenu ? (nav.member ?? []) : []), SIGN_OUT];
+    ? [...portals, VIEW_AS_ROLE, INSPECT_GUEST, ...report, SIGN_OUT]
+    : [...portals, ...(guestMenu ? (nav.member ?? []) : []), ...report, SIGN_OUT];
   // On a page inside a member page (one photo album), its item is where the reader is, not the page.
   const mark = nav.currentIsAncestor ? 'true' : 'page';
   if (variant === 'inline') return <InlineGroup items={items} currentPath={nav.currentPath} mark={mark} classNames={classNames} />;
@@ -143,7 +151,18 @@ function ItemList({ items, currentPath, mark, className, onPick }: { items: NavI
     <ul className="account-menu__list">
       {items.map((item) => (
         <li key={`${item.href}:${item.label}`}>
-          <a className={className} href={item.href} aria-current={item.href === currentPath ? mark : undefined} onClick={onPick}>
+          <a
+            className={className}
+            href={item.href}
+            aria-current={item.href === currentPath ? mark : undefined}
+            onClick={(e) => {
+              if (item.href === FEEDBACK_PATH && typeof (window as unknown as Record<string, unknown>)[REPORTER_GLOBAL] === 'function') {
+                e.preventDefault();
+                openReporter();
+              }
+              onPick?.();
+            }}
+          >
             {item.label}
           </a>
         </li>

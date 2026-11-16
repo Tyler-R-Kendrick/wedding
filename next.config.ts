@@ -64,7 +64,9 @@ const nextConfig: NextConfig = {
   // keeps them.
   ...(process.env.NODE_ENV === 'test' ? { experimental: { turbopackSourceMaps: false, turbopackInputSourceMaps: false, serverSourceMaps: false } } : {}),
   reactStrictMode: true,
-  ...(deploymentSiteUrl ? { env: { NEXT_PUBLIC_SITE_URL: deploymentSiteUrl } } : {}),
+  // The deployed commit, for the browser: every error report and problem report says which build
+  // it came from (src/lib/diagnostics/recorder.ts). Empty off Vercel, where the recorder says `dev`.
+  env: { NEXT_PUBLIC_BUILD_SHA: (process.env.VERCEL_GIT_COMMIT_SHA ?? '').slice(0, 7), ...(deploymentSiteUrl ? { NEXT_PUBLIC_SITE_URL: deploymentSiteUrl } : {}) },
   // Loaded by Node at run time, not compiled into the server bundle. The first list has to be
   // (native, wasm or worker-based packages). The second is there for the dev and test servers'
   // memory only: every route reaches these libraries, and compiling them again for each route and
