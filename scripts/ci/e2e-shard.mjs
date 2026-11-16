@@ -27,7 +27,7 @@ if (!KINDS[kind] || !i || Number(i) < 1 || Number(i) > Number(n)) {
 }
 
 const mine = planFor(kind, Number(n))[Number(i) - 1];
-console.log(`${kind} shard ${i}/${n}: ${mine.tests.length} tests, about ${Math.round(mine.seconds)}s of recorded test time`);
+console.log(`${kind} shard ${i}/${n}: ${mine.tests.length} tests, ${Math.round(mine.seconds)}s of recorded test time, expected to take about ${Math.round(mine.expected)}s`);
 if (!mine.tests.length) process.exit(0);
 
 const files = [...new Set(mine.tests.map((t) => t.file))];

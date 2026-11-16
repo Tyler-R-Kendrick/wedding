@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { durationKey, grepFor, grepTitle, plan as planE2e, serverState } from '../../../scripts/ci/e2e-plan.mjs';
+import { durationKey, expected, grepFor, grepTitle, plan as planE2e, serverState } from '../../../scripts/ci/e2e-plan.mjs';
 import { filesOf, plan as planFiles, readDurations } from '../../../scripts/ci/vitest-plan.mjs';
 
 type E2eTest = { file: string; titles: string[]; project: string };
@@ -48,6 +48,22 @@ describe('the Playwright shard plan (scripts/ci/e2e-plan.mjs)', () => {
     expect(serverState('tests/e2e/seating.spec.ts')).toBe('seating');
     expect(serverState('tests/security/seating.spec.ts')).toBe('seating');
     expect(serverState('tests/e2e/rsvp.spec.ts')).toBeNull();
+  });
+
+  it('gives a shard that holds a serial file less other work: the chain runs on one worker and can start last', () => {
+    // One 50-second serial file among forty 10-second tests, in four shards.
+    const many = [...Array.from({ length: 5 }, (_, i) => t('tests/e2e/chain.spec.ts', `step ${i}`)), ...Array.from({ length: 40 }, (_, i) => t(`tests/e2e/f${i}.spec.ts`, 'one'))];
+    const times = Object.fromEntries(many.map((x) => [durationKey(x), 10]));
+    const shards = planE2e(many, times, 4, (file) => file.endsWith('chain.spec.ts'));
+    const withChain = shards.find((s) => s.tests.some((x) => x.file.endsWith('chain.spec.ts')))!;
+    const others = shards.filter((s) => s !== withChain);
+    for (const other of others) expect(withChain.seconds).toBeLessThan(other.seconds);
+    // And the shards are still expected to finish together.
+    const longest = Math.max(...shards.map((s) => s.expected));
+    for (const shard of shards) expect(longest - shard.expected).toBeLessThan(10);
+    // A chain is at least its own length, however little else the shard holds.
+    expect(expected(50, 50)).toBe(50);
+    expect(expected(90, 50)).toBe(60);
   });
 
   it('counts a test with no recorded time as the median, so a new test cannot make a shard look empty', () => {
