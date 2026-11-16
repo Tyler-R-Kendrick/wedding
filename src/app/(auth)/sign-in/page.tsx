@@ -11,8 +11,6 @@ import {
   SIGN_IN_CODE_PROMISE_EMAIL,
   SIGN_IN_CODE_PROMISE_PHONE,
   SIGN_IN_SAVE_THE_DATE_NOTE,
-  SIGN_IN_TROUBLE_FOLLOW,
-  SIGN_IN_TROUBLE_LEAD,
 } from '../_lib/guest-auth-copy';
 import { GUEST_CONTACT_EMAIL, guestContactMailtoHref } from '@/domain/contact/copy';
 import { Actions, AuthShell, Button, Field, Notice } from '../_components/kit';
@@ -120,11 +118,11 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
 function SignInHelp() {
   return (
     <p className="auth-hint">
-      {SIGN_IN_TROUBLE_LEAD} Email{' '}
+      Having trouble signing in? Email{' '}
       <a className="auth-link" href={guestContactMailtoHref()}>
         {GUEST_CONTACT_EMAIL}
       </a>{' '}
-      {SIGN_IN_TROUBLE_FOLLOW}
+      and tell us the email address or mobile number you’d like to sign in with. We’ll get you set up.
     </p>
   );
 }
