@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { isSafeReturnPath } from '@/domain/identity/routes';
 import { Actions, AuthShell, Notice } from '../../_components/kit';
 import { SAVE_THE_DATE_COPY } from '../../_lib/guest-auth-copy';
-import { GUEST_CONTACT_EMAIL, guestContactMailtoHref } from '@/domain/contact/copy';
+import { SignInHelp } from '../../_components/SignInHelp';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Save the date', robots: { index: false, follow: false } };
@@ -21,11 +21,7 @@ export default async function SaveTheDatePage({ searchParams }: { searchParams: 
     <AuthShell eyebrow={SAVE_THE_DATE_COPY.eyebrow} title={SAVE_THE_DATE_COPY.title} lede={<p>{SAVE_THE_DATE_COPY.body}</p>}>
       <Notice tone="info" title="What to do next">
         <p>
-          {SAVE_THE_DATE_COPY.tryOther} Still having trouble, or want to use a different one? Email{' '}
-          <a className="auth-link" href={guestContactMailtoHref()}>
-            {GUEST_CONTACT_EMAIL}
-          </a>{' '}
-          and tell us the email address or mobile number you’d like to sign in with. We’ll get you set up.
+          {SAVE_THE_DATE_COPY.tryAgain} <SignInHelp lead="Still having trouble, or want to use a different one?" />
         </p>
       </Notice>
       <Actions>
