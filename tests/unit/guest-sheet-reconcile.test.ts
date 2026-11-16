@@ -24,14 +24,21 @@ describe('the planning sheet beside the guest list', () => {
     expect(diffSheetCopies([line(2, 'Иванов')], [line(2, 'Петров')])).toMatchObject({ added: [{ label: 'Петров' }], removed: [{ label: 'Иванов' }] });
   });
 
-  it('matches a line to a household by name, and says when the adults or children differ', () => {
-    const sync = reconcileSheet([line(2, 'Fitzgerald', 2, 1), line(3, 'Ana Ruiz & Guest', 1, 0, 1)], [home('h1', 'The Fitzgerald Family', 2, 0), home('h2', 'Ana Ruiz', 1, 0, 0)]);
+  it('matches a line to a household by name, and says when the grown-ups or children differ', () => {
+    const sync = reconcileSheet(
+      [line(2, 'Fitzgerald', 2, 1), line(3, 'Ana Ruiz & Guest', 1, 0, 1), line(4, 'Lee', 2, 0, 0)],
+      [home('h1', 'The Fitzgerald Family', 2, 0), home('h2', 'Ana Ruiz', 1, 0, 1), home('h3', 'Lee', 1, 0, 1)],
+    );
     expect(sync.matched.map((m) => [m.label, m.household.id, m.how, m.differs])).toEqual([
       ['Fitzgerald', 'h1', 'name', true],
-      // A plus-one on the sheet and none on the site is not a difference: the site may hold it as an allowance.
       ['Ana Ruiz & Guest', 'h2', 'name', false],
+      // Two adults on the sheet; one named adult and one unnamed plus-one here, which is how the
+      // sync keeps a head the line counts and does not name. The same two grown-ups.
+      ['Lee', 'h3', 'name', false],
     ]);
-    expect(sync.summary).toMatchObject({ lines: 2, matched: 2, differing: 1, onlyOnSheet: 0, onlyOnSite: 0, sheetPeople: 5, sitePeople: 3 });
+    expect(sync.summary).toMatchObject({ lines: 3, matched: 3, differing: 1, onlyOnSheet: 0, onlyOnSite: 0, sheetPeople: 7, sitePeople: 6 });
+    // A plus-one the sheet counts and the site lacks is a head missing here.
+    expect(reconcileSheet([line(2, 'Ana Ruiz', 1, 0, 1)], [home('h2', 'Ana Ruiz', 1, 0, 0)]).matched[0]!.differs).toBe(true);
   });
 
   it('a saved link wins over a name, and survives either side being renamed', () => {

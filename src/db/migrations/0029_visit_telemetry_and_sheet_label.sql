@@ -26,6 +26,7 @@ CREATE TABLE "visit_sessions" (
 	"errors" integer DEFAULT 0 NOT NULL
 );
 --> statement-breakpoint
+ALTER TABLE "households" ADD COLUMN "sheet_label" text;--> statement-breakpoint
 CREATE INDEX "visit_events_session_idx" ON "visit_events" USING btree ("session_id");--> statement-breakpoint
 CREATE INDEX "visit_events_kind_at_idx" ON "visit_events" USING btree ("kind","at");--> statement-breakpoint
 CREATE INDEX "visit_events_fingerprint_idx" ON "visit_events" USING btree ("fingerprint");--> statement-breakpoint

@@ -632,9 +632,9 @@
   color: var(--ops-muted);
 }
 
-.det-shown__label {
+/* What the site says is the thing being read; where it shows is the footnote. */
+.det-value {
   color: var(--color-primary);
-  font-weight: 500;
 }
 
 .det-copy {
@@ -725,7 +725,8 @@
   gap: 0 var(--spacing-xs);
 }
 
-@media (width < 60rem) {
+/* Three columns need the width of a desk screen beside the rail; under it the name column was squeezed to a few words a line. */
+@media (width < 80rem) {
   .ag-row {
     grid-template-columns: minmax(0, 1fr);
   }

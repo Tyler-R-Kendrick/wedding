@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { adminGuestSheet, adminGuestSheetSync } from '@/capabilities/admin_guest_sheet';
+import { WEDDING_TIMEZONE } from '@/contracts/lifecycle';
 import { QuickAction } from '@/components/admin/flow/QuickAction';
 import { RecordList, RecordRow } from '@/components/admin/flow/records';
 import { adminInvoke, adminPrincipal } from '../../../_shared/admin';
-import { ConsoleGate, ConsolePage, DataTable, Denied, Day, Empty, Pill, Section, Stat, StatStrip, formatStamp } from '../../_components/console';
+import { ConsoleGate, ConsolePage, DataTable, Denied, Day, Empty, Pill, Section, Stat, StatStrip } from '../../_components/console';
 import { UpdatePlanningSheetFlow } from '../_components/GuestFlows';
 import { PlanningSheet } from '../_components/PlanningSheet';
 
@@ -18,6 +19,8 @@ function heads(c: Counts): string {
   const parts = [c.adults ? plural(c.adults, 'adult', 'adults') : '', c.kids ? plural(c.kids, 'child', 'children') : '', c.plusOnes ? plural(c.plusOnes, 'plus-one', 'plus-ones') : ''].filter(Boolean);
   return parts.length ? parts.join(', ') : 'nobody yet';
 }
+/** "9:19 PM CST": the day is the figure above it. */
+const timeOfDay = (iso: string) => new Intl.DateTimeFormat('en-US', { timeZone: WEDDING_TIMEZONE, hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }).format(new Date(iso));
 const household = (id: string) => `/admin/guests?householdId=${encodeURIComponent(id)}#guests`;
 
 /**
@@ -26,8 +29,9 @@ const household = (id: string) => `/admin/guests?householdId=${encodeURIComponen
  * left to do afterwards: lines that are not households here yet, households whose head counts
  * disagree with their line, and households the sheet does not mention.
  *
- * Nothing is applied in bulk. A sheet line names a group and counts heads, so the site can be told
- * "this line is that household" or "add this line as a household", one at a time, by a person.
+ * Saving a copy adds everyone a line names (src/domain/guests/sheet-sync.ts) and removes nobody, so
+ * what is listed here is what that sync left for a person: a line it could not read, a head count
+ * that disagrees, a household the sheet no longer mentions.
  */
 export default async function AdminGuestSheetPage() {
   const { principal } = await adminPrincipal();
@@ -49,20 +53,19 @@ export default async function AdminGuestSheetPage() {
   return (
     <ConsolePage
       title="Guest sheet"
-      lede="The guest list is kept in the planning spreadsheet. Sync saves a fresh copy of its Guests tab here, then this screen lists what differs from the site. Addresses, emails, phones, dietary needs and notes are dropped before anything is saved."
+      lede="The guest list is kept in the planning spreadsheet. Syncing saves a copy of its Guests tab and adds everyone a line names to the guest list; nobody is removed. This screen lists what still differs. Addresses, phones, dietary needs and notes are never saved."
       actions={<UpdatePlanningSheetFlow hasCopy={!!s.copy} variant="primary" />}
-      wide
     >
       {!s.copy || !s.summary ? (
         <Empty>No copy of the sheet yet. Choose Add the planning sheet, then paste the Guests tab or pick the file you downloaded from it.</Empty>
       ) : (
         <>
           <StatStrip>
-            <Stat label="Last synced" value={<Day at={s.copy.uploadedAt} />} hint={formatStamp(s.copy.uploadedAt)} />
-            <Stat label="Lines on the sheet" value={s.summary.lines} hint={`${s.summary.matched} are households here`} />
-            <Stat label="People on the sheet" value={s.summary.sheetPeople} />
-            <Stat label="People on the site" value={s.summary.sitePeople} />
             <Stat label="To reconcile" value={todo} hint={todo ? undefined : 'The site matches the sheet'} />
+            <Stat label="Last synced" value={<Day at={s.copy.uploadedAt} />} hint={timeOfDay(s.copy.uploadedAt)} />
+            <Stat label="Sheet lines" value={s.summary.lines} hint={`${s.summary.matched} matched`} />
+            <Stat label="On the sheet" value={s.summary.sheetPeople} hint="people" />
+            <Stat label="On the site" value={s.summary.sitePeople} hint="people" />
           </StatStrip>
 
           {changes ? (
@@ -87,7 +90,7 @@ export default async function AdminGuestSheetPage() {
             </Section>
           ) : null}
 
-          <Section title={`On the sheet, not on the site (${s.onlyOnSheet.length})`} id="missing" note="Adding a line makes an empty household with that name. The sheet counts heads and names nobody, so the people are added on Guests.">
+          <Section title={`On the sheet, not on the site (${s.onlyOnSheet.length})`} id="missing" note="Lines the last sync left alone: nobody on the line could be read as a name, or two guests already answer to one. Link the line to its household, or add an empty household and its people on Guests.">
             <RecordList label="Sheet lines that are not households here" empty={s.onlyOnSheet.length === 0 ? 'Every line of the sheet is a household here.' : null}>
               {s.onlyOnSheet.map((line) => (
                 <RecordRow
@@ -112,8 +115,8 @@ export default async function AdminGuestSheetPage() {
             </RecordList>
           </Section>
 
-          <Section title={`Head counts differ (${differing.length})`} id="differing" note="Adults and children are compared. Plus-ones are not: the site may hold one as an allowance on the invitation instead of a person.">
-            <RecordList label="Households whose head counts differ from their sheet line" empty={differing.length === 0 ? 'Every matched household has the adults and children its line counts.' : null}>
+          <Section title={`Head counts differ (${differing.length})`} id="differing" note="Grown-ups are compared together, and children. A head the sheet counts and does not name is kept here as a plus-one.">
+            <RecordList label="Households whose head counts differ from their sheet line" empty={differing.length === 0 ? 'Every matched household has the heads its line counts.' : null}>
               {differing.map((m) => (
                 <RecordRow
                   key={m.sheetRow}

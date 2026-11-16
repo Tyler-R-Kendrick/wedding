@@ -6,6 +6,7 @@ import { newId } from '@/contracts/ids';
 import { err, ok } from '@/contracts/result';
 import type { Db } from '@/db/client';
 import { guests, guestSheetCopies, households } from '@/db/schema';
+import { guestRows, sheetSyncLines, syncGuestsFromSheet } from '@/domain/guests/sheet-sync';
 import { parseGuestSheetText } from '@/domain/guests/sheet';
 import { diffSheetCopies, reconcileSheet, sheetKey, type SiteHousehold } from '@/domain/guests/sheet-reconcile';
 import { totalsOf } from '@/domain/guests/sheet-totals';
@@ -112,6 +113,8 @@ const uploadOutput = z.object({
   changes: changesSchema.nullable(),
   /** How this copy stands against the site's guest list. */
   site: summarySchema,
+  /** What saving did to the guest records (absent on a dry run): counts only. */
+  guests: z.object({ added: z.number().int(), alreadyThere: z.number().int(), completed: z.number().int(), counted: z.number().int(), cannotBeFoundByName: z.number().int(), skippedLines: z.number().int() }).optional(),
 });
 
 /** Every household on the site with its head counts, as the reconciliation reads them. */
@@ -139,6 +142,11 @@ const latestCopies = (db: Db, n: number) => db.select().from(guestSheetCopies).o
  * Replaces the planning sheet's copy with a fresh one. The pasted text is parsed on the server and
  * only the planning columns are kept; the text itself is never stored or logged. A dry run says
  * what would be saved.
+ *
+ * Saving also makes the guest records agree with the sheet (src/domain/guests/sheet-sync.ts): each
+ * person a line names becomes a guest unless they already are one, so that either person on a line
+ * can sign in under their own name. It only adds and completes; nobody is removed or changed. The
+ * one contact column it reads is Email, which becomes that guest's sign-in address.
  */
 export const adminUploadGuestSheet = defineCapability<z.infer<typeof uploadInput>, z.infer<typeof uploadOutput>>({
   ...ADMIN_ONLY,
@@ -159,20 +167,46 @@ export const adminUploadGuestSheet = defineCapability<z.infer<typeof uploadInput
     const totals = totalsOf(parsed.rows);
     const { db } = appServices(ctx);
     const [[previous], site] = await Promise.all([latestCopies(db, 1), siteHouseholds(db)]);
+    // The lines that are guests, without the sheet's own tallies under them: what the sync reads too.
+    const lines = guestRows(parsed.rows);
     const summary = {
       dryRun: !!i.dryRun,
       lines: parsed.rows.length,
       people: totals.people,
       withheldColumns: parsed.withheldColumns,
       missingColumns: parsed.missingColumns,
-      changes: previous ? diffSheetCopies(previous.rows, parsed.rows) : null,
-      site: reconcileSheet(parsed.rows, site).summary,
+      changes: previous ? diffSheetCopies(guestRows(previous.rows), lines) : null,
+      site: reconcileSheet(lines, site).summary,
     };
     if (i.dryRun) return ok({ data: summary, sources: [] });
     const id = newId();
-    await db.insert(guestSheetCopies).values({ id, rows: parsed.rows, withheldColumns: parsed.withheldColumns, missingColumns: parsed.missingColumns, source: i.source || null, uploadedBy: guard.value.adminId, uploadedAt: ctx.now });
-    await ctx.audit.record({ actor: actorOf(ctx), action: 'guest.imported', target: { type: 'guest_sheet_copy', id }, outcome: 'success', requestId: ctx.requestId, metadata: { lines: summary.lines, people: summary.people } });
-    return ok({ data: summary, sources: [] });
+    // The copy and the guest records change together, or not at all.
+    const synced = await db.transaction(async (tx) => {
+      const t = tx as unknown as typeof db;
+      await t.insert(guestSheetCopies).values({ id, rows: parsed.rows, withheldColumns: parsed.withheldColumns, missingColumns: parsed.missingColumns, source: i.source || null, uploadedBy: guard.value.adminId, uploadedAt: ctx.now });
+      // Which household the sync gave each line, so the link outlives a rename on either side.
+      const homes = new Map<string, string>();
+      const result = await syncGuestsFromSheet(t, sheetSyncLines(i.text).lines, { onHousehold: (line, householdId) => homes.set(householdId, line.name) });
+      const linked = new Map((await t.select({ id: households.id, sheetLabel: households.sheetLabel }).from(households)).map((h) => [h.id, h.sheetLabel]));
+      const taken = new Set([...linked.values()].flatMap((label) => (label ? [sheetKey(label)] : [])));
+      for (const [householdId, label] of homes) {
+        // A link a person saved stands, and one line is one household's.
+        if (linked.get(householdId) || taken.has(sheetKey(label))) continue;
+        await t.update(households).set({ sheetLabel: label }).where(eq(households.id, householdId));
+        taken.add(sheetKey(label));
+      }
+      return result;
+    });
+    const guestsSummary = {
+      added: synced.guests.created,
+      alreadyThere: synced.guests.found,
+      completed: synced.guests.completed,
+      counted: synced.guests.unnamedCreated,
+      cannotBeFoundByName: Object.values(synced.notes).reduce((a, b) => a + (b ?? 0), 0),
+      skippedLines: synced.skipped.length,
+    };
+    await ctx.audit.record({ actor: actorOf(ctx), action: 'guest.imported', target: { type: 'guest_sheet_copy', id }, outcome: 'success', requestId: ctx.requestId, metadata: { lines: summary.lines, people: summary.people, ...guestsSummary, householdsAdded: synced.households.created, emailsAdded: synced.emailsAdded, foundElsewhere: synced.foundElsewhere } });
+    return ok({ data: { ...summary, guests: guestsSummary }, sources: [] });
   },
 });
 
@@ -194,14 +228,14 @@ export type GuestSheetSyncView = z.infer<typeof syncOutput>;
 /**
  * The planning sheet set beside the site's guest list (src/domain/guests/sheet-reconcile): the lines
  * that are households here, the lines that are not here yet, the households the sheet does not
- * mention, and where the adult and child counts disagree. Reads only; it is the list of what is
+ * mention, and where the head counts disagree. Reads only; it is the list of what is
  * left to do after a sync, not the doing of it.
  */
 export const adminGuestSheetSync = defineCapability<Record<string, never> | undefined, GuestSheetSyncView>({
   ...ADMIN_ONLY,
   name: 'admin_guest_sheet_sync',
   title: 'Admin: the planning sheet against the guest list',
-  description: 'Admin only. Compares the newest copy of the planning sheet with the households on the site: matched lines and whether their adult and child counts agree, lines not on the site (with a suggested household when a name is close), households the sheet does not mention, and what the newest copy changed against the previous one.',
+  description: 'Admin only. Compares the newest copy of the planning sheet with the households on the site: matched lines and whether their head counts agree (grown-ups together, and children), lines not on the site (with a suggested household when a name is close), households the sheet does not mention, and what the newest copy changed against the previous one.',
   kind: 'read',
   annotations: { readOnlyHint: true, untrustedContentHint: true, consequentialHint: false },
   input: z.object({}).optional(),
@@ -213,15 +247,16 @@ export const adminGuestSheetSync = defineCapability<Record<string, never> | unde
     const { db } = appServices(ctx);
     const [[latest, previous], site] = await Promise.all([latestCopies(db, 2), siteHouseholds(db)]);
     if (!latest) return ok({ data: { copy: null, summary: null, matched: [], onlyOnSheet: [], onlyOnSite: [], changes: null, previousAt: null }, sources: [] });
-    const sync = reconcileSheet(latest.rows, site);
+    const lines = guestRows(latest.rows);
+    const sync = reconcileSheet(lines, site);
     return ok({
       data: {
-        copy: { uploadedAt: latest.uploadedAt.toISOString(), source: latest.source, lines: latest.rows.length, people: totalsOf(latest.rows).people },
+        copy: { uploadedAt: latest.uploadedAt.toISOString(), source: latest.source, lines: lines.length, people: totalsOf(latest.rows).people },
         summary: sync.summary,
         matched: sync.matched,
         onlyOnSheet: sync.onlyOnSheet,
         onlyOnSite: sync.onlyOnSite,
-        changes: previous ? diffSheetCopies(previous.rows, latest.rows) : null,
+        changes: previous ? diffSheetCopies(guestRows(previous.rows), lines) : null,
         previousAt: previous ? previous.uploadedAt.toISOString() : null,
       },
       sources: [],
@@ -269,7 +304,7 @@ const adoptInput = z.object({ label: z.string().trim().min(1).max(200) });
 
 /**
  * Adds a sheet line to the site as a household, named as the sheet names it and linked to that
- * line. The sheet counts heads and names nobody, so the household starts empty: the people in it
+ * line. It is for a line the upload's own sync left alone, so the household starts empty: the people in it
  * are added on the Guests screen, where an invitation needs a name.
  */
 export const adminAddHouseholdFromSheet = defineCapability<z.infer<typeof adoptInput>, { householdId: string; name: string; created: boolean }>({

@@ -2,7 +2,8 @@
 
 import { AdminFlow } from '@/components/admin/flow/AdminFlow';
 import { Consequences, ReviewList, TextField } from '@/components/admin/flow/fields';
-import { chicagoLocalToIso, isoToChicagoLocal } from '@/domain/events/format';
+import { WEDDING_TIMEZONE } from '@/contracts/lifecycle';
+import { chicagoLocalToIso, formatDeadline, formatEventDate, isoToChicagoLocal } from '@/domain/events/format';
 import { withValue, type DetailEdit, type ShownOn } from '@/domain/site-details';
 
 type Values = { value: string };
@@ -22,11 +23,27 @@ export function DetailFlow({ id, label, now, edit, shownOn, copies }: { id: stri
     if (!text) return null;
     return edit.input === 'datetime' ? chicagoLocalToIso(text) : text;
   };
-  const shown = (v: string) => (v.trim() ? (edit.input === 'datetime' ? v.replace('T', ' at ') : v.trim()) : 'Not decided');
+  /** The new value as the site will print it, so "Now" and "Becomes" read alike. */
+  const shown = (v: string) => {
+    const text = v.trim();
+    if (!text) return 'Not decided';
+    if (edit.input === 'date') return /^\d{4}-\d{2}-\d{2}$/.test(text) ? formatEventDate(text, WEDDING_TIMEZONE) : text;
+    if (edit.input === 'datetime') return formatDeadline(chicagoLocalToIso(text) ?? '', WEDDING_TIMEZONE) || text;
+    return text;
+  };
+  /** What the server will accept, checked here so the check step never shows a value that cannot be saved. */
+  const valid = (v: string) => {
+    const text = v.trim();
+    if (!text) return edit.optional;
+    if (edit.input === 'url') return URL.canParse(text) && text.startsWith('https://');
+    if (edit.input === 'date') return /^\d{4}-\d{2}-\d{2}$/.test(text);
+    if (edit.input === 'datetime') return chicagoLocalToIso(text) !== null;
+    return true;
+  };
   return (
     <AdminFlow<Values>
       id={`details:${id}`}
-      title={`Change ${label.toLowerCase()}`}
+      title={`Edit ${label.toLowerCase()}`}
       trigger={{ label: now ? 'Edit' : 'Set', variant: 'quiet', accessibleName: `${now ? 'Edit' : 'Set'} ${label.toLowerCase()}` }}
       initial={{ value: initial }}
       steps={[
@@ -45,8 +62,8 @@ export function DetailFlow({ id, label, now, edit, shownOn, copies }: { id: stri
               hint={edit.input === 'datetime' ? 'Chicago time.' : edit.input === 'url' ? 'An https address.' : edit.optional ? 'Leave it empty if it is not decided.' : undefined}
             />
           ),
-          ready: (v) => edit.optional || v.value.trim().length > 0,
-          readyHint: { field: 'value', message: `Enter the ${label.toLowerCase()}.` },
+          ready: (v) => valid(v.value),
+          readyHint: { field: 'value', message: edit.input === 'url' ? 'Enter an address that starts with https://.' : `Enter the ${label.toLowerCase()}.` },
         },
         {
           title: 'Check and save',
@@ -58,7 +75,7 @@ export function DetailFlow({ id, label, now, edit, shownOn, copies }: { id: stri
                   { label: 'Becomes', value: shown(ctx.values.value) },
                 ]}
               />
-              <Consequences>
+              <Consequences tone="note">
                 <p>Changes on: {shownOn.map((p) => p.label).join(', ')}.</p>
                 {copies.length ? <p>Does not change: {copies.map((c) => c.where).join('; ')}. Those are set in the code.</p> : null}
               </Consequences>

@@ -46,7 +46,7 @@ export default async function AdminDetailsPage() {
                 data-fact={f.key}
                 title={f.label}
                 status={f.state === 'todo' ? <Pill tone="warn">To decide</Pill> : f.state === 'differs' ? <Pill tone="bad">Out of step</Pill> : null}
-                meta={f.value ?? 'Not decided yet'}
+                meta={f.value ? <span className="det-value">{f.value}</span> : 'Not decided yet'}
                 actions={
                   f.edit.kind === 'here' ? (
                     <DetailFlow id={f.key} label={f.label} now={f.value} edit={f.edit} shownOn={f.shownOn} copies={f.copies} />
@@ -58,7 +58,7 @@ export default async function AdminDetailsPage() {
                 }
               >
                 <p className="det-shown">
-                  <span className="det-shown__label">Shows on</span>
+                  Shows on
                   {f.shownOn.map((p, i) => (
                     <span key={`${p.href}-${p.label}`}>
                       {i ? ', ' : ' '}

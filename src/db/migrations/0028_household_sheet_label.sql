@@ -1,1 +1,0 @@
-ALTER TABLE "households" ADD COLUMN "sheet_label" text;

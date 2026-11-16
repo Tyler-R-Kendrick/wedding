@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 import { Telemetry } from '@/components/telemetry/Telemetry';
 import { telemetryEnabled } from '@/lib/telemetry';
-import { WebMcpBridge } from '@/webmcp/WebMcpBridge';
+import { PostHogIdentity, WebMcpBridge } from '@/webmcp/WebMcpBridge';
 import { isWebMcpEnabled } from '@/webmcp/flag';
 import './globals.css';
 
@@ -34,6 +34,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en" suppressHydrationWarning>
       <body>
         {children}
+        <PostHogIdentity />
         {/* Renders nothing; registers WebMCP tools when the browser has document.modelContext. */}
         {isWebMcpEnabled() && <WebMcpBridge />}
         {/* Renders nothing; after paint, reports page views, web vitals and errors to this site only (TELEMETRY=off removes it). */}

@@ -5,10 +5,11 @@ import type { GuestSheetRow } from './sheet';
  * the site, which are not there yet, which households the sheet does not mention, and where the
  * head counts disagree.
  *
- * A sheet line is a household label with counts ("Mom/Dad Fitz", 2 adults); it names nobody, so the
- * comparison is household to household. A line is matched to a household by the link an
- * administrator saved (`households.sheet_label`) or, failing that, by name, read loosely. Pure:
- * no database, no clock.
+ * Saving a copy already adds the people each line names (./sheet-sync.ts); this is the check after
+ * it, household to household: a line is matched to a household by its saved link
+ * (`households.sheet_label`, written by the sync or by an administrator) or, failing that, by name,
+ * read loosely. Head counts compare grown-ups together, because the sync keeps a head a line counts
+ * and does not name as an unnamed plus-one. Pure: no database, no clock.
  */
 
 export interface Counts {
@@ -32,7 +33,7 @@ export interface SheetMatch {
   site: Counts;
   /** `linked`: an administrator said so. `name`: the names are the same once read loosely. */
   how: 'linked' | 'name';
-  /** Adults or children differ. Plus-ones are not compared: the site may hold one as an allowance, not a person. */
+  /** Grown-ups (adults and plus-ones together) or children differ. */
   differs: boolean;
 }
 
@@ -128,7 +129,7 @@ export function reconcileSheet(rows: readonly GuestSheetRow[], households: reado
       unmatched.push(row);
       continue;
     }
-    matched.push({ sheetRow: row.sheetRow, label: row.name, sheet: counts(row), household: { id: h.id, name: h.name }, site: counts(h), how, differs: row.adults !== h.adults || row.kids !== h.kids });
+    matched.push({ sheetRow: row.sheetRow, label: row.name, sheet: counts(row), household: { id: h.id, name: h.name }, site: counts(h), how, differs: row.adults + row.plusOnes !== h.adults + h.plusOnes || row.kids !== h.kids });
   }
 
   const free = households.filter((h) => !taken.has(h.id));

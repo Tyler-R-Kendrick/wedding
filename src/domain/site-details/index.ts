@@ -163,7 +163,7 @@ export function buildSiteDetails(i: SiteDetailsInput): DetailFact[] {
     key: 'rsvp.window',
     group: 'replies',
     label: 'Replies are',
-    value: i.rsvp.mode === 'open' ? 'Open now' : i.rsvp.mode === 'closed' ? 'Closed now' : 'Open while the site is at RSVPs open, until the reply-by time',
+    value: i.rsvp.mode === 'open' ? 'Open now' : i.rsvp.mode === 'closed' ? 'Closed now' : 'Following the lifecycle: open at “RSVPs open”, until the reply-by time',
     state: 'set',
     shownOn: [PAGES.rsvp, PAGES.dashboard],
     edit: { kind: 'screen', href: '/admin/events#window', label: 'Change on Schedule' },

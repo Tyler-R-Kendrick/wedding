@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState, useId } from 'react';
+import posthog from 'posthog-js';
 import { formatChicagoTime, formatLocalClock, formatLocalDay } from '@/domain/travel/format';
 import { formatDuration, formatMoney, REFRESH_BEFORE_BOOKING } from '@/domain/travel/snapshot';
 import type { FlightSearchOutcome, HotelSearchOutcome } from '@/domain/travel/types';
@@ -183,7 +184,7 @@ export function FlightSearchForm({
       ? [{ iata: defaults.origin.toUpperCase(), name: defaults.origin }]
       : [];
   return (
-    <form action={action} aria-describedby={helpId} className="flex flex-col gap-4">
+    <form action={action} aria-describedby={helpId} className="flex flex-col gap-4" onSubmit={() => posthog.capture('flight_search_requested')}>
       <input type="hidden" name="kind" value="flights" />
       <p id={helpId} className="fld__hint">
         We only search when you press the button, and nothing is booked or charged here. Prices come from the partner and change often.
@@ -272,7 +273,7 @@ export function HotelSearchForm({ defaults = {} }: { defaults?: Defaults }) {
   const { value, issue } = useValues(state, defaults);
   const helpId = useId();
   return (
-    <form action={action} aria-describedby={helpId} className="flex flex-col gap-4">
+    <form action={action} aria-describedby={helpId} className="flex flex-col gap-4" onSubmit={() => posthog.capture('hotel_search_requested')}>
       <input type="hidden" name="kind" value="hotels" />
       <p id={helpId} className="fld__hint">
         Live rates near the venue, only when you ask.

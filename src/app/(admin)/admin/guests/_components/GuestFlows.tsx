@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useId } from 'react';
 import { AdminFlow, type FieldErrors, type FlowStep } from '@/components/admin/flow/AdminFlow';
 import { useList } from '@/components/admin/flow/lists';
 import { CheckField, ChoiceField, Consequences, ReviewList, SelectField, TextField } from '@/components/admin/flow/fields';
@@ -728,33 +728,34 @@ interface SheetResult {
   missingColumns: string[];
   changes: { added: { label: string; people: number }[]; removed: { label: string; people: number }[]; changed: { label: string; before: SheetCounts; after: SheetCounts }[] } | null;
   site: { lines: number; matched: number; differing: number; onlyOnSheet: number; onlyOnSite: number; sheetPeople: number; sitePeople: number };
+  guests?: { added: number; alreadyThere: number; completed: number; counted: number; cannotBeFoundByName: number; skippedLines: number };
 }
 
-/**
- * Update the console's copy of the planning sheet: paste the Guests tab (copied straight out of the
- * sheet, or a CSV export), read what would be saved, then save. Only the planning columns are kept;
- * the server drops addresses, emails, phones, dietary needs and notes before anything is stored.
- *
- * `secret`: the pasted tab (with those columns in it) is never kept on this device.
- */
 /**
  * A file instead of a paste: the tab downloaded from the sheet (File, Download, CSV or TSV). It is
  * read in the browser into the same field a paste fills, so the rest of the flow is one path.
  */
 function SheetFile({ onText }: { onText: (text: string) => void }) {
+  const id = useId();
   const [name, setName] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   return (
-    <div className="flow-field">
-      <label htmlFor="sheet-file">A downloaded copy of the tab (optional)</label>
-      <span className="flow-hint">In the sheet: File, Download, Comma-separated values. Or paste the tab below.</span>
+    <div className="flow-field" data-invalid={problem ? '' : undefined}>
+      <label htmlFor={id} className="flow-label">
+        The downloaded tab
+        <span className="flow-optional"> (optional)</span>
+      </label>
       <input
-        id="sheet-file"
+        id={id}
+        className="ops-input flow-input"
         type="file"
         accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain"
+        aria-describedby={`${id}-hint`}
+        aria-invalid={problem ? true : undefined}
         onChange={async (event) => {
           const file = event.target.files?.[0];
           setProblem(null);
+          setName(null);
           if (!file) return;
           if (file.size > REQUEST_LIMIT_BYTES) return setProblem('That file is too large to send in one go. Download only the Guests tab.');
           try {
@@ -765,11 +766,9 @@ function SheetFile({ onText }: { onText: (text: string) => void }) {
           }
         }}
       />
-      {name ? (
-        <span className="flow-hint" role="status">
-          Read {name}. Continue to check it.
-        </span>
-      ) : null}
+      <span id={`${id}-hint`} className="flow-hint" role="status">
+        {name ? `Read ${name}. Continue to check it.` : 'In the sheet: File, Download, Comma-separated values.'}
+      </span>
       {problem ? (
         <span className="flow-field-error" role="alert">
           {problem}
@@ -779,6 +778,15 @@ function SheetFile({ onText }: { onText: (text: string) => void }) {
   );
 }
 
+/**
+ * Sync the planning sheet: pick the downloaded Guests tab or paste it, read what the copy changes
+ * and how it stands against the site, then save. Only the planning columns are kept in the copy;
+ * the server drops addresses, phones, dietary needs and notes before anything is stored. Saving
+ * also adds everyone a line names to the guest list, if they are not on it yet (an email on a line
+ * becomes that guest's sign-in address), so either person on a line can sign in.
+ *
+ * `secret`: the pasted tab (with those columns in it) is never kept on this device.
+ */
 export function UpdatePlanningSheetFlow({ hasCopy, variant }: { hasCopy: boolean; variant?: 'primary' | 'ghost' }) {
   return (
     <AdminFlow<SheetValues>
@@ -790,12 +798,12 @@ export function UpdatePlanningSheetFlow({ hasCopy, variant }: { hasCopy: boolean
       steps={[
         {
           title: 'Paste the Guests tab',
-          lede: 'In the sheet, open the Guests tab, select everything (Ctrl or Cmd + A), copy it, and paste it here. A CSV export of the tab works too.',
+          lede: 'Download the Guests tab from the sheet and pick the file, or select the whole tab (Ctrl or Cmd + A), copy it and paste it.',
           fields: ['text'],
           render: (ctx) => (
             <>
               <SheetFile onText={(text) => ctx.set({ text })} />
-              <TextField ctx={ctx} name="text" label="The Guests tab" multiline rows={8} spellCheck={false} hint="Header row first. Addresses, emails, phones, dietary needs and notes are dropped before anything is saved." />
+              <TextField ctx={ctx} name="text" label="Or paste the tab" multiline rows={8} spellCheck={false} hint="Header row first. Addresses, phones, dietary needs and notes are dropped; an email is kept as that guest’s sign-in address." />
             </>
           ),
           ready: (v) => v.text.trim().length > 0,
@@ -816,7 +824,7 @@ export function UpdatePlanningSheetFlow({ hasCopy, variant }: { hasCopy: boolean
                     ...(changes.added.length + changes.removed.length + changes.changed.length === 0 ? ['Nothing changed since the last copy.'] : []),
                   ]
                 : ['This is the first copy.']),
-              `Against the site: ${site.matched} of ${site.lines} lines are households here, ${site.onlyOnSheet} are not yet, ${site.differing} have different head counts.`,
+              `Against the site: ${site.matched} of ${site.lines} lines are households here${site.onlyOnSheet ? `; saving adds the other ${site.onlyOnSheet}` : ''}${site.differing ? `; ${site.differing} have different head counts` : ''}.`,
               ...(res.data.missingColumns.length ? [`Columns not found, so shown blank: ${res.data.missingColumns.join(', ')}.`] : []),
               ...(res.data.withheldColumns.length ? [`Dropped, on purpose: ${res.data.withheldColumns.join(', ')}.`] : []),
             ];
@@ -825,7 +833,7 @@ export function UpdatePlanningSheetFlow({ hasCopy, variant }: { hasCopy: boolean
         },
         {
           title: 'Check it',
-          lede: 'Nothing has been saved yet. This is what the console will show.',
+          lede: 'Nothing is saved yet. Saving keeps this copy and adds everyone a line names to the guest list, if they are not on it yet. Nobody is removed or changed.',
           render: (ctx) => (
             <>
               <p className="flow-copy">{ctx.values.summary}</p>
@@ -847,7 +855,15 @@ export function UpdatePlanningSheetFlow({ hasCopy, variant }: { hasCopy: boolean
         input: (v) => ({ text: v.text, source: v.source, dryRun: false }),
         result: (data) => {
           const d = data as SheetResult;
-          return <p>{`Saved ${d.lines} lines, ${d.people} people.`}</p>;
+          const g = d.guests;
+          return (
+            <>
+              <p>{`Saved ${d.lines} lines, ${d.people} people.`}</p>
+              {g ? <p>{`Guest list: ${g.added} added, ${g.alreadyThere} already there${g.completed ? `, ${g.completed} completed` : ''}${g.counted ? `, ${g.counted} counted but not named` : ''}.`}</p> : null}
+              {g && g.cannotBeFoundByName ? <p>{`${g.cannotBeFoundByName} ${g.cannotBeFoundByName === 1 ? 'line has' : 'lines have'} someone with no surname or no given name, who cannot sign in with Google or Facebook by name until the sheet has both.`}</p> : null}
+              {g && g.skippedLines ? <p>{`${g.skippedLines} ${g.skippedLines === 1 ? 'line was' : 'lines were'} left alone: two guests already answer to a name on it. They are listed under “On the sheet, not on the site”.`}</p> : null}
+            </>
+          );
         },
       }}
     />

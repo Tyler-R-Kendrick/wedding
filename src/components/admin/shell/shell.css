@@ -554,3 +554,11 @@
     display: none;
   }
 }
+
+/*
+ * The top bar is sticky and opaque. Without this, tabbing backwards scrolls a control to the very
+ * top of the viewport, underneath it, and focus is on something nobody can see (WCAG 2.4.11).
+ */
+html:has(.adm-bar) {
+  scroll-padding-block-start: calc(var(--adm-bar, 3.5rem) + 1rem);
+}

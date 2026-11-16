@@ -19,6 +19,10 @@ export async function register() {
   // How long this hook took and where. One line per server start.
   const boot = { librariesMs: 0, databaseMs: 0, mode: 'eager' as 'eager' | 'lazy' };
   const hookStarted = performance.now();
+  const posthogLogs = await import('@/lib/posthog-logs');
+  posthogLogs.emitPostHogLog('server bootstrap started', posthogLogs.posthogLogSeverity.info, {
+    runtime: 'nodejs',
+  });
 
   // Before anything can call a model: a model named by a string must never reach Vercel's AI Gateway.
   const { refuseHostedModels } = await import('@/lib/ai/no-hosted-models');
@@ -45,6 +49,10 @@ export async function register() {
     boot.librariesMs = Math.round(performance.now() - hookStarted);
     const { logger } = await import('@/lib/logger');
     logger.info({ boot }, 'server started');
+    posthogLogs.emitPostHogLog('server bootstrap completed', posthogLogs.posthogLogSeverity.info, {
+      boot_mode: boot.mode,
+      libraries_ms: boot.librariesMs,
+    });
     return;
   }
 
@@ -80,10 +88,18 @@ export async function register() {
   } catch (err) {
     const { logger } = await import('@/lib/logger');
     logger.error({ err }, 'boot seed failed; capabilities will retry lazily');
+    posthogLogs.emitPostHogLog('server bootstrap seed unavailable', posthogLogs.posthogLogSeverity.warn, {
+      boot_mode: boot.mode,
+    });
   }
   boot.databaseMs = Math.round(performance.now() - hookStarted) - boot.librariesMs;
   const { logger } = await import('@/lib/logger');
   logger.info({ boot }, 'server started');
+  posthogLogs.emitPostHogLog('server bootstrap completed', posthogLogs.posthogLogSeverity.info, {
+    boot_mode: boot.mode,
+    libraries_ms: boot.librariesMs,
+    database_ms: boot.databaseMs,
+  });
 }
 
 type LocationSuggestionResolver = import('@/domain/travel/profile').LocationSuggestionResolver;

@@ -71,7 +71,7 @@ export default async function AdminEventsPage({ searchParams }: { searchParams: 
         {agendaDays(d.events).map((day) => (
           <div key={day.dateIso} className="ag-day">
             <h3 className="ag-day__title">
-              {formatEventDate(day.dateIso, WEDDING_TIMEZONE)}
+              {formatEventDate(day.dateIso, WEDDING_TIMEZONE)}{' '}
               <span className="ag-day__count">
                 {day.timed.length + day.untimed.length} {day.timed.length + day.untimed.length === 1 ? 'event' : 'events'}
               </span>
@@ -88,7 +88,8 @@ export default async function AdminEventsPage({ searchParams }: { searchParams: 
                         {e.name} {e.rsvpRequired ? null : <Pill>No RSVP</Pill>}
                       </p>
                       <p className="ag-row__meta">
-                        {roomName(e.venueSpaceRef) ?? 'Room not set'} · {e.invitedCount} invited · {e.mealOptions.length ? `menu version ${e.mealOptionsVersion}, ${e.mealOptions.length} choices` : 'no meal choice'}
+                        {roomName(e.venueSpaceRef) ? `${roomName(e.venueSpaceRef)} · ` : ''}
+                        {e.invitedCount} invited · {e.mealOptions.length ? `menu version ${e.mealOptionsVersion}, ${e.mealOptions.length} choices` : 'no meal choice'}
                       </p>
                       {open.length || e.placeholder ? (
                         <p className="ag-row__open">
@@ -128,7 +129,7 @@ export default async function AdminEventsPage({ searchParams }: { searchParams: 
       <Section title="RSVP window" id="window">
         <p className="flow-copy">
           RSVPs are <strong>{d.window.open ? 'open' : 'closed'}</strong> right now. Setting: {MODE[d.settings.mode] ?? d.settings.mode}
-          {d.settings.deadlineAt ? `; deadline ${formatDeadline(d.settings.deadlineAt)}` : '; no deadline set yet'}. Open or closed by hand beats the schedule.
+          {d.settings.deadlineAt ? `; reply by ${formatDeadline(d.settings.deadlineAt)}` : '; no reply-by time set yet'}. Open or closed by hand beats the schedule.
         </p>
         <WindowFlow settings={d.settings} />
       </Section>

@@ -1,0 +1,2 @@
+ALTER TABLE "guest_sheet_copies" ADD COLUMN "upload_digest" text;--> statement-breakpoint
+CREATE UNIQUE INDEX "guest_sheet_copies_upload_digest_uq" ON "guest_sheet_copies" USING btree ("upload_digest");

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import posthog from 'posthog-js';
 import { useEffect } from 'react';
 import '@/components/rsvp/recipes.css';
 
@@ -12,6 +13,7 @@ import '@/components/rsvp/recipes.css';
  */
 export function PageError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
+    posthog.captureException(error);
     console.error(error);
   }, [error]);
   return (

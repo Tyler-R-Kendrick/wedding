@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react';
+import posthog from 'posthog-js';
 import { downloadIcs, TripPlannerProvider, TripRenderer, type TripAction, type TripHotel } from '@/components/trip/openui';
 import {
   aboutHowLong,
@@ -612,6 +613,14 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
         const r = await send().catch(() => ({ ok: false, message: undefined }));
         if (r.ok) {
           channel.current?.postMessage('saved');
+          if (after) {
+            posthog.capture('trip_plan_item_saved', {
+              change_type: before ? 'moved' : 'added',
+              item_type: after.own ? 'personal' : 'recommended_place',
+              day: after.day,
+              part: after.part,
+            });
+          }
           return true;
         }
         update((all) => {
@@ -741,8 +750,10 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
   );
 
   const exportCalendar = useCallback(() => {
-    const text = buildIcs({ items: calendarEntries(), now: new Date(), uidDomain: typeof location === 'undefined' ? 'wedding.local' : location.host || 'wedding.local' });
+    const items = calendarEntries();
+    const text = buildIcs({ items, now: new Date(), uidDomain: typeof location === 'undefined' ? 'wedding.local' : location.host || 'wedding.local' });
     downloadIcs(text, 'our-wedding-weekend.ics');
+    posthog.capture('trip_calendar_exported', { calendar_item_count: items.length });
     say('Your calendar file is saved. Open it to add these plans to your calendar.');
   }, [calendarEntries, say]);
 

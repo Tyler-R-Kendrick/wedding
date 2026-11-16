@@ -91,11 +91,13 @@ export function EventFlow({ event, rooms, label, variant = 'primary' }: { event?
           {/* A time of day, on the date above: three fields that each took a full date and time let an
               event start on a different day from its own date. */}
           <TextField ctx={ctx} name="startsAt" label="Starts" type="time" optional hint={CHICAGO_HINT} />
-          <TextField ctx={ctx} name="endsAt" label="Ends" type="time" optional hint="Chicago time. An end earlier than the start is read as after midnight." />
+          <TextField ctx={ctx} name="endsAt" label="Ends" type="time" optional hint="An end earlier than the start is read as after midnight." />
         </>
       ),
       ready: (v) => v.name.trim().length >= 2 && /^\d{4}-\d{2}-\d{2}$/.test(v.dateIso),
       readyHint: { field: 'name', message: 'Give the event a name (two letters or more) and a date.' },
+      // An end with no start would be saved and never shown: the time reads "not set" without a start.
+      next: async (v) => (v.endsAt && !v.startsAt ? { errors: { startsAt: 'Add a start time, or clear the end.' } } : {}),
     },
     {
       title: 'Where, and what to know',
