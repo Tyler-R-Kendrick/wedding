@@ -232,7 +232,8 @@ jobs:
         run: node scripts/ci/e2e-shard.mjs production ${{ matrix.shard }}/${{ matrix.of }}
         env:
           CI: 'true'
-          PW_WEB_SERVER_COMMAND: npm run start
+          # The long keep-alive is scripts/test-server-specs.mjs's KEEP_ALIVE, for the same reason.
+          PW_WEB_SERVER_COMMAND: npm run start -- --keepAliveTimeout 120000
           PGLITE_MEMORY: '1'
           DB_AUTO_MIGRATE: '1'
           DB_AUTO_SEED: '1'

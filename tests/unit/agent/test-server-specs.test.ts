@@ -37,7 +37,7 @@ describe('npm run test:e2e:server is the CI test-server step', () => {
 
   it('serves the production build, and has no warm-up to keep in step with the routes', () => {
     const script = readFileSync('scripts/test-server-specs.mjs', 'utf8');
-    expect(script).toContain("['next', 'start', '-p', port]");
+    expect(script).toContain("['next', 'start', '-p', port, ...KEEP_ALIVE]");
     expect(script).not.toMatch(/'next', 'dev'|WARM_ROUTES/);
   });
 

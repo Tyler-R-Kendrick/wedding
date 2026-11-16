@@ -84,6 +84,17 @@ export function localIsolation(exampleText, mirrored) {
   return Object.fromEntries(blank.map((k) => [k, '']));
 }
 
+/**
+ * The server keeps an idle connection open for two minutes, not Node's five seconds.
+ *
+ * Playwright's request client keeps connections and reuses them. A server that closes one after
+ * 5 s idle (measured: `Keep-Alive: timeout=5`, closed at 6.3 s) and a test that reuses it at that
+ * moment meet as `read ECONNRESET` on a request that never reached any code: idor.spec.ts failed
+ * that way on its first POST, and webmcp.spec.ts had a retry for exactly this error. A browser
+ * opens a new connection when that happens; a test client sending a POST does not.
+ */
+export const KEEP_ALIVE = ['--keepAliveTimeout', '120000'];
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /** Any answer from `/api/health` on this origin: someone is serving it. */
@@ -172,7 +183,7 @@ async function main(args) {
   const log = path.join(tmpdir(), `wedding-test-server-${port}.log`);
   const out = openSync(log, 'w'); // one descriptor for both streams, so neither overwrites the other
   // Its own process group, so stopping it takes `next start` and next-server together.
-  const server = spawn('npx', ['next', 'start', '-p', port], { cwd: ROOT, env, detached: true, stdio: ['ignore', out, out] });
+  const server = spawn('npx', ['next', 'start', '-p', port, ...KEEP_ALIVE], { cwd: ROOT, env, detached: true, stdio: ['ignore', out, out] });
   closeSync(out);
   let serverError;
   let serverExited = false;
