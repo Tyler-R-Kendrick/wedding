@@ -73,7 +73,13 @@ Guest matching uses **verified provider email OR fuzzy name** (see `docs/design/
 
 - **Linked provider account** → sign in by subject id without re-matching.
 - **Verified email** → match any row on `guest_contacts` or `guests.email` (same normalization as OTP). Google requires `email_verified`. Facebook: treat a returned email as verified (documented in design).
-- **Fuzzy name** → middle initials ignored; nicknames, diacritics, hyphens, `alternate_names`; typo tolerance only when **exactly one** adult matches.
+- **Fuzzy name** (`src/domain/identity/name-match.ts`) → how strongly a profile fits a guest is a tier, and the strongest tier anyone reaches decides, only if exactly one adult reaches it:
+  0. the whole profile name is one of the guest's other names (`alternate_names`, e.g. a business name);
+  1. their given name as listed, with their own surname or one among their other names (a maiden name), wherever it sits ("Jane Doe Smith");
+  2. a short form of the given name with their own surname; or the given name as listed with the surname of another adult in their household (a couple on the list under two surnames, either of whom may go by the other's; and a guest listed by first name, known by the household's);
+  3. a short form with the household's surname; or a middle name used as the given name;
+  4. one letter out in the given name and at most one in the surname, never on a name shorter than five letters.
+  Middle initials, titles, diacritics, apostrophes, hyphens, emoji and decoration ("Name | Business", "(she/her)") are set aside. A profile with no surname never matches by name, and neither does a guest with no surname and nobody in the household to be known by.
 - Email match wins when name differs; **email + name → different guests** → no session (`email_name_conflict`).
 - **Invitation sent** required for both paths.
 - **Failure** → no session; `/sign-in/save-the-date` (warm save-the-date copy — never implies list membership). Attempts stay in `social_auth_reviews` for `admin_link_social_auth`.

@@ -3,7 +3,7 @@ import { newId } from '@/contracts/ids';
 import type { Db } from '@/db/client';
 import { authAccounts, authUsers, guests, invitations, socialAuthReviews, type SocialProvider, type SocialReviewReason } from '@/db/schema';
 import { findGuestsByEmail } from '@/domain/guests/repo';
-import { matchGuestsByName, type ProviderProfileName } from '@/domain/identity/name-match';
+import { householdSurnamesOf, matchGuestsByName, type ProviderProfileName } from '@/domain/identity/name-match';
 import { activeBindingForGuest, activeBindingsForIdentity, bindIdentity, ensureAuthUser, findAuthUserByEmail } from '@/domain/identity/bindings';
 import { verifiedProviderEmail } from '@/domain/identity/social/admin-email';
 import type { CookieSink } from '@/lib/auth';
@@ -224,9 +224,13 @@ export async function completeSocialSignIn(
     }
   }
 
-  const candidates = (await listMatchableGuests(db)).filter(
+  const adults = (await listMatchableGuests(db)).filter(
     (g) => g.kind !== 'child' && !g.isMinor && g.isNamed !== false,
   );
+  // Each guest with the surnames of the other adults they are on the list with: a couple under two
+  // surnames may each go by the other's, and a guest listed by first name is known by the household's.
+  const surnames = householdSurnamesOf(adults);
+  const candidates = adults.map((g) => ({ ...g, householdSurnames: surnames.get(g.id) ?? [] }));
   const { confidence, matches: nameMatches } = matchGuestsByName(profileName, candidates);
 
   let emailMatches: typeof candidates = [];

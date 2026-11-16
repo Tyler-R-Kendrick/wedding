@@ -93,6 +93,8 @@ Keeps existing: nicknames, diacritics, punctuation, hyphens, `alternate_names`.
 
 **Confidence:** Still `none` | `one` | `ambiguous`; social requires `one` after combining with email.
 
+**Households (added 2026-11-16).** The planning sheet lists couples on one line, often under two surnames, and people use either online. Each guest is matched with the surnames of the other named adults in their household (`householdSurnamesOf`), as a weaker tier than their own: see the tier list in `docs/social-auth.md` and the S-17 to S-28 rows of the rubric. An exact given name outranks a short form of it, so two guests one profile could equally be are `ambiguous`, never guessed between. Typo tolerance no longer applies to names shorter than five letters.
+
 ### Invitation sent
 
 **Email and name matches both require** a usable invitation with `sent_at` set (unchanged product rule). Verified email does **not** bypass “invitation sent.”

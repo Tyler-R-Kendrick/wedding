@@ -111,6 +111,18 @@ Harnesses without CLI quota on this VM use **Cursor Task** reviewers on distinct
 | S-13 | Two guests same name | `ambiguous`; no session; review queued | `save-the-date page (`SAVE_THE_DATE_COPY`)` + sign-in suggests email/phone | social-sign-in ambiguous |
 | S-14 | Fuzzy typo one guest only | One match ≤1 edit on core given+family | success if invite sent | name-match fuzzy |
 | S-15 | Fuzzy typo two guests | ambiguous | save-the-date page (`SAVE_THE_DATE_COPY`) | name-match fuzzy |
+| S-17 | Either person on a sheet line ("Alma Jarvik and Jody O'Brennan") signs in under their own name | Each is a guest of their own and matches | N/A | `name-match-households.test.ts`, `guest-list-sync.test.ts` |
+| S-18 | A couple under two surnames; one goes by the other's ("Alma O'Brennan", "Alma Jarvik-O'Brennan") | Match, through the household's surname (tier 2) | N/A | `name-match-households.test.ts` cross-surname; `guest-list-sync.test.ts` sign-in |
+| S-19 | Maiden name on record (`alternate_names`: "Nora Halloran" or "Halloran"), used as the surname or kept as a middle name | Match; hers only, never her partner's | N/A | `name-match-households.test.ts` maiden |
+| S-20 | Guest listed by first name with a partner who has a surname ("Neal Kendall and Tilly") | Matches under the partner's surname only; "Tilly Jones" and "Tilly" do not | save-the-date page on fail | `name-match-households.test.ts` first-name |
+| S-21 | Line with no surname at all ("Mick and Christa"), or a relation for a name ("Grandma Winslow") | Never matched by name (a first name is not a person); the upload counts these for the couple | save-the-date page | `name-match-households.test.ts`, `sheet-people.test.ts` notes |
+| S-22 | A profile that could be two guests at the same strength ("Janet Fitzwilliam": Janet under her partner's name, or Jan by a longer form) | `ambiguous`; no session; review lists both | save-the-date page | `name-match-households.test.ts` tiers |
+| S-23 | An exact given name outranks a short form; own surname outranks the household's | The stronger tier decides when exactly one guest reaches it | N/A | `name-match-households.test.ts` tiers |
+| S-24 | Typo tolerance on a short name ("Dan" for "Jan", "Fax" for "Fox") | No match: one letter is another person | save-the-date page | `name-match-households.test.ts` slips |
+| S-25 | Decorated display names ("Name \| Business", "(she/her)", "Name - Title", "Surname, Given", emoji) | Decoration set aside; the name matches | N/A | `name-match-households.test.ts` providers |
+| S-26 | The wedding planner: middle name or initial, short form, business name as the profile ("Bustle & Lace") with it on record as another name | Match | N/A | `name-match-households.test.ts` planner |
+| S-27 | Surname written run together or apart ("LeMarchand", "Le Marchand", "O Brennan", "OBrennan") | Match | N/A | `name-match-households.test.ts` |
+| S-28 | Planning sheet uploaded again, or after the couple added people by hand | Nobody is made twice, removed or changed; a guest not on the sheet (the planner) is untouched | N/A | `guest-list-sync.test.ts` |
 
 ### Social — email & account (A)
 

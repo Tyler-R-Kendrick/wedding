@@ -1,7 +1,37 @@
-/** Lowercase, strip diacritics, punctuation, and collapse whitespace. */
-const TITLES_SUFFIXES = /\b(dr|mr|mrs|ms|prof|rev|jr|sr|ii|iii|iv)\b\.?/gi;
-const EMOJI = /\p{Extended_Pictographic}/gu;
+/**
+ * Matching the name on a Google or Facebook profile to a guest on the list.
+ *
+ * A guest signs in with the name they use online, which is often not the name on the envelope:
+ * a nickname, a middle name, a maiden name, a married name, their partner's surname, a hyphenated
+ * pair, a typo on our side or theirs. Everything here is decided from names alone, so the rule
+ * throughout is: accept what one person on the list plainly is, and refuse whatever two people
+ * could be. A name that fits two guests equally well is `ambiguous` and signs in nobody.
+ *
+ * How strongly a profile fits a guest is a tier (`matchRank`); the strongest tier that anyone
+ * reaches decides, and only if exactly one guest reaches it:
+ *
+ *   0  the whole profile name is one of the guest's other names ("Bustle & Lace")
+ *   1  their given name as listed, with their own surname or a surname among their other names
+ *      (a maiden name), wherever it sits in the profile ("Jane Doe Smith")
+ *   2  a short form of their given name ("Mike" for Michael) with their own surname; or their
+ *      given name as listed with the surname of another adult in their household: a couple on
+ *      the list under two surnames, where either may go by the other's online, and a guest
+ *      listed with no surname ("Neal Kendall and Tilly"), who is known by the household's
+ *   3  a short form with the household's surname; or a middle name used as the given name, with
+ *      their own surname
+ *   4  one letter out in the given name and at most one in the surname (a typo), never on a
+ *      short name
+ *
+ * A profile with no surname at all never matches by tier 1 to 4: a given name alone is not a
+ * person. Nothing here reads an email address; `social/complete.ts` weighs that separately.
+ */
 
+const TITLES_SUFFIXES = /\b(dr|mr|mrs|ms|miss|mx|prof|rev|sr|jr|ii|iii|iv|phd|esq|cpa)\b\.?/gi;
+const EMOJI = /\p{Extended_Pictographic}/gu;
+const PUNCT = /['’‘`.,]/g;
+const HYPHEN = /[-–—]/;
+
+/** Lowercase, strip diacritics, titles and punctuation, and collapse whitespace. Hyphens become spaces. */
 export function normalizeNamePart(raw: string): string {
   const stripped = raw.replace(EMOJI, '');
   const ascii = stripped
@@ -9,70 +39,208 @@ export function normalizeNamePart(raw: string): string {
     .replace(/\p{M}/gu, '')
     .toLowerCase();
   return ascii
+    .replace(/[&+]/g, ' and ')
     .replace(TITLES_SUFFIXES, ' ')
     .replace(PUNCT, '')
-    .replace(HYPHEN, ' ')
+    .replace(new RegExp(HYPHEN.source, 'g'), ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
-export const NICKNAME_CANONICAL: Readonly<Record<string, string>> = {
-  bill: 'william',
-  billy: 'william',
-  will: 'william',
-  willy: 'william',
-  bob: 'robert',
-  bobby: 'robert',
-  rob: 'robert',
-  robbie: 'robert',
-  liz: 'elizabeth',
-  beth: 'elizabeth',
-  betsy: 'elizabeth',
-  lizzie: 'elizabeth',
-  kate: 'katherine',
-  katie: 'katherine',
-  kathy: 'katherine',
-  mike: 'michael',
-  mikey: 'michael',
-  jim: 'james',
-  jimmy: 'james',
-  jamie: 'james',
-  tom: 'thomas',
-  tommy: 'thomas',
-  dick: 'richard',
-  rick: 'richard',
-  rich: 'richard',
-  peg: 'margaret',
-  peggy: 'margaret',
-  maggie: 'margaret',
-  meg: 'margaret',
-  jack: 'john',
-  johnny: 'john',
-  chuck: 'charles',
-  charlie: 'charles',
-  alex: 'alexander',
-  sandy: 'alexander',
-  tony: 'anthony',
-  jen: 'jennifer',
-  jenny: 'jennifer',
-  sue: 'susan',
-  susie: 'susan',
-  dave: 'david',
-  dan: 'daniel',
-  danny: 'daniel',
-  matt: 'matthew',
-  pat: 'patricia',
-  trish: 'patricia',
-  joe: 'joseph',
-  joey: 'joseph',
-  sam: 'samuel',
-  ben: 'benjamin',
-  nick: 'nicholas',
-  nate: 'nathaniel',
-  abby: 'abigail',
-  gabby: 'gabrielle',
-  vicky: 'victoria',
-  tori: 'victoria',
-};
+
+/**
+ * Given names that are the same name: short forms, pet forms and common spellings. A name may sit
+ * in more than one group ("Pat" is Patrick and Patricia; "Kate" is Katherine and Katelyn): two
+ * names are the same when any one group holds both.
+ */
+const NICKNAME_GROUPS: readonly (readonly string[])[] = [
+  ['william', 'bill', 'billy', 'will', 'willy', 'willie', 'liam'],
+  ['robert', 'bob', 'bobby', 'rob', 'robbie', 'bert'],
+  ['elizabeth', 'liz', 'lizzie', 'beth', 'betsy', 'betty', 'eliza', 'libby', 'ellie', 'elle'],
+  ['katherine', 'kathryn', 'catherine', 'katharine', 'kathrine', 'kate', 'katie', 'katy', 'kathy', 'cathy', 'kat', 'kit', 'kitty'],
+  ['katelyn', 'kaitlyn', 'caitlin', 'katelynn', 'kaitlin', 'caitlyn', 'kate', 'katie', 'cait'],
+  ['michael', 'mike', 'mikey', 'mick', 'micky', 'mickey'],
+  ['michelle', 'michele', 'shelly', 'shelley', 'chelle', 'mich', 'micki', 'mickie', 'missy'],
+  ['james', 'jim', 'jimmy', 'jamie', 'jimbo'],
+  ['thomas', 'tom', 'tommy'],
+  ['richard', 'rick', 'ricky', 'rich', 'richie', 'dick'],
+  ['margaret', 'peg', 'peggy', 'maggie', 'meg', 'marge', 'margie', 'greta'],
+  ['john', 'jack', 'johnny', 'jon'],
+  ['jonathan', 'jon', 'jonny', 'johnathan'],
+  ['charles', 'chuck', 'charlie', 'chas', 'chaz'],
+  ['alexander', 'alex', 'xander', 'sandy', 'al', 'lex'],
+  ['alexandra', 'alex', 'alexa', 'lexi', 'sandy', 'allie', 'ali'],
+  ['alexis', 'alex', 'lexi'],
+  ['sandra', 'sandy', 'sandi'],
+  ['anthony', 'tony', 'ant'],
+  ['jennifer', 'jen', 'jenny', 'jenn', 'jenni'],
+  ['susan', 'sue', 'susie', 'suzy', 'suzie', 'suzanne', 'susanne'],
+  ['david', 'dave', 'davey', 'davy'],
+  ['daniel', 'dan', 'danny'],
+  ['matthew', 'matt', 'matty'],
+  ['patricia', 'pat', 'patty', 'patti', 'trish', 'tricia', 'patsy'],
+  ['patrick', 'pat', 'paddy'],
+  ['joseph', 'joe', 'joey', 'jos'],
+  ['samuel', 'sam', 'sammy'],
+  ['samantha', 'sam', 'sammy', 'sammie'],
+  ['benjamin', 'ben', 'benny', 'benji'],
+  ['nicholas', 'nick', 'nicky', 'nicolas', 'nico'],
+  ['nicole', 'nikki', 'nicki', 'nichole', 'nicky', 'nic'],
+  ['nathaniel', 'nate', 'nathan', 'nat'],
+  ['abigail', 'abby', 'abbie', 'abbey', 'gail'],
+  ['gabrielle', 'gabby', 'gabi', 'gabriella', 'gabbie'],
+  ['victoria', 'vicky', 'vicki', 'tori', 'vic', 'vickie'],
+  ['zachary', 'zach', 'zack', 'zac', 'zak', 'zachery'],
+  ['steven', 'stephen', 'steve', 'stevie'],
+  ['stephanie', 'steph', 'stephie', 'stefanie', 'steffi'],
+  ['deborah', 'debra', 'deb', 'debbie', 'debby', 'debi'],
+  ['barbara', 'barb', 'barbie', 'babs'],
+  ['cynthia', 'cindy', 'cindi', 'cyndi'],
+  ['teresa', 'theresa', 'terri', 'terry', 'teri', 'tess', 'tessa'],
+  ['terrence', 'terence', 'terrance', 'terry'],
+  ['christine', 'christina', 'chris', 'christy', 'chrissy', 'tina', 'kristine', 'kristina', 'kris', 'kristy', 'christie'],
+  ['christopher', 'chris', 'kris', 'topher', 'kit'],
+  ['kristen', 'kristin', 'kirsten', 'kris', 'krissy'],
+  ['jeffrey', 'jeff', 'geoffrey', 'geoff', 'jeffery'],
+  ['peter', 'pete', 'petey'],
+  ['jason', 'jay', 'jase'],
+  ['jacob', 'jake', 'jay'],
+  ['mackenzie', 'mckenzie', 'kenzie', 'mack', 'makenzie'],
+  ['eleanor', 'ellie', 'nell', 'nellie', 'elle'],
+  ['ellen', 'ellie', 'elle', 'nell'],
+  ['lucas', 'luke', 'luc'],
+  ['randall', 'randy', 'randolph', 'rand'],
+  ['curtis', 'curt', 'kurt', 'kurtis'],
+  ['vincent', 'vince', 'vinny', 'vinnie', 'vin'],
+  ['lucille', 'lucy', 'lucia', 'lu', 'lucinda'],
+  ['derek', 'derrick', 'derick', 'deric'],
+  ['brian', 'bryan', 'brien'],
+  ['neil', 'neal', 'niel'],
+  ['caroline', 'carolyn', 'carrie', 'caro', 'cari'],
+  ['carol', 'carole', 'carrie', 'caryl'],
+  ['sarah', 'sara'],
+  ['mark', 'marc'],
+  ['marcus', 'markus', 'marc'],
+  ['melissa', 'mel', 'missy', 'lissa', 'melly'],
+  ['clayton', 'clay'],
+  ['rosemary', 'rose', 'rosie', 'romy'],
+  ['allison', 'alison', 'allyson', 'alyson', 'ali', 'allie', 'ally'],
+  ['alice', 'alyce', 'allie', 'ali'],
+  ['eric', 'erik', 'erick'],
+  ['francis', 'frank', 'frankie', 'fran'],
+  ['franklin', 'frank', 'frankie'],
+  ['frances', 'fran', 'frankie', 'francie', 'francesca'],
+  ['louis', 'lou', 'louie'],
+  ['janet', 'jan', 'janette', 'jeanette'],
+  ['janice', 'jan', 'janis'],
+  ['lindsey', 'lindsay', 'lyndsey', 'lyndsay', 'linsey', 'linds'],
+  ['tyler', 'ty'],
+  ['amy', 'aimee', 'amie'],
+  ['andrew', 'andy', 'drew'],
+  ['andrea', 'andy', 'andie', 'drea'],
+  ['edward', 'ed', 'eddie', 'ted', 'teddy', 'ned'],
+  ['edgar', 'ed', 'eddie'],
+  ['theodore', 'ted', 'teddy', 'theo'],
+  ['timothy', 'tim', 'timmy'],
+  ['gregory', 'greg', 'gregg'],
+  ['douglas', 'doug'],
+  ['donald', 'don', 'donnie', 'donny'],
+  ['ronald', 'ron', 'ronnie', 'ronny'],
+  ['kenneth', 'ken', 'kenny'],
+  ['lawrence', 'laurence', 'larry', 'lars'],
+  ['raymond', 'ray'],
+  ['gerald', 'gerry', 'jerry'],
+  ['jerome', 'jerry'],
+  ['harold', 'harry', 'hal'],
+  ['henry', 'harry', 'hank', 'hal'],
+  ['walter', 'walt', 'wally'],
+  ['phillip', 'philip', 'phil'],
+  ['frederick', 'fred', 'freddy', 'freddie', 'fritz'],
+  ['leonard', 'leo', 'len', 'lenny'],
+  ['maximilian', 'max'],
+  ['maxwell', 'max'],
+  ['joshua', 'josh'],
+  ['justin', 'jus'],
+  ['dominic', 'dom', 'dominick'],
+  ['augustus', 'gus', 'august', 'augie'],
+  ['austin', 'austen'],
+  ['mary', 'molly', 'polly'],
+  ['rebecca', 'becky', 'becca', 'bec', 'rebekah'],
+  ['jessica', 'jess', 'jessie', 'jessi'],
+  ['amanda', 'mandy', 'mandi'],
+  ['kimberly', 'kim', 'kimmy', 'kimberley'],
+  ['pamela', 'pam', 'pammy'],
+  ['dorothy', 'dot', 'dottie', 'dolly'],
+  ['virginia', 'ginny', 'ginger', 'ginnie'],
+  ['jacqueline', 'jackie', 'jacqui', 'jacky'],
+  ['madeline', 'maddie', 'maddy', 'madeleine', 'madelyn'],
+  ['natalie', 'nat', 'nattie', 'natalia', 'nathalie'],
+  ['olivia', 'liv', 'livvy', 'olive'],
+  ['isabella', 'isabel', 'isabelle', 'izzy', 'bella', 'belle'],
+  ['charlotte', 'charlie', 'lottie', 'char'],
+  ['josephine', 'jo', 'josie', 'joey'],
+  ['joanne', 'jo', 'joann'],
+  ['joanna', 'jo'],
+  ['laura', 'laurie', 'lori'],
+  ['lauren', 'laurie'],
+  ['linda', 'lynda', 'lindy'],
+  ['lynn', 'lynne', 'lyn'],
+  ['valerie', 'val'],
+  ['veronica', 'ronnie', 'roni', 'vera'],
+  ['angela', 'angie', 'ange', 'angel'],
+  ['annabelle', 'anna', 'ann', 'anne', 'annie', 'belle'],
+  ['anna', 'ann', 'anne', 'annie', 'ana'],
+  ['diana', 'di'],
+  ['diane', 'di', 'dianne'],
+  ['colleen', 'coleen', 'collie'],
+  ['cheryl', 'sheryl', 'cher', 'cheri', 'sherry', 'sherri'],
+  ['maura', 'maureen', 'mo'],
+  ['corinne', 'corrine', 'corinna', 'cori', 'corey', 'cory'],
+  ['ashley', 'ash', 'ashleigh', 'ashlee'],
+  ['nancy', 'nan', 'nance'],
+  ['karen', 'karin', 'caren', 'kari'],
+  ['kyle', 'ky'],
+  ['dean', 'deano'],
+  ['devin', 'devon', 'dev'],
+  ['colin', 'collin', 'col'],
+  ['marshall', 'marsh'],
+  ['kevin', 'kev'],
+  ['jeremy', 'jerry', 'jem'],
+  ['philippa', 'pippa', 'pip'],
+  ['regina', 'regine', 'gina', 'reggie'],
+  ['reginald', 'reggie', 'reg'],
+  ['ajay', 'aj'],
+  ['benedict', 'ben', 'benny'],
+  ['russell', 'russ', 'rusty'],
+  ['troy', 'troye'],
+];
+
+const GROUPS_OF = new Map<string, number[]>();
+NICKNAME_GROUPS.forEach((group, i) => {
+  for (const name of group) {
+    const at = GROUPS_OF.get(name);
+    if (at) at.push(i);
+    else GROUPS_OF.set(name, [i]);
+  }
+});
+
+/** The same given name, allowing short forms and common spellings. */
+export function sameGivenName(a: string, b: string): boolean {
+  if (!a || !b) return false;
+  if (a === b) return true;
+  const ga = GROUPS_OF.get(a);
+  const gb = GROUPS_OF.get(b);
+  return !!ga && !!gb && ga.some((g) => gb.includes(g));
+}
+
+/** Every name a given name may stand for, itself included. */
+export function expandNicknames(tokens: readonly string[]): string[] {
+  const out = new Set<string>();
+  for (const t of tokens) {
+    out.add(t);
+    for (const g of GROUPS_OF.get(t) ?? []) for (const name of NICKNAME_GROUPS[g]!) out.add(name);
+  }
+  return [...out];
+}
 
 export interface ParsedPersonName {
   given: string[];
@@ -87,119 +255,101 @@ export interface ProviderProfileName {
   name?: string | null;
 }
 
-const PUNCT = /['’`.]/g;
-const HYPHEN = /[-–—]/;
-
-/** Common English nicknames → canonical given names used on invitations. */
+/** A guest as the matcher reads them. */
+export interface GuestNameRecord {
+  firstName: string;
+  lastName: string;
+  /** Other names they go by: a maiden name ("Jane Doe" or just "Doe"), a nickname, a business name. */
+  alternateNames?: readonly string[] | null;
+  /** Surnames of the other named adults in their household (`householdSurnamesOf`). */
+  householdSurnames?: readonly string[] | null;
+}
 
 /** Split on spaces and hyphens; drop empty and single-letter middle initials. */
 export function tokenizeName(raw: string): string[] {
   const norm = normalizeNamePart(raw);
   if (!norm) return [];
-  const parts = norm.split(/\s+/).flatMap((p) => p.split(HYPHEN)).filter(Boolean);
+  const parts = norm.split(/\s+/).filter(Boolean);
   return parts.filter((t, i) => t.length > 1 || (i === 0 && t.length === 1) || (i === parts.length - 1 && t.length === 1));
 }
 
-export function expandNicknames(tokens: readonly string[]): string[] {
-  const out = new Set<string>();
-  for (const t of tokens) {
-    out.add(t);
-    const canon = NICKNAME_CANONICAL[t];
-    if (canon) out.add(canon);
-  }
-  return [...out];
+/** Words of a surname that are not the surname: "Le Marchand", "van der Berg", "De La Cruz". */
+const PARTICLES = new Set(['le', 'la', 'de', 'del', 'della', 'di', 'da', 'du', 'des', 'van', 'von', 'der', 'den', 'ter', 'st', 'san', 'al', 'el', 'bin', 'ibn', 'mac', 'mc', 'o', 'and']);
+const weighty = (tokens: readonly string[]) => tokens.filter((t) => !PARTICLES.has(t) && t.length > 1);
+
+/**
+ * What a display name is once the decoration around it is gone: "Jane Doe | Acme Events",
+ * "Jane Doe (she/her)", "Jane Doe - Photographer", "Doe, Jane". Returned as the candidate names it
+ * could be, most likely first; the pieces cut away are kept as candidates of their own, since the
+ * decoration is sometimes the name a guest is listed under (a business).
+ */
+function displayCandidates(raw: string): string[] {
+  const text = raw.replace(EMOJI, ' ').replace(/\s+/g, ' ').trim();
+  if (!text) return [];
+  const out: string[] = [];
+  const add = (s: string) => {
+    const v = s.replace(/\s+/g, ' ').trim();
+    if (v && !out.includes(v)) out.push(v);
+  };
+  const noBrackets = text.replace(/[([{][^)\]}]*[)\]}]/g, ' ');
+  const pieces = noBrackets.split(/\s[|·•@/:]\s|\s[-–—]\s|\s[-–—]{2,}\s?/).map((s) => s.trim()).filter(Boolean);
+  const head = pieces[0] ?? noBrackets;
+  // "Doe, Jane" is the surname first; "Jane Doe, CPA" is a credential, already stripped as a suffix.
+  const comma = /^([^,]+),\s*([^,]+)$/.exec(head);
+  if (comma && tokenizeName(comma[1]!).length >= 1 && tokenizeName(comma[2]!).length >= 1) add(`${comma[2]} ${comma[1]}`);
+  add(head);
+  for (const p of pieces.slice(1)) add(p);
+  for (const m of text.matchAll(/[([{]([^)\]}]*)[)\]}]/g)) add(m[1]!);
+  add(text);
+  return out;
 }
 
+/** A profile's given and family names, from its own fields where it has them, else from its display name. */
 export function parseProviderProfile(input: ProviderProfileName): ParsedPersonName {
-  if (!input.givenName && !input.familyName && input.name) {
-    const all = tokenizeName(input.name);
-    if (all.length >= 2) {
-      const familyTokens = expandNicknames([all.at(-1)!]);
-      const givenTokens = all.slice(0, -1);
-      return { given: expandNicknames(givenTokens), family: familyTokens, tokens: [...givenTokens, ...familyTokens] };
-    }
-    return { given: expandNicknames(all), family: [], tokens: all };
+  const givenRaw = (input.givenName ?? '').trim();
+  const familyRaw = (input.familyName ?? '').trim();
+  if (givenRaw || familyRaw) {
+    const given = tokenizeName(displayCandidates(givenRaw)[0] ?? givenRaw);
+    const family = tokenizeName(displayCandidates(familyRaw)[0] ?? familyRaw);
+    if (given.length && family.length) return { given, family, tokens: [...given, ...family] };
+    // One field only ("Jane Doe" typed into the first-name box): read it as a whole name.
+    const whole = given.length ? given : family;
+    if (whole.length >= 2 && !input.name) return { given: whole.slice(0, -1), family: [whole.at(-1)!], tokens: whole };
+    if (!input.name) return { given: given.length ? given : [], family: given.length ? [] : family, tokens: whole };
   }
-  const givenRaw = [input.givenName, input.familyName ? null : input.name].filter(Boolean).join(' ');
-  const familyRaw = input.familyName ?? '';
-  let givenTokens = tokenizeName(givenRaw);
-  let familyTokens = tokenizeName(familyRaw);
-  if (givenTokens.length === 0 && input.name) {
-    const all = tokenizeName(input.name);
-    if (all.length >= 2) {
-      familyTokens = [all.at(-1)!];
-      givenTokens = all.slice(0, -1);
-    } else givenTokens = all;
-  }
-  const tokens = [...givenTokens, ...familyTokens];
-  return { given: expandNicknames(givenTokens), family: expandNicknames(familyTokens), tokens };
+  const display = displayCandidates(input.name ?? '')[0] ?? '';
+  // The last word is the surname, with a hyphenated pair kept together and any particle before it.
+  const words = normalizeNamePart(display.replace(new RegExp(HYPHEN.source, 'g'), '\u0001')).split(/\s+/).filter(Boolean);
+  const all = tokenizeName(display);
+  if (words.length < 2) return { given: all, family: [], tokens: all };
+  const family = words.at(-1)!.split('\u0001').filter(Boolean);
+  let cut = words.length - 1;
+  while (cut > 1 && PARTICLES.has(words[cut - 1]!)) cut--;
+  const particles = words.slice(cut, -1);
+  // Middle initials are dropped; a first initial is kept ("J. Robert Doe").
+  const given = words.slice(0, cut).flatMap((w) => w.split('\u0001')).filter((t, i) => t.length > 1 || i === 0);
+  return { given, family: [...particles, ...family], tokens: [...given, ...particles, ...family] };
 }
 
+/** A guest's names as sets: every given name they answer to, every surname that is theirs. */
 export function parseGuestRecord(firstName: string, lastName: string, alternateNames: readonly string[] = []): ParsedPersonName {
-  const primary = parseProviderProfile({ givenName: firstName, familyName: lastName });
-  const aliasSets = alternateNames.flatMap((a) => {
-    const t = tokenizeName(a);
-    if (t.length >= 2) return [{ given: expandNicknames(t.slice(0, -1)), family: expandNicknames([t.at(-1)!]) }];
-    if (t.length === 1) return [{ given: expandNicknames(t), family: [] as string[] }];
-    return [];
-  });
-  const given = new Set(primary.given);
-  const family = new Set(primary.family);
-  for (const a of aliasSets) {
-    for (const g of a.given) given.add(g);
-    for (const f of a.family) family.add(f);
+  const given = tokenizeName(firstName);
+  const family = tokenizeName(lastName);
+  const givenAll = new Set(given);
+  const familyAll = new Set(family);
+  for (const alt of alternateNames) {
+    const t = tokenizeName(alt);
+    if (t.length >= 2) {
+      for (const g of t.slice(0, -1)) givenAll.add(g);
+      familyAll.add(t.at(-1)!);
+    } else if (t.length === 1) {
+      // One word is a nickname or a maiden name; it may be either.
+      givenAll.add(t[0]!);
+      familyAll.add(t[0]!);
+    }
   }
-  return { given: [...given], family: [...family], tokens: primary.tokens };
+  return { given: [...givenAll], family: [...familyAll], tokens: [...given, ...family] };
 }
-
-/** First significant given token (middle names ignored for the core comparison). */
-function coreGiven(p: ParsedPersonName): string {
-  if (p.given.length) return p.given[0]!;
-  return p.tokens[0] ?? '';
-}
-
-/** Last significant family token (maiden / hyphen tokens still in family set). */
-function coreFamily(p: ParsedPersonName): string {
-  if (p.family.length) return p.family[p.family.length - 1]!;
-  if (p.tokens.length > 1) return p.tokens[p.tokens.length - 1]!;
-  return '';
-}
-
-function expandCore(token: string): string[] {
-  return token ? expandNicknames([token]) : [];
-}
-
-/** True when core family tokens overlap (maiden/hyphen tolerant). */
-function familyMatches(a: ParsedPersonName, b: ParsedPersonName): boolean {
-  const af = coreFamily(a);
-  const bf = coreFamily(b);
-  if (!af && !bf) return true;
-  if (!af || !bf) {
-    const aTokens = new Set([...a.family, ...a.tokens]);
-    const bTokens = new Set([...b.family, ...b.tokens]);
-    for (const f of aTokens) if (bTokens.has(f)) return true;
-    return false;
-  }
-  const aSet = new Set([...expandCore(af), ...a.family, ...a.tokens]);
-  const bSet = new Set([...expandCore(bf), ...b.family, ...b.tokens]);
-  if (aSet.has(bf) || bSet.has(af)) return true;
-  for (const f of a.family) if (bSet.has(f)) return true;
-  for (const f of b.family) if (aSet.has(f)) return true;
-  return false;
-}
-
-/** True when core given tokens overlap after nickname expansion (middle names ignored). */
-function givenMatches(a: ParsedPersonName, b: ParsedPersonName): boolean {
-  const ag = coreGiven(a);
-  const bg = coreGiven(b);
-  if (!ag || !bg) return a.tokens.length > 0 && b.tokens.some((t) => a.tokens.includes(t) || b.tokens.includes(t));
-  const aExpanded = new Set(expandCore(ag));
-  const bExpanded = new Set(expandCore(bg));
-  for (const g of aExpanded) if (bExpanded.has(g)) return true;
-  return false;
-}
-
-const FUZZY_MAX_EDIT = 1;
 
 function editDistance(a: string, b: string): number {
   if (a === b) return 0;
@@ -220,42 +370,114 @@ function editDistance(a: string, b: string): number {
   return row[b.length]!;
 }
 
-function fuzzyNameMatch(profile: ProviderProfileName, guest: { firstName: string; lastName: string; alternateNames?: readonly string[] }): boolean {
-  const a = parseProviderProfile(profile);
-  const b = parseGuestRecord(guest.firstName, guest.lastName, guest.alternateNames ?? []);
-  const ag = coreGiven(a);
-  const bg = coreGiven(b);
-  const af = coreFamily(a);
-  const bf = coreFamily(b);
-  if (!ag || !bg) return false;
-  if (editDistance(ag, bg) > FUZZY_MAX_EDIT) return false;
-  if (af && bf && editDistance(af, bf) > FUZZY_MAX_EDIT) return false;
-  if ((af && !bf) || (!af && bf)) return false;
-  return true;
+/** One letter out, on names long enough that one letter is a slip and not another name ("Jan" is not "Dan"). */
+const FUZZY_MIN_LENGTH = 5;
+const oneOff = (a: string, b: string) => a === b || (a.length >= FUZZY_MIN_LENGTH && b.length >= FUZZY_MIN_LENGTH && editDistance(a, b) <= 1);
+
+/** The surnames in a household, for `GuestNameRecord.householdSurnames`: every named adult's but the guest's own. */
+export function householdSurnamesOf<T extends { id: string; householdId: string; lastName: string }>(members: readonly T[]): Map<string, string[]> {
+  const byHousehold = new Map<string, T[]>();
+  for (const m of members) {
+    const list = byHousehold.get(m.householdId);
+    if (list) list.push(m);
+    else byHousehold.set(m.householdId, [m]);
+  }
+  const out = new Map<string, string[]>();
+  for (const list of byHousehold.values()) {
+    for (const m of list) {
+      const others = list.filter((o) => o.id !== m.id && o.lastName.trim()).map((o) => o.lastName.trim());
+      out.set(m.id, [...new Set(others)]);
+    }
+  }
+  return out;
 }
 
-/** Whether a provider profile matches a guest's printed / alias names. */
-export function namesMatch(profile: ProviderProfileName, guest: { firstName: string; lastName: string; alternateNames?: readonly string[] }): boolean {
-  const a = parseProviderProfile(profile);
-  const b = parseGuestRecord(guest.firstName, guest.lastName, guest.alternateNames ?? []);
-  // A provider name with only a given token must not match a guest with a distinct family name (social false-positive guard).
-  if (a.family.length === 0 && coreFamily(b).length > 0) return false;
-  if (!givenMatches(a, b)) return false;
-  return familyMatches(a, b);
+export type MatchRank = 0 | 1 | 2 | 3 | 4;
+
+/** How strongly a profile fits a guest (0 strongest), or null when it does not. See the tiers at the top. */
+export function matchRank(profile: ProviderProfileName, guest: GuestNameRecord): MatchRank | null {
+  const alternates = (guest.alternateNames ?? []).map((a) => tokenizeName(a)).filter((t) => t.length > 0);
+
+  // 0: the whole name as given, or any part of a decorated display name, is one of their other names.
+  const wholes = [
+    ...displayCandidates(str(profile.name)),
+    [str(profile.givenName), str(profile.familyName)].filter(Boolean).join(' '),
+  ]
+    .map((s) => tokenizeName(s).join(' '))
+    .filter(Boolean);
+  const aliasHit = alternates.some((alt) => alt.length >= 2 && wholes.includes(alt.join(' ')));
+
+  const p = parseProviderProfile(profile);
+  const coreGiven = p.given[0] ?? '';
+  // A given name alone is not a person: with no surname on the profile only a whole-name alias counts.
+  if (!coreGiven || weighty(p.family).length === 0) return aliasHit ? 0 : null;
+  if (aliasHit) return 0;
+
+  const first = tokenizeName(guest.firstName);
+  const altGiven = alternates.flatMap((t) => (t.length >= 2 ? [t[0]!] : t));
+  const altFamily = alternates.flatMap((t) => (t.length >= 2 ? [[t.at(-1)!]] : [t]));
+  const theirs = [...surnameForms(tokenizeName(guest.lastName)), ...altFamily.flatMap(surnameForms)];
+  const household = (guest.householdSurnames ?? []).flatMap((s) => surnameForms(tokenizeName(s)));
+
+  // Where a surname may sit in the profile: its family name, or after the given name (a maiden name kept as a middle name).
+  const saidFamily = surnameForms(p.family);
+  const said = [...saidFamily, ...weighty(p.given.slice(1))];
+  const knownAs = [...(first[0] ? [first[0]] : []), ...altGiven];
+  // The given name exactly as listed outranks a short form of it: "Janet" is Janet before she is Jan.
+  const givenLevel = knownAs.includes(coreGiven) ? 0 : knownAs.some((g) => sameGivenName(coreGiven, g)) ? 1 : null;
+  const familyOwn = theirs.some((f) => said.includes(f));
+  // The household's surname: only through the profile's own family name, never a middle name.
+  const familyHousehold = household.some((f) => saidFamily.includes(f));
+
+  if (givenLevel !== null && familyOwn) return givenLevel === 0 ? 1 : 2;
+  if (givenLevel !== null && familyHousehold) return givenLevel === 0 ? 2 : 3;
+
+  // They go by a middle name.
+  const middles = first.slice(1);
+  if (familyOwn && middles.some((m) => p.given.some((g) => sameGivenName(g, m)))) return 3;
+
+  // A typo, in the given name, the surname, or one letter in each.
+  const givenClose = knownAs.some((g) => oneOff(coreGiven, g));
+  const familyClose = theirs.some((f) => saidFamily.some((x) => oneOff(x, f)));
+  if ((givenLevel !== null || givenClose) && (familyOwn || familyClose)) return 4;
+  return null;
+}
+
+/** A surname as it may be written: its words ("marchand"), and run together ("lemarchand", "obrien"). */
+function surnameForms(tokens: readonly string[]): string[] {
+  const out = weighty(tokens);
+  if (tokens.length > 1) out.push(tokens.join(''));
+  return out;
+}
+
+const str = (v: string | null | undefined) => (v ?? '').trim();
+
+/** Whether a profile plainly is this guest: any tier but a typo's. */
+export function namesMatch(profile: ProviderProfileName, guest: GuestNameRecord): boolean {
+  const rank = matchRank(profile, guest);
+  return rank !== null && rank < 4;
 }
 
 export type NameMatchConfidence = 'none' | 'one' | 'ambiguous';
 
-/** Pick guests whose names match the provider profile. */
-export function matchGuestsByName<T extends { id: string; firstName: string; lastName: string; alternateNames?: readonly string[] | null }>(
-  profile: ProviderProfileName,
-  candidates: readonly T[],
-): { confidence: NameMatchConfidence; matches: T[] } {
-  const exact = candidates.filter((g) => namesMatch(profile, { ...g, alternateNames: g.alternateNames ?? [] }));
-  if (exact.length === 1) return { confidence: 'one', matches: exact };
-  if (exact.length > 1) return { confidence: 'ambiguous', matches: exact };
-  const fuzzy = candidates.filter((g) => fuzzyNameMatch(profile, { ...g, alternateNames: g.alternateNames ?? [] }));
-  if (fuzzy.length === 1) return { confidence: 'one', matches: fuzzy };
-  if (fuzzy.length > 1) return { confidence: 'ambiguous', matches: fuzzy };
-  return { confidence: 'none', matches: [] };
+type Candidate = { id: string; firstName: string; lastName: string; alternateNames?: readonly string[] | null; householdSurnames?: readonly string[] | null };
+
+/**
+ * The guest a profile is, among `candidates`: the strongest tier anyone reaches, and only when one
+ * guest alone reaches it. Two guests at the same tier are `ambiguous` (both are returned, for the
+ * couple to sort out), whatever weaker matches exist.
+ */
+export function matchGuestsByName<T extends Candidate>(profile: ProviderProfileName, candidates: readonly T[]): { confidence: NameMatchConfidence; matches: T[]; rank: MatchRank | null } {
+  let best: MatchRank | null = null;
+  let matches: T[] = [];
+  for (const g of candidates) {
+    const rank = matchRank(profile, g);
+    if (rank === null) continue;
+    if (best === null || rank < best) {
+      best = rank;
+      matches = [g];
+    } else if (rank === best) matches.push(g);
+  }
+  if (best === null) return { confidence: 'none', matches: [], rank: null };
+  return { confidence: matches.length === 1 ? 'one' : 'ambiguous', matches, rank: best };
 }
