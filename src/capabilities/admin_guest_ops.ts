@@ -14,6 +14,7 @@ import { activeBindingsForGuests, getAuthUser, rebindIdentity, resetIdentity } f
 import { qrSvg } from '@/domain/identity/qr';
 import { invitationLifecycle, invitationUrl } from '@/domain/identity/tokens';
 import { adminLinkSocialReview } from '@/domain/identity/social/complete';
+import { issueForHouseholds, listHouseholdInvitationStates, markHouseholdsSent, setBulkGroup } from '@/domain/invitations/bulk';
 import { currentInvitationsForHouseholds, getInvitation, issueInvitation, listInvitations, revokeInvitation, rotateInvitation } from '@/domain/invitations/repo';
 import { normalizeEmail, isEmailShape } from '@/domain/identity/mask';
 import { hashOtpIdentifier } from '@/domain/identity/otp';
@@ -773,12 +774,105 @@ export const adminMarkInvitationSent = defineCapability({
   },
 });
 
+/** A bulk action names its households one by one: never "everyone", and never more than a wedding has. */
+const householdIds = z.array(z.string().min(1).max(64)).min(1).max(1000);
+
+export const adminListInvitationHouseholds = defineCapability({
+  ...adminBase,
+  name: 'admin_list_invitation_households',
+  title: 'Admin: households and their invitations',
+  description: 'Lists every household with whether it has an invitation link, whether that is marked as sent, and whether the household is in the bulk group. Admin only.',
+  kind: 'read',
+  annotations: readAnn,
+  input: z.object({}).optional(),
+  output: z.object({
+    households: z.array(z.object({ id: z.string(), name: z.string(), people: z.number().int(), inGroup: z.boolean(), link: z.enum(['none', 'active', 'claimed']), sentAt: z.string().nullable() })),
+  }),
+  async handler(ctx) {
+    const guard = adminOf(ctx);
+    if (!guard.ok) return err(guard.error);
+    const { db } = appServices(ctx);
+    const rows = await listHouseholdInvitationStates(db, ctx.now);
+    return ok({ data: { households: rows.map((r) => ({ ...r, sentAt: r.sentAt ? r.sentAt.toISOString() : null })) }, sources: [] });
+  },
+});
+
+export const adminSetBulkGroup = defineCapability({
+  ...adminBase,
+  name: 'admin_set_bulk_group',
+  title: 'Admin: put households in the bulk group, or take them out',
+  description: 'Sets which households the next bulk invitation action applies to. The group is saved and shared between administrators. It changes nothing about the households themselves. Admin only.',
+  kind: 'action',
+  confirmation: 'none',
+  idempotent: true,
+  annotations: { readOnlyHint: false, untrustedContentHint: false, consequentialHint: false },
+  input: z.object({ householdIds, inGroup: z.boolean() }),
+  output: z.object({ changed: z.number().int() }),
+  async handler(ctx, i) {
+    const guard = adminOf(ctx);
+    if (!guard.ok) return err(guard.error);
+    const { db } = appServices(ctx);
+    return ok({ data: { changed: await setBulkGroup(db, i.householdIds, i.inGroup, ctx.now) }, sources: [] });
+  },
+});
+
+export const adminMarkHouseholdsSent = defineCapability({
+  ...adminBase,
+  name: 'admin_mark_households_sent',
+  title: 'Admin: mark households’ invitations as sent, or as not sent',
+  description: 'Records for the named households that the invitation went out (which lets their guests sign in with Google or Facebook by name), or undoes that. A household with no working link is skipped and named in the result. Admin only.',
+  kind: 'action',
+  confirmation: 'inline',
+  idempotent: true,
+  annotations: writeAnn,
+  input: z.object({ householdIds, sent: z.boolean() }),
+  output: z.object({ sent: z.boolean(), changed: z.number().int(), already: z.number().int(), noLink: z.array(z.string()) }),
+  async handler(ctx, i) {
+    const guard = adminOf(ctx);
+    if (!guard.ok) return err(guard.error);
+    const { db } = appServices(ctx);
+    const r = await markHouseholdsSent(db, { householdIds: i.householdIds, sent: i.sent, actor: actorOf(ctx), requestId: ctx.requestId, audit: ctx.audit, now: ctx.now });
+    return ok({ data: { sent: i.sent, ...r }, sources: [] });
+  },
+});
+
+export const adminIssueInvitations = defineCapability({
+  ...adminBase,
+  name: 'admin_issue_invitations',
+  title: 'Admin: issue invitation links for several households',
+  description: 'Creates an invitation link for each named household that has none that works. Each token is shown once. A household that already has a link is left alone and counted. Admin only.',
+  kind: 'action',
+  confirmation: 'inline',
+  // As for one link: never replayed (the outcome holds the plaintext tokens), and it mints bearer links.
+  stepUp: true,
+  idempotent: false,
+  annotations: writeAnn,
+  input: z.object({ householdIds, eventKeys: z.array(z.string().min(1).max(64)).max(20).optional(), plusOneAllowance: z.number().int().min(0).max(10).optional(), childrenAllowance: z.number().int().min(0).max(20).optional() }),
+  output: z.object({
+    /** Shown once. Not stored anywhere. */
+    links: z.array(z.object({ householdId: z.string(), householdName: z.string(), url: z.string(), tokenPrefix: z.string(), expiresAt: z.string() })),
+    hadLink: z.number().int(),
+  }),
+  async handler(ctx, i) {
+    const guard = adminOf(ctx);
+    if (!guard.ok) return err(guard.error);
+    const { db } = appServices(ctx);
+    const origin = siteOrigin();
+    const r = await issueForHouseholds(db, { householdIds: i.householdIds, eventKeys: i.eventKeys ?? [], plusOneAllowance: i.plusOneAllowance ?? 0, childrenAllowance: i.childrenAllowance ?? 0, actor: actorOf(ctx), requestId: ctx.requestId, audit: ctx.audit, now: ctx.now });
+    return ok({
+      data: { links: r.issued.map((x) => ({ householdId: x.householdId, householdName: x.householdName, url: invitationUrl(origin, x.token), tokenPrefix: x.invitation.tokenPrefix, expiresAt: x.invitation.expiresAt.toISOString() })), hadLink: r.hadLink },
+      sources: [],
+    });
+  },
+});
+
 export const adminGuestOpsCapabilities = [
   adminListGuests, adminUpsertGuest, adminDeleteGuest, adminMergeGuests,
   adminListHouseholds, adminGetHousehold, adminUpsertHousehold, adminDeleteHousehold,
   adminListInvitations, adminIssueInvitation, adminRotateInvitation, adminRevokeInvitation,
   adminResetIdentity, adminRebindIdentity, adminImportGuestsCsv, adminExportGuestsCsv, adminSetAdminRole,
   adminListSocialAuthReviews, adminLinkSocialAuth, adminMarkInvitationSent,
+  adminListInvitationHouseholds, adminSetBulkGroup, adminMarkHouseholdsSent, adminIssueInvitations,
 ];
 
 export { guestAccessBindings, invitations };

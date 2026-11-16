@@ -60,6 +60,8 @@ Every `/admin` screen uses this kit the same way. `/admin/gifts`, `/admin/guests
   no draft at all, and a step-up detour asks for them again instead of keeping them.
 - A list that can run to hundreds of rows (guests, households, seats) shows fifty at a time:
   `paged(rows, searchParams.page)` and `PageLinks` under the list. Search narrows it first.
+  The one exception is a list a saved group is gathered from (the households on
+  `/admin/invitations`): "All shown" has to mean all of them, so it is not paged, only narrowed.
 - A picker every row shares (households, guests, tables) goes to the browser once, through
   `ListsProvider` around the list, and each row's flow reads it with `useList`. Passed to every row,
   it makes the page grow with the rows times the options.
