@@ -21,8 +21,11 @@ const merged = readDurations(suite);
 let seen = 0;
 for (const file of reports) {
   for (const result of JSON.parse(readFileSync(file, 'utf8')).testResults ?? []) {
-    const rel = path.relative(ROOT, result.name).split(path.sep).join('/');
-    if (!rel.startsWith(`${SUITES[suite].dir}/`)) continue;
+    // A report from CI names files by the runner's checkout path; keep what follows the suite's directory.
+    const name = result.name.split(path.sep).join('/');
+    const at = name.lastIndexOf(`${SUITES[suite].dir}/`);
+    if (at < 0) continue;
+    const rel = name.slice(at);
     merged[rel] = Math.round(((result.endTime - result.startTime) / 1000) * 10) / 10;
     seen++;
   }
