@@ -53,6 +53,7 @@ import { WEDDING_DETAILS } from './helpers/wedding-details';
  * '/admin/sitemap'
  * '/admin/transport'
  * '/admin/travel'
+ * '/api/feedback'
  * '/api/health'
  * '/api/session'
  * '/ask-us'

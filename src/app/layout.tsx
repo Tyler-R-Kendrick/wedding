@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
+import { ReporterLauncher } from '@/components/feedback/ReporterLauncher';
+import { reporterHotkeyScript } from '@/lib/feedback/hotkey-script';
 import { PostHogIdentity, WebMcpBridge } from '@/webmcp/WebMcpBridge';
 import { isWebMcpEnabled } from '@/webmcp/flag';
 import './globals.css';
@@ -35,6 +37,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <PostHogIdentity />
         {/* Renders nothing; registers WebMCP tools when the browser has document.modelContext. */}
         {isWebMcpEnabled() && <WebMcpBridge />}
+        {/*
+          The couple's problem reporter (src/components/feedback). Nothing for anyone else: the
+          launcher renders nothing and the script returns at its first check unless this device is
+          one of theirs. The script is inline so the shortcut still reaches the plain form on a page
+          whose own script has failed.
+        */}
+        <ReporterLauncher />
+        <script dangerouslySetInnerHTML={{ __html: reporterHotkeyScript() }} />
       </body>
     </html>
   );

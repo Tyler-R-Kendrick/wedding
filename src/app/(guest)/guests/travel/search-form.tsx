@@ -1,7 +1,7 @@
 'use client';
 
 import { useActionState, useId } from 'react';
-import posthog from 'posthog-js';
+import posthog from '@/lib/observe/posthog';
 import { formatChicagoTime, formatLocalClock, formatLocalDay } from '@/domain/travel/format';
 import { formatDuration, formatMoney, REFRESH_BEFORE_BOOKING } from '@/domain/travel/snapshot';
 import type { FlightSearchOutcome, HotelSearchOutcome } from '@/domain/travel/types';

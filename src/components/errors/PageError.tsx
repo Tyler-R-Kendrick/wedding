@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import posthog from 'posthog-js';
 import { useEffect } from 'react';
+import { ReportProblemButton } from '@/components/feedback/ReportProblemButton';
+import { captureError } from '@/lib/diagnostics/recorder';
 import '@/components/rsvp/recipes.css';
 
 /**
@@ -13,8 +14,10 @@ import '@/components/rsvp/recipes.css';
  */
 export function PageError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
-    posthog.captureException(error);
     console.error(error);
+    // An error boundary swallows the error before anything global sees it, so it is reported from
+    // here: to the site's own log, and to the session tracker when one is connected.
+    captureError(error, 'boundary', error.digest ? { digest: error.digest } : {});
   }, [error]);
   return (
     <div className="page">
@@ -33,6 +36,10 @@ export function PageError({ error, reset }: { error: Error & { digest?: string }
         </Link>
       </p>
       {error.digest ? <p className="card__meta">Reference: {error.digest}</p> : null}
+      {/* Only on the couple's own devices; a guest's error page is as it was. */}
+      <p>
+        <ReportProblemButton digest={error.digest} className="link-block" />
+      </p>
     </div>
   );
 }
