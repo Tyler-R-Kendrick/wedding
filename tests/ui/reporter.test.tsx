@@ -159,6 +159,25 @@ describe('the launcher and the page’s session answer', () => {
     expect(hint.viewAs).toEqual({ name: 'Ana', household: 'Testhouse', readOnly: true });
   });
 
+  it('remembers an answer for the address it was asked on, and asks again after a move without a reload', async () => {
+    // What `PostHogIdentity` does on every page, then "Browse as a guest" from an admin page.
+    const { sessionProbe } = await import('@/themes/shared/session-hint');
+    window.history.pushState({}, '', '/admin/guests');
+    const fetchMock = vi.fn(async () => adminAnswer());
+    vi.stubGlobal('fetch', fetchMock);
+    expect((await sessionProbe(true)).viewAs).toBeNull();
+    expect((await sessionProbe()).viewAs).toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    fetchMock.mockImplementation(async () => answer({ signedIn: true, admin: true, reporter: true, viewAs: { name: 'Ana', household: 'Testhouse', readOnly: true }, viewRole: null, portals: [] }));
+    window.history.pushState({}, '', '/guests');
+    const band = await sessionProbe();
+    expect(band.viewAs).toEqual({ name: 'Ana', household: 'Testhouse', readOnly: true });
+    // The account menu on the same page shares that answer.
+    await sessionProbe();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it('sends nothing of its own when the chrome has already asked, and still hears the answer', async () => {
     window.history.pushState({}, '', '/admin');
     const fetchMock = vi.fn(async () => adminAnswer());

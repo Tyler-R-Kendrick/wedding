@@ -28,6 +28,10 @@ export interface SessionHint {
 export const SIGNED_OUT: SessionHint = { resolved: false, signedIn: false, distinctId: null, admin: false, viewAs: null, viewRole: null, viewing: false, portals: [], reporter: false };
 
 let probe: Promise<SessionHint> | null = null;
+/** The address `probe` was asked on. A remembered answer is good for that address only. */
+let probedOn: string | null = null;
+
+const here = (): string => (typeof location === 'undefined' ? '' : location.pathname);
 
 const hintListeners = new Set<(hint: SessionHint) => void>();
 
@@ -91,10 +95,19 @@ async function ask(): Promise<SessionHint> {
  * One request per page, whichever instance asks first. Only an answer is kept: a failed request
  * reads as signed out for now and is forgotten, so the next instance (or the next page) asks again
  * rather than showing "Sign in" to a signed-in guest for the rest of the visit.
+ *
+ * "Per page" means per address, not per document. The router moves between pages without
+ * reloading, and the session can change on the way: "Browse as a guest" is a server action on an
+ * admin page that lands on a guest page. An answer remembered across that move says nobody is being
+ * browsed as, and the band that says whose view it is never appears. That was invisible while
+ * nothing on an admin page asked; once something in the root layout asks on every page
+ * (`PostHogIdentity`), every such move starts from a stale answer. So the answer is kept for the
+ * address it was asked on, and the first instance on a new address asks again.
  */
 export function sessionProbe(fresh = false): Promise<SessionHint> {
-  if (fresh) probe = null;
+  if (fresh || probedOn !== here()) probe = null;
   if (probe) return probe;
+  probedOn = here();
   const asked: Promise<SessionHint> = ask().catch(() => {
     if (probe === asked) probe = null;
     return SIGNED_OUT;
@@ -104,16 +117,11 @@ export function sessionProbe(fresh = false): Promise<SessionHint> {
 }
 
 /** Whether something on this page has already asked (and so `onSessionHint` will hear the answer). */
-export const sessionAsked = (): boolean => probe !== null;
+export const sessionAsked = (): boolean => probe !== null && probedOn === here();
 
 /**
- * Asks without becoming the page's remembered answer.
- *
- * The remembered answer outlives a navigation that does not reload the page, and "Browse as a
- * guest" is one: it starts on an admin page and lands on a guest page whose band reads
- * `sessionProbe()`. An answer cached on the admin page says nobody is being browsed as, and the
- * band would never appear. So a caller with no stake in the chrome (the problem reporter, on admin
- * pages, which have no account menu to ask for it) uses this instead. Listeners still hear it.
+ * Asks without becoming the page's remembered answer: for a caller with no stake in the chrome
+ * (the problem reporter, when nothing else on the page has asked). Listeners still hear it.
  */
 export function askSession(): Promise<SessionHint> {
   return ask().catch(() => SIGNED_OUT);
