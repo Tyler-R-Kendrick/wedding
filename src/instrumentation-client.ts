@@ -11,7 +11,10 @@ if (token && host) {
     tracing_headers: [window.location.hostname],
     debug: process.env.NODE_ENV === 'development',
   });
-} else if (process.env.NODE_ENV !== 'production') {
+} else if (process.env.NODE_ENV === 'development') {
+  // Said, never thrown. This file runs before the page's own scripts: an error here stops React
+  // from starting, so every button, form and flow on the site is dead wherever PostHog is not set
+  // up. A checkout needs no account (CLAUDE.md), and neither does the test server CI runs.
   const missingVariable = token ? 'NEXT_PUBLIC_POSTHOG_HOST' : 'NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN';
-  throw new Error(`${missingVariable} variable required by PostHog is missing or un-configured, this causes events to be silently missed. This error stops appearing once ${missingVariable} is configured`);
+  console.warn(`PostHog is off: ${missingVariable} is not set, so no events are sent from this browser.`);
 }
