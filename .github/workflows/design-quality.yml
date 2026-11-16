@@ -238,7 +238,9 @@ jobs:
 
   build-cache:
     name: seed the build cache (main only)
-    if: github.ref == 'refs/heads/main'
+    # TEMPORARY, this pull request only: also seed from here, once, so the next run can show what a
+    # warm cache does before any of this is on main. Reverted in the next commit.
+    if: github.ref == 'refs/heads/main' || github.head_ref == 'claude/relaxed-wright-hk7l1o'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
