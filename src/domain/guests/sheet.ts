@@ -76,12 +76,6 @@ const ALIASES: Record<Field, string[]> = {
 /** Columns that exist in the sheet and are never read: contact details and anything personal. */
 const WITHHELD = ['address', 'address street', 'street', 'mailing address', 'city', 'state', 'zip', 'zip code', 'postal code', 'email', 'e mail', 'phone', 'phone number', 'dietary restrictions', 'dietary', 'allergies', 'notes'];
 
-/** Whether a column, by its header, is one whose cells are blanked before the sheet is sealed for upload: everything withheld but the email. */
-export const WITHHELD_FROM_SEALING = (header: string): boolean => {
-  const h = norm(header);
-  return WITHHELD.includes(h) && !/^e ?mail/.test(h);
-};
-
 const cell = (row: readonly unknown[], i: number | undefined): string => {
   if (i === undefined) return '';
   const v = row[i];
