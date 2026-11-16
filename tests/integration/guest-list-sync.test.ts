@@ -289,6 +289,11 @@ describe('the sealed upload a deploy loads', () => {
     // Tallies straight under the list, with no blank line between, are not part of it either.
     const tallies = [HEADER, ...SHEET, ['', '', '', '', '', '', '', '', '', '', '', 'Adults', 'Kids'], ['', '', '', '', '', '', '53760', '', '', '', '1s', '28', '6']].map((r) => r.join('\t')).join('\n');
     expect(textForSealing(tallies)).toBe(text);
+    // So are tallies that read like households ("Declined", 6 adults): a guest line says whose guest it is, and they do not.
+    const blank = (name: string, adults: string) => [name, adults, ...HEADER.slice(2).map(() => '')];
+    const labelled = [HEADER, ...SHEET, blank('2s', '14'), blank('Declined', '6'), blank('Total', '120')].map((r) => r.join('\t')).join('\n');
+    expect(textForSealing(labelled)).toBe(text);
+    expect(sheetSyncLines(labelled).lines).toEqual(a.lines);
     // A CSV export comes out the same.
     const csv = [HEADER, ...SHEET].map((r) => r.map((c) => (/[",]/.test(c) ? `"${c.replace(/"/g, '""')}"` : c)).join(',')).join('\n');
     expect(sheetSyncLines(textForSealing(csv)).lines).toEqual(a.lines);
@@ -460,6 +465,8 @@ describe('what the couple changed by hand is not undone by the next load of the 
     await upsertGuest(d, { id: zed!.id, householdId: ava!.householdId, firstName: 'Zed' });
     const r = await load(sheet);
     expect(r.guests).toEqual({ created: 0, found: 3, completed: 0, unnamedCreated: 0 });
+    // Said in the counts, so a namesake taken for a moved guest does not pass unseen.
+    expect(r.foundElsewhere).toBe(1);
     expect(await all(/Hopquill/)).toHaveLength(3);
   });
 

@@ -424,7 +424,7 @@ interface PreparedProfile {
   suffix: string | null;
 }
 
-const JOINT = /(^|\s)(&|\+|and)(\s|$)/i;
+const JOINT = /&|\+|(^|\s)and(\s|$)/i;
 /** "Jr.", "Sr.", "II", "III", "IV" as one comparable word, or null. Tells a father from a son of one name. */
 export function generationalSuffix(raw: string): string | null {
   const m = /(?:^|[\s,])(jr|sr|junior|senior|ii|iii|iv)\.?\s*$/i.exec(raw.trim());
@@ -440,7 +440,8 @@ function prepareProfile(profile: ProviderProfileName): PreparedProfile {
   const heads = [...shown.heads, [capped.givenName, capped.familyName].filter(Boolean).join(' ')].map(whole).filter(Boolean);
   const decor = shown.decor.map(whole).filter((d) => d && !heads.includes(d));
   const head = shown.heads.at(-1) ?? '';
-  const joint = JOINT.test(capped.givenName) || (!capped.givenName && JOINT.test(head));
+  // In any field: "Tom&Mary", or a whole joint name typed into the surname box.
+  const joint = JOINT.test(capped.givenName) || JOINT.test(capped.familyName) || JOINT.test(head);
   const suffix = generationalSuffix(capped.familyName) ?? generationalSuffix(head);
   return { p: parseProviderProfile(capped), heads: [...new Set(heads)], decor: [...new Set(decor)], joint, suffix };
 }
@@ -571,5 +572,12 @@ export function matchGuestsByName<T extends Candidate>(profile: ProviderProfileN
   }
   if (best === null) return { confidence: 'none', matches: [], rank: null };
   if (best === 1 && rivals.length) matches = [...matches, ...rivals];
+  // A profile that says "Jr." does not sign in a guest listed without it while another guest of
+  // that surname is listed with it: which of them the profile is, is not ours to guess.
+  if (prepared.suffix && matches.every((m) => generationalSuffix(m.lastName) !== prepared.suffix)) {
+    const said = weighty(prepared.p.family);
+    const marked = candidates.filter((g) => !matches.includes(g) && generationalSuffix(g.lastName) === prepared.suffix && weighty(tokenizeName(g.lastName)).some((t) => said.includes(t)));
+    matches = [...matches, ...marked];
+  }
   return { confidence: matches.length === 1 ? 'one' : 'ambiguous', matches, rank: best };
 }

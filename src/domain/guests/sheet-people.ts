@@ -56,7 +56,7 @@ const TITLE = /^(mr|mrs|ms|miss|mx|dr|prof|rev)\.?$/i;
 /** "Corwin Zarkov Jr." is a different person from "Corwin Zarkov Sr.": the suffix stays with the surname. */
 const SUFFIX = /^(jr|sr|ii|iii|iv)\.?$/i;
 /** Words that stand for a head the line does not name: "Ana Ruiz and guest", "+ 1", "& family"; and the sheet's own tally labels. */
-const PLACEHOLDER = /^(guests?|plus[- ]?ones?|\+?\d+|family|kids?|children|child|date|partner|friends?|tbd|tba|spouse|wife|husband|others?|totals?|subtotal|sum|count)$/i;
+const PLACEHOLDER = /^(guests?|plus[- ]?ones?|\+?\d+|family|kids?|children|child|date|partner|friends?|tbd|tba|spouse|wife|husband|others?|totals?|subtotal|sum|count|his|her|their)$/i;
 /** "The Bakewell Family": the word that makes a surname a household, not a person. Only words nobody is called. */
 const FAMILY = /^(family|fam|household)$/i;
 /** Brackets are lifted out of a line before it is split into people, and stand in it as one of these. */
@@ -104,6 +104,8 @@ function readChunk(raw: string, brackets: readonly string[]): Chunk {
     titled = true;
   }
   if (words.length && (words.every((w) => PLACEHOLDER.test(w)) || PLACEHOLDER.test(words.join(' ')))) words = [];
+  // A name begins with a letter: "2s", "#3" are the sheet's own labels.
+  if (words.length && !words.some((w) => /^\p{L}/u.test(w))) words = [];
   // A surname and no person: "The Bakewell Family", "Bakewell family", "The Bakewells", and the
   // "Mrs. Bakewell" of "Dr. and Mrs. Bakewell". "Tom Bakewell family" still names Tom.
   let familyOnly = false;
@@ -145,9 +147,13 @@ export function peopleOfLine(row: Pick<GuestSheetRow, 'name' | 'adults' | 'kids'
   const lifted = tidy(row.name)
     .replace(/[\uE000\uE001]/g, ' ')
     .replace(/\(([^)]*)\)/g, (_m, inner: string) => ` \uE000${brackets.push(inner) - 1}\uE001 `)
-    // "+1", "plus one", "+ 2" written against a name: a head counted, in its own chunk.
+    // A bracket left open or closed on its own is nothing.
+    .replace(/[()]/g, ' ')
+    // "+1", "plus one", "plus guest", "+guest", "w/ guest", "with guest" written against a name:
+    // a head counted, in its own chunk.
     .replace(/\bplus[- ]?(?:ones?|1)\b/gi, ' + 1 ')
-    .replace(/\+\s*(\d+)/g, ' + $1 ');
+    .replace(/\s(?:plus|with|w\/)\s/gi, ' + ')
+    .replace(/\+/g, ' + ');
   const read = tidy(lifted).split(SPLIT).map((chunk) => readChunk(chunk, brackets));
   const chunks = read.filter((c) => c.words.length > 0);
   const notes = new Set<SheetLineNote>();

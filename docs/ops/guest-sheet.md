@@ -59,6 +59,12 @@ so that everyone a line names can sign in under their own name:
   email signs a guest in on its own, so a wrong guess would sign in the wrong person. Addresses,
   phones, dietary needs and notes are still never read.
 - **A line of more than 20 heads** is taken for a tally or a typo, left alone and reported.
+- **The list ends at the last line that says whose guest it is** (a side, group or tier). The
+  sheet's own tallies under it ("2s", "Declined", "Total") are not households, with or without a
+  blank line between.
+- **`foundElsewhere`** in the counts is how many people a line names were not in its household and
+  were taken to be the guest of that exact name somewhere else (someone you moved). If it is not
+  zero and you moved nobody, two different people share a name: add the second by hand.
 
 ### Writing a line so its people can sign in by name
 

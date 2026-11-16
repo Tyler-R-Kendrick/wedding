@@ -130,7 +130,7 @@ describe('the people on a line of the planning sheet', () => {
   });
 
   it('a plus-one written against a name is counted, however it is written', () => {
-    for (const written of ['Ana Ruizdale +1', 'Ana Ruizdale plus one', 'Ana Ruizdale + 1', 'Ana Ruizdale plus-one']) {
+    for (const written of ['Ana Ruizdale +1', 'Ana Ruizdale plus one', 'Ana Ruizdale + 1', 'Ana Ruizdale plus-one', 'Ana Ruizdale plus guest', 'Ana Ruizdale +guest', 'Ana Ruizdale w/ guest', 'Ana Ruizdale with guest', 'Ana Ruizdale and her husband']) {
       expect(names(written, 1, 0, 1), written).toEqual(['Ana|Ruizdale']);
       expect(line(written, 1, 0, 1), written).toMatchObject({ unnamedAdults: 0, unnamedPlusOnes: 1 });
     }
@@ -153,6 +153,8 @@ describe('the people on a line of the planning sheet', () => {
   });
 
   it('the sheet’s own tally labels name nobody', () => {
-    for (const written of ['Total', 'Totals', 'Subtotal', 'Count']) expect(line(written, 120).named, written).toEqual([]);
+    for (const written of ['Total', 'Totals', 'Subtotal', 'Count', '2s', '#3']) expect(line(written, 120).named, written).toEqual([]);
+    // A bracket left open is nothing, and nobody's surname.
+    expect(names('Tom Bakewell (', 1)).toEqual(['Tom|Bakewell']);
   });
 });

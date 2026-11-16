@@ -147,7 +147,7 @@ export const adminUploadGuestSheet = defineCapability<z.infer<typeof uploadInput
       cannotBeFoundByName: Object.values(synced.notes).reduce((a, b) => a + (b ?? 0), 0),
       skippedLines: synced.skipped.length,
     };
-    await ctx.audit.record({ actor: actorOf(ctx), action: 'guest.imported', target: { type: 'guest_sheet_copy', id }, outcome: 'success', requestId: ctx.requestId, metadata: { lines: summary.lines, people: summary.people, ...guestsSummary, householdsAdded: synced.households.created, emailsAdded: synced.emailsAdded } });
+    await ctx.audit.record({ actor: actorOf(ctx), action: 'guest.imported', target: { type: 'guest_sheet_copy', id }, outcome: 'success', requestId: ctx.requestId, metadata: { lines: summary.lines, people: summary.people, ...guestsSummary, householdsAdded: synced.households.created, emailsAdded: synced.emailsAdded, foundElsewhere: synced.foundElsewhere } });
     return ok({ data: { ...summary, guests: guestsSummary }, sources: [] });
   },
 });

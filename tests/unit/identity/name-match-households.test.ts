@@ -388,6 +388,9 @@ describe('names that must not sign in the wrong person', () => {
     ]);
     for (const name of ['Tom & Mary Bakewell', 'Tom and Mary Bakewell', 'Mary + Tom Bakewell']) expect(who({ name }), name).toBe('none');
     expect(who({ givenName: 'Tom & Mary', familyName: 'Bakewell' })).toBe('none');
+    // Written without spaces, or all typed into the surname box.
+    expect(who({ name: 'Tom&Mary Bakewell' })).toBe('none');
+    expect(who({ familyName: 'Tom & Mary Bakewell' })).toBe('none');
     expect(who({ name: 'Tom Bakewell' })).toBe('tom');
   });
 
@@ -401,6 +404,13 @@ describe('names that must not sign in the wrong person', () => {
     expect(who({ givenName: 'Corwin', familyName: 'Zarkov Sr' })).toBe('senior');
     expect(who({ name: 'Corwin Zarkov Senior' })).toBe('senior');
     expect(who({ name: 'Corwin Zarkov III' })).toBe('none');
+    // Listed without it, beside a namesake of the surname listed with it: a profile that says "Jr." could be either.
+    const mixed = findIn([
+      { id: 'plain', householdId: 'a', firstName: 'Corwin', lastName: 'Zarkov' },
+      { id: 'marked', householdId: 'b', firstName: 'Corey', lastName: 'Zarkov Jr.' },
+    ]);
+    expect(mixed({ name: 'Corwin Zarkov Jr.' })).toBe('ambiguous:marked+plain');
+    expect(mixed({ name: 'Corwin Zarkov' })).toBe('plain');
   });
 
   it('a very long or bracket-heavy name costs nothing and matches nobody', () => {

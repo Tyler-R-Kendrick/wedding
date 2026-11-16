@@ -46,6 +46,8 @@ export interface SheetSyncResult {
   households: { created: number; found: number };
   guests: { created: number; found: number; completed: number; unnamedCreated: number };
   emailsAdded: number;
+  /** People a line names who were not in its household and were taken to be a guest of that exact name elsewhere (moved by the couple, or a namesake): none was made. Worth a look when it is not zero. */
+  foundElsewhere: number;
   /** Lines with people who cannot be found by name alone, by what is missing. Counts only. */
   notes: Partial<Record<SheetLineNote, number>>;
   /** Lines the sync left alone, and why. */
@@ -114,7 +116,7 @@ function samePerson(g: Pick<GuestRow, 'firstName' | 'lastName'>, p: Pick<SheetPe
 const MAX_HEADS_ON_A_LINE = 20;
 
 export async function syncGuestsFromSheet(db: Db, lines: readonly SheetSyncLine[]): Promise<SheetSyncResult> {
-  const result: SheetSyncResult = { lines: lines.length, households: { created: 0, found: 0 }, guests: { created: 0, found: 0, completed: 0, unnamedCreated: 0 }, emailsAdded: 0, notes: {}, skipped: [] };
+  const result: SheetSyncResult = { lines: lines.length, households: { created: 0, found: 0 }, guests: { created: 0, found: 0, completed: 0, unnamedCreated: 0 }, emailsAdded: 0, foundElsewhere: 0, notes: {}, skipped: [] };
   const allHouseholds = await db.select().from(households);
   const everyGuest = await db.select().from(guests);
   let live = everyGuest.filter((g) => !g.mergedIntoGuestId);
@@ -274,7 +276,10 @@ export async function syncGuestsFromSheet(db: Db, lines: readonly SheetSyncLine[
       const mergedAway = merged.some((g) => g.householdId === householdId && personKey(g.firstName, g.lastName) === keyOf(p));
       if (elsewhere || mergedAway) {
         result.guests.found += 1;
-        if (elsewhere) claimed.add(elsewhere.id);
+        if (elsewhere) {
+          claimed.add(elsewhere.id);
+          result.foundElsewhere += 1;
+        }
         slots[i] = 'elsewhere';
         continue;
       }
@@ -376,12 +381,27 @@ export function emailOwner<T extends { firstName: string; lastName: string }>(em
  * becomes a sign-in address on the guest it belongs to. Nothing else of the tab is read: not the
  * address, the phone, the dietary notes or the notes.
  */
+/**
+ * Where the guest list ends. Under it the sheet keeps its own tallies ("2s", "Declined", "Total"),
+ * with or without a blank line between, and a tally with a label in the names column reads like a
+ * household. What tells them apart is that a guest line says whose guest it is: where the sheet has
+ * a side, group or tier column at all, the list ends at the last line that fills one in.
+ */
+function guestRows(parse: GuestSheetParse): GuestSheetParse['rows'] {
+  const said = (r: GuestSheetParse['rows'][number]) => r.guestOf !== null || r.group !== null || r.priority !== null;
+  let last = -1;
+  parse.rows.forEach((r, i) => {
+    if (said(r)) last = i;
+  });
+  return last < 0 ? parse.rows : parse.rows.slice(0, last + 1);
+}
+
 export function sheetSyncLines(text: string): { parse: GuestSheetParse; lines: SheetSyncLine[] } {
   const parse = parseGuestSheetText(text);
   const firstLine = text.replace(/^﻿/, '').split(/\r?\n/, 1)[0] ?? '';
   const values = parseCsv(text, { delimiter: firstLine.includes('\t') ? '\t' : ',', keepBlankRows: true });
   const emailAt = (values[0] ?? []).findIndex((h) => /^(e[- ]?mails?|email address)$/i.test(String(h ?? '').trim()));
-  const lines = parse.rows.map((r) => {
+  const lines = guestRows(parse).map((r) => {
     const cell = emailAt >= 0 ? String(values[r.sheetRow - 1]?.[emailAt] ?? '') : '';
     const emails = cell.split(/[;,\s]+/).map((e) => e.trim()).filter(Boolean);
     return { sheetRow: r.sheetRow, name: r.name, adults: r.adults, kids: r.kids, plusOnes: r.plusOnes, ...(emails.length ? { emails } : {}) };
@@ -393,8 +413,8 @@ export function sheetSyncLines(text: string): { parse: GuestSheetParse; lines: S
  * The Guests tab with everything the site does not read taken out, for sealing: same header row
  * (so the copy still says which columns the sheet has and the site leaves alone), same lines, and
  * every cell of an address, phone, dietary or notes column blank. The Email column stays: it is
- * the one contact column the sync reads. Lines below the last one that names someone (the sheet's
- * own tallies) are dropped. Tab-separated, whatever came in.
+ * the one contact column the sync reads. Lines below the end of the guest list (the sheet's own
+ * tallies, see `guestRows`) are dropped. Tab-separated, whatever came in.
  */
 export function textForSealing(text: string): string {
   const firstLine = text.replace(/^﻿/, '').split(/\r?\n/, 1)[0] ?? '';
@@ -403,7 +423,7 @@ export function textForSealing(text: string): string {
   const blank = header.map((h) => WITHHELD_FROM_SEALING(String(h ?? '')));
   // Up to the last line that names someone: below it the sheet keeps its own tallies, with or
   // without a blank line between, and those sit under whatever column they happen to be in.
-  const last = Math.max(0, ...parseGuestSheetText(text).rows.map((r) => r.sheetRow - 1));
+  const last = Math.max(0, ...guestRows(parseGuestSheetText(text)).map((r) => r.sheetRow - 1));
   const kept = body.slice(0, last).map((row) => header.map((_h, i) => (blank[i] ? '' : String(row[i] ?? ''))));
   const cellOut = (v: string) => v.replace(/[\t\r\n]+/g, ' ').trim();
   return [header.map((h) => cellOut(String(h ?? ''))), ...kept.map((row) => row.map(cellOut))].map((row) => row.join('\t')).join('\n');
