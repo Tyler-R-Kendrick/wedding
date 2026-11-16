@@ -99,9 +99,6 @@ export const DEPLOY_STEPS = [
   { script: 'db:migrate', failure: 'migrations failed' },
   { script: 'db:verify-schema', failure: 'schema verification failed' },
   { script: 'db:sync-content', failure: 'content sync failed' },
-  // The couple's guest list, committed sealed (src/db/seed/sync-guest-list.ts). Optional: a list
-  // that will not load is said in the log and the deploy goes on with the guests the site had.
-  { script: 'db:sync-guest-list', failure: 'guest list not loaded', optional: true },
 ];
 
 // `pathToFileURL` rather than `file://` + argv[1]: the concatenated form does not percent-encode,
@@ -117,9 +114,6 @@ if (isMain) {
   }
   if (!run) {
     console.log(`migrate-on-deploy: skipped (${reason})`);
-    // A preview touches no database, but it does say which sealing key it would open a guest list
-    // with (src/db/seed/sync-guest-list.ts): the key is public, and it is how a list gets sealed.
-    if (process.env.VERCEL) spawnSync('npm', ['run', '-s', 'db:sync-guest-list', '--', '--key-only'], { stdio: 'inherit', env: process.env });
     process.exit(0);
   }
   console.log('migrate-on-deploy: applying the migration chain and syncing content before the build');
@@ -128,10 +122,6 @@ if (isMain) {
   // the code expects but the database lacks. A failed build leaves the previous deployment serving.
   for (const step of DEPLOY_STEPS) {
     const r = spawnSync('npm', ['run', step.script], { stdio: 'inherit', env: childEnv(process.env, url) });
-    if (r.status !== 0 && step.optional) {
-      console.error(`migrate-on-deploy: ${step.failure}; carrying on`);
-      continue;
-    }
     if (r.status !== 0) {
       console.error(`migrate-on-deploy: ${step.failure}; failing the build`);
       process.exit(r.status ?? 1);

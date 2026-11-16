@@ -1,11 +1,8 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { getDb } from '@/db/client';
-import { guestAccessBindings, guestContacts, guestSheetCopies, guests, households, invitations, socialAuthReviews } from '@/db/schema';
-import { applyGuestListUpload, readUpload, type GuestListUpload } from '@/db/seed/sync-guest-list';
-import { PLANNER_GUEST, plannerGuestStatus } from '@/domain/guests/planner-guest';
-import { sealGuestList, sealKeyFromSecret } from '@/domain/guests/sealed-list';
-import { sheetSyncLines, syncGuestsFromSheet, textForSealing } from '@/domain/guests/sheet-sync';
+import { guestAccessBindings, guestContacts, guests, households, invitations, socialAuthReviews } from '@/db/schema';
+import { sheetSyncLines, syncGuestsFromSheet } from '@/domain/guests/sheet-sync';
 import { upsertGuest } from '@/domain/guests/repo';
 import { upsertHousehold } from '@/domain/households/repo';
 import { completeSocialSignIn, GUEST_SIGN_IN_FAIL_PATH } from '@/domain/identity/social/complete';
@@ -204,138 +201,34 @@ describe('loading the planning sheet into the guest records', () => {
   });
 });
 
-describe('the sealed upload a deploy loads', () => {
-  const SECRET = 'an-integration-test-secret-0123456789';
-  const upload = (rows: string[][]): GuestListUpload => ({ v: 1, readAt: '2026-11-16T00:00:00.000Z', source: 'Test sheet, Guests tab', text: tab(rows) });
-  const copies = async () => (await db()).select().from(guestSheetCopies);
-
-  it('opens with the deployment’s secret, and with no other', () => {
-    const sealed = JSON.stringify(sealGuestList(JSON.stringify(upload(SHEET)), sealKeyFromSecret(SECRET).publicKey));
-    expect(sealed).not.toMatch(/quill|example\.test/i);
-    const read = readUpload(sealed, SECRET);
-    expect(read.ok && read.upload.source).toBe('Test sheet, Guests tab');
-    expect(readUpload(sealed, 'a-different-secret-of-good-length')).toEqual({ ok: false, status: 'other_key' });
-    expect(readUpload('not json', SECRET)).toEqual({ ok: false, status: 'not_sealed' });
-    expect(readUpload(JSON.stringify(sealGuestList('not an upload', sealKeyFromSecret(SECRET).publicKey)), SECRET)).toEqual({ ok: false, status: 'unreadable' });
-  });
-
-  it('S-28: is applied once: a later deploy with the same upload leaves alone whatever the couple did since', async () => {
+describe('the wedding planner, who is not on the sheet', () => {
+  it('S-26 S-28: her guest record is the couple’s to make, is never touched by a load of the sheet, and signs her in under her name', async () => {
     const d = await db();
-    const rows = [row('Copy Copyquill and Carbon Paperquill', 2, '', '', 'copy.c@example.test')];
-    const before = (await copies()).length;
-    const mine = { ...upload(rows), readAt: new Date(Date.now() + 60_000).toISOString() };
-    const one = await applyGuestListUpload(d, mine);
-    expect(one, JSON.stringify(one)).toMatchObject({ status: 'synced', lines: 1, result: { guests: { created: 2 }, emailsAdded: 1 } });
-    const all = await copies();
-    expect(all).toHaveLength(before + 1);
-    const newest = all.sort((a, b) => b.uploadedAt.getTime() - a.uploadedAt.getTime())[0]!;
-    expect(newest).toMatchObject({ source: 'Test sheet, Guests tab', uploadedBy: null });
-    expect(newest.uploadDigest).toMatch(/^[0-9a-f]{32}$/);
-    expect(JSON.stringify(newest.rows)).not.toMatch(/example\.test|Secret St|555-0100|Peanuts|private note/);
-    // The couple take someone off the list. The sealed file is still in the repository, and the next deploy reads it again.
-    const [carbon] = await guestNamed('Carbon', 'Paperquill');
-    await d.delete(guests).where(eq(guests.id, carbon!.id));
-    expect(await applyGuestListUpload(d, mine)).toEqual({ status: 'already_applied', lines: 1 });
-    expect(await guestNamed('Carbon', 'Paperquill')).toHaveLength(0);
-    expect(await copies()).toHaveLength(before + 1);
-    expect(await applyGuestListUpload(d, { ...upload([]), text: HEADER.join('\t') })).toEqual({ status: 'empty' });
-  });
-
-  it('S-28: an upload read before the newest copy the site holds is not applied over it', async () => {
-    const d = await db();
-    const before = (await copies()).length;
-    // The newest copy here was saved a moment ago; this upload was read from the sheet last month, or does not say when.
-    const stale = { ...upload([row('Stale Stalequill', 1)]), readAt: '2026-10-01T00:00:00.000Z' };
-    expect(await applyGuestListUpload(d, stale)).toEqual({ status: 'older_than_site', lines: 1 });
-    expect(await applyGuestListUpload(d, { ...stale, readAt: '' })).toEqual({ status: 'older_than_site', lines: 1 });
-    expect(await guestNamed('Stale', 'Stalequill')).toHaveLength(0);
-    expect(await copies()).toHaveLength(before);
-  });
-
-  it('S-28: uploads apply in the order the sheet was read, whatever order they deploy in', async () => {
-    const d = await db();
-    const day = 24 * 60 * 60_000;
-    const T = Date.now() + day; // well clear of every other copy in this database
-    const at = (ms: number) => new Date(T + ms);
-    const first = { ...upload([row('Order Firstquill', 1)]), readAt: at(0).toISOString() };
-    const second = { ...upload([row('Order Firstquill', 1), row('Order Secondquill', 1)]), readAt: at(5 * 60_000).toISOString() };
-    const earlier = { ...upload([row('Order Zeroquill', 1)]), readAt: at(-60_000).toISOString() };
-    // The first is sealed at T and deploys ten minutes later; the second is read five minutes after the first, and deploys after it.
-    expect((await applyGuestListUpload(d, first, at(10 * 60_000))).status).toBe('synced');
-    expect((await applyGuestListUpload(d, second, at(20 * 60_000))).status).toBe('synced');
-    expect(await guestNamed('Order', 'Secondquill')).toHaveLength(1);
-    // One read before the newest copy was read is not laid over it, however late it deploys.
-    expect(await applyGuestListUpload(d, earlier, at(30 * 60_000))).toEqual({ status: 'older_than_site', lines: 1 });
-    expect(await guestNamed('Order', 'Zeroquill')).toHaveLength(0);
-    // The copies are dated by when the sheet was read, not by when the deploy ran.
-    const mine = (await copies()).filter((c) => c.uploadedAt.getTime() >= T - day / 2);
-    expect(mine.map((c) => c.uploadedAt.getTime()).sort()).toEqual([at(0).getTime(), at(5 * 60_000).getTime()]);
-    // The marker is unique: a second copy under one upload's digest cannot be saved.
-    await expect(d.insert(guestSheetCopies).values({ id: 'dup-digest', rows: [], uploadDigest: mine[0]!.uploadDigest })).rejects.toThrow();
-    await d.delete(guestSheetCopies).where(inArray(guestSheetCopies.id, mine.map((c) => c.id)));
-  });
-
-  it('seals only what the site reads: no address, phone, dietary need or note is in the upload at all', () => {
-    const text = textForSealing(tab(SHEET));
-    expect(text).not.toMatch(/Secret St|Hiddenville|60000|555-0100|Peanuts|private note|53760/);
-    // The names, the counts, the planning columns and the email are; and the header still names every column.
-    expect(text).toMatch(/neal\.k@example\.test/);
-    expect(text.split('\n')[0]!.split('\t')).toEqual(HEADER);
-    expect(text.split('\n')).toHaveLength(SHEET.length + 1);
-    const a = sheetSyncLines(tab(SHEET));
-    const b = sheetSyncLines(text);
-    expect(b.lines).toEqual(a.lines);
-    expect(b.parse).toEqual(a.parse);
-    // Tallies straight under the list, with no blank line between, are not part of it either.
-    const tallies = [HEADER, ...SHEET, ['', '', '', '', '', '', '', '', '', '', '', 'Adults', 'Kids'], ['', '', '', '', '', '', '53760', '', '', '', '1s', '28', '6']].map((r) => r.join('\t')).join('\n');
-    expect(textForSealing(tallies)).toBe(text);
-    // So are tallies that read like households ("Declined", 6 adults): a guest line says whose guest it is, and they do not.
-    const blank = (name: string, adults: string) => [name, adults, ...HEADER.slice(2).map(() => '')];
-    const labelled = [HEADER, ...SHEET, blank('2s', '14'), blank('Declined', '6'), blank('Total', '120')].map((r) => r.join('\t')).join('\n');
-    expect(textForSealing(labelled)).toBe(text);
-    expect(sheetSyncLines(labelled).lines).toEqual(a.lines);
-    // A CSV export comes out the same.
-    const csv = [HEADER, ...SHEET].map((r) => r.map((c) => (/[",]/.test(c) ? `"${c.replace(/"/g, '""')}"` : c)).join(',')).join('\n');
-    expect(sheetSyncLines(textForSealing(csv)).lines).toEqual(a.lines);
-  });
-
-  it('S-26 S-28: the wedding planner’s guest sign-in is the couple’s to make, is never touched by an upload, and is reported', async () => {
-    const d = await db();
-    // Nothing is made for her: her name is on the public site, and a record made here with its invitation
-    // marked sent would let anyone who read that page sign in under it.
-    expect(await plannerGuestStatus(d)).toEqual({ records: 0, invitationSent: false, hasSignedIn: false });
-    await applyGuestListUpload(d, { ...upload(SHEET), readAt: new Date(Date.now() + 120_000).toISOString() });
-    expect(await plannerGuestStatus(d)).toEqual({ records: 0, invitationSent: false, hasSignedIn: false });
+    // Nothing is made for her by a load: until the couple add her and send her invitation, her name signs in nobody.
+    await sync(SHEET);
     expect((await signIn({ name: 'Michelle Sunder' })).r).toEqual({ ok: false, redirectTo: GUEST_SIGN_IN_FAIL_PATH });
 
-    // The couple add her (/admin/guests) and send her invitation.
     const home = await upsertHousehold(d, { name: 'Our planner' });
     if (!home.ok) throw home.error;
-    const her = await upsertGuest(d, { householdId: home.value.id, firstName: PLANNER_GUEST.firstName, lastName: PLANNER_GUEST.lastName, alternateNames: ['Bustle & Lace'] });
+    const her = await upsertGuest(d, { householdId: home.value.id, firstName: 'Michelle Elaine', lastName: 'Sunder', alternateNames: ['Bustle & Lace'] });
     if (!her.ok) throw her.error;
-    expect(await plannerGuestStatus(d)).toEqual({ records: 1, invitationSent: false, hasSignedIn: false });
-    await markSent(PLANNER_GUEST.firstName, PLANNER_GUEST.lastName);
-    expect(await plannerGuestStatus(d)).toEqual({ records: 1, invitationSent: true, hasSignedIn: false });
+    // With a record and no invitation sent, still nobody.
+    expect((await signIn({ name: 'Michelle Sunder' })).r).toEqual({ ok: false, redirectTo: GUEST_SIGN_IN_FAIL_PATH });
+    await markSent('Michelle Elaine', 'Sunder');
 
-    // An upload of the sheet she is not on leaves her exactly as she is.
-    const again = await applyGuestListUpload(d, { ...upload(SHEET), readAt: new Date(Date.now() + 180_000).toISOString() });
-    expect(again.status).toBe('synced');
+    // A load of the sheet she is not on leaves her exactly as she is.
+    await sync(SHEET);
     const [after] = await d.select().from(guests).where(eq(guests.id, her.value.id));
     expect(after).toMatchObject({ firstName: 'Michelle Elaine', lastName: 'Sunder', alternateNames: ['Bustle & Lace'], householdId: home.value.id, mergedIntoGuestId: null });
-    expect(await plannerGuestStatus(d)).toEqual({ records: 1, invitationSent: true, hasSignedIn: false });
 
-    // She signs in with Google under the name she uses there, and stays signed in to the same record after another upload.
+    // She signs in with Google under the name she uses there, and is the same record after another load.
     const google = await signIn({ givenName: 'Michelle', familyName: 'Sunder', name: 'Michelle Sunder' });
     expect(google.r.ok).toBe(true);
     expect(google.sink.setCookies.length).toBeGreaterThan(0);
-    await applyGuestListUpload(d, { ...upload(SHEET), readAt: new Date(Date.now() + 240_000).toISOString() });
-    expect(await plannerGuestStatus(d)).toEqual({ records: 1, invitationSent: true, hasSignedIn: true });
-
-    // A second record of her is said, not sorted out: which is hers is the couple's to say.
-    const twin = await upsertGuest(d, { householdId: home.value.id, firstName: 'Michelle E.', lastName: 'Sunder' });
-    if (!twin.ok) throw twin.error;
-    expect(await plannerGuestStatus(d)).toMatchObject({ records: 2 });
-    await d.delete(guests).where(inArray(guests.id, [her.value.id, twin.value.id]));
+    await sync(SHEET);
+    const bound = await d.select().from(guestAccessBindings).where(and(eq(guestAccessBindings.guestId, her.value.id), isNull(guestAccessBindings.revokedAt)));
+    expect(bound).toHaveLength(1);
+    await d.delete(guests).where(eq(guests.id, her.value.id));
   });
 
   it('S-26: her business’s page, once the couple have put that name on her record, signs her in too', async () => {
@@ -348,6 +241,15 @@ describe('the sealed upload a deploy loads', () => {
     const fb = await signIn({ name: 'Bustle & Lace' }, 'facebook');
     expect(fb.r.ok).toBe(true);
     await d.delete(guests).where(eq(guests.id, her.value.id));
+  });
+
+  it('the list ends where lines stop saying whose guest they are: the sheet’s own tallies are not households', () => {
+    const a = sheetSyncLines(tab(SHEET));
+    const blank = (name: string, adults: string) => [name, adults, ...HEADER.slice(2).map(() => '')];
+    const labelled = [HEADER, ...SHEET, blank('2s', '14'), blank('Declined', '6'), blank('Total', '120')].map((r) => r.join('\t')).join('\n');
+    expect(sheetSyncLines(labelled).lines).toEqual(a.lines);
+    // Nothing of the tab but names, counts and emails reaches a line.
+    expect(JSON.stringify(a.lines)).not.toMatch(/Secret St|Hiddenville|60000|555-0100|Peanuts|private note|53760/);
   });
 });
 
