@@ -5,8 +5,9 @@
 
 ## Shape
 
-Every job starts at once. Nothing waits for another job except the last one, `CI`, which reports
-whether all of them passed and is the one check to require in branch protection.
+Every job starts at once and none waits for another. One of them, `CI`, watches the rest
+(`scripts/ci/gate.mjs`) and passes only when every other job has completed with success or skipped.
+It is the one check to require in branch protection.
 
 | Job | What it runs | Budget |
 |---|---|---|
