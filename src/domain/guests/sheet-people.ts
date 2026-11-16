@@ -55,11 +55,12 @@ const RELATION = /^(grandma|grandpa|granny|grandmother|grandfather|nana|papa|aun
 const TITLE = /^(mr|mrs|ms|miss|mx|dr|prof|rev)\.?$/i;
 /** "Corwin Zarkov Jr." is a different person from "Corwin Zarkov Sr.": the suffix stays with the surname. */
 const SUFFIX = /^(jr|sr|ii|iii|iv)\.?$/i;
-/** Words that stand for a head the line does not name: "Ana Ruiz and guest", "+ 1", "& family". */
-const PLACEHOLDER = /^(guests?|plus[- ]?ones?|\+?\d+|family|kids?|children|child|date|partner|friends?|tbd|tba|spouse|wife|husband|so|others?)$/i;
-
-/** "The Bakewell Family": the word that makes a surname a household, not a person. */
-const FAMILY = /^(family|fam|household|house|clan|crew|s)$/i;
+/** Words that stand for a head the line does not name: "Ana Ruiz and guest", "+ 1", "& family"; and the sheet's own tally labels. */
+const PLACEHOLDER = /^(guests?|plus[- ]?ones?|\+?\d+|family|kids?|children|child|date|partner|friends?|tbd|tba|spouse|wife|husband|others?|totals?|subtotal|sum|count)$/i;
+/** "The Bakewell Family": the word that makes a surname a household, not a person. Only words nobody is called. */
+const FAMILY = /^(family|fam|household)$/i;
+/** Brackets are lifted out of a line before it is split into people, and stand in it as one of these. */
+const BRACKET = /\uE000(\d+)\uE001/g;
 
 const tidy = (s: string) => s.replace(/\s+/g, ' ').trim();
 /** A name typed all in lower case is capitalised; anything else is left as the couple wrote it ("AJ", "McDonald"). */
@@ -67,14 +68,22 @@ const proper = (word: string) => (word && word === word.toLowerCase() && /[a-z]/
 
 type Chunk = { words: string[]; alternates: string[]; cutShort: boolean; described: boolean; familyOnly: boolean };
 
-function readChunk(raw: string): Chunk {
+function readChunk(raw: string, brackets: readonly string[]): Chunk {
   let text = tidy(raw);
   const alternates: string[] = [];
-  // "Nora (Halloran) Fitzwilliam", "Nora Fitzwilliam (née Halloran)", "Nora Fitzwilliam née Halloran".
-  text = text.replace(/\(\s*(?:n[ée]e\s+)?([^)]+)\)/gi, (_m, inner: string) => {
-    alternates.push(tidy(inner));
+  // "Nora (Halloran) Fitzwilliam": brackets between a given name and a surname hold a maiden name.
+  // After the whole name they hold one only when they say so ("(née Halloran)"); anything else there
+  // is a note about the person ("(boss)", "(Tess's brother)") and is nobody's name.
+  const stripped = tidy(text.replace(BRACKET, ' '));
+  text = text.replace(BRACKET, (_m, i: string, at: number, whole: string) => {
+    const inner = tidy(brackets[Number(i)] ?? '');
+    const born = /^(?:n[ée]e|born)\s+(.+)$/i.exec(inner);
+    const between = tidy(whole.slice(0, at).replace(BRACKET, ' ')).length > 0 && tidy(whole.slice(at + _m.length).replace(BRACKET, ' ')).length > 0;
+    if (born) alternates.push(tidy(born[1]!));
+    else if (between && /^\p{L}[\p{L}'’-]*$/u.test(inner)) alternates.push(inner);
     return ' ';
   });
+  text = stripped;
   text = text.replace(/\bn[ée]e\s+(\S+(?:\s+\S+)?)\s*$/i, (_m, inner: string) => {
     alternates.push(tidy(inner));
     return ' ';
@@ -89,11 +98,19 @@ function readChunk(raw: string): Chunk {
   let words = text.split(' ').filter((w) => w && !/^(and|&|\+|[.,…-]+)$/i.test(w));
   // Titles in front of the name are dropped; a chunk that is only a title, or only stands for
   // someone ("guest", "family", "1"), names nobody: that head is counted, not named.
-  while (words.length && TITLE.test(words[0]!)) words = words.slice(1);
+  let titled = false;
+  while (words.length && TITLE.test(words[0]!)) {
+    words = words.slice(1);
+    titled = true;
+  }
   if (words.length && (words.every((w) => PLACEHOLDER.test(w)) || PLACEHOLDER.test(words.join(' ')))) words = [];
-  // "The Bakewell Family", "Bakewell family": a surname and no person. "Tom Bakewell family" still names Tom.
+  // A surname and no person: "The Bakewell Family", "Bakewell family", "The Bakewells", and the
+  // "Mrs. Bakewell" of "Dr. and Mrs. Bakewell". "Tom Bakewell family" still names Tom.
   let familyOnly = false;
-  if (words.length > 1 && (/^the$/i.test(words[0]!) || FAMILY.test(words.at(-1)!))) {
+  if (titled && words.length === 1) {
+    familyOnly = true;
+    words = [];
+  } else if (words.length > 1 && (/^the$/i.test(words[0]!) || FAMILY.test(words.at(-1)!))) {
     const inner = words.filter((w, i) => !(i === 0 && /^the$/i.test(w)) && !(i === words.length - 1 && FAMILY.test(w)));
     if (inner.length <= 1) {
       familyOnly = true;
@@ -123,7 +140,15 @@ function splitName(words: readonly string[]): { firstName: string; lastName: str
 }
 
 export function peopleOfLine(row: Pick<GuestSheetRow, 'name' | 'adults' | 'kids' | 'plusOnes'>): SheetLinePeople {
-  const read = tidy(row.name).split(SPLIT).map(readChunk);
+  // Brackets first, so that what is inside them is never split into people ("Ana Ruiz (Petal & Twine)").
+  const brackets: string[] = [];
+  const lifted = tidy(row.name)
+    .replace(/[\uE000\uE001]/g, ' ')
+    .replace(/\(([^)]*)\)/g, (_m, inner: string) => ` \uE000${brackets.push(inner) - 1}\uE001 `)
+    // "+1", "plus one", "+ 2" written against a name: a head counted, in its own chunk.
+    .replace(/\bplus[- ]?(?:ones?|1)\b/gi, ' + 1 ')
+    .replace(/\+\s*(\d+)/g, ' + $1 ');
+  const read = tidy(lifted).split(SPLIT).map((chunk) => readChunk(chunk, brackets));
   const chunks = read.filter((c) => c.words.length > 0);
   const notes = new Set<SheetLineNote>();
   // A line that is a family's name and nobody's own: nobody on it can be found by name.

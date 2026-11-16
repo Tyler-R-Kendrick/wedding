@@ -252,6 +252,29 @@ describe('the sealed upload a deploy loads', () => {
     expect(await copies()).toHaveLength(before);
   });
 
+  it('S-28: uploads apply in the order the sheet was read, whatever order they deploy in', async () => {
+    const d = await db();
+    const day = 24 * 60 * 60_000;
+    const T = Date.now() + day; // well clear of every other copy in this database
+    const at = (ms: number) => new Date(T + ms);
+    const first = { ...upload([row('Order Firstquill', 1)]), readAt: at(0).toISOString() };
+    const second = { ...upload([row('Order Firstquill', 1), row('Order Secondquill', 1)]), readAt: at(5 * 60_000).toISOString() };
+    const earlier = { ...upload([row('Order Zeroquill', 1)]), readAt: at(-60_000).toISOString() };
+    // The first is sealed at T and deploys ten minutes later; the second is read five minutes after the first, and deploys after it.
+    expect((await applyGuestListUpload(d, first, at(10 * 60_000))).status).toBe('synced');
+    expect((await applyGuestListUpload(d, second, at(20 * 60_000))).status).toBe('synced');
+    expect(await guestNamed('Order', 'Secondquill')).toHaveLength(1);
+    // One read before the newest copy was read is not laid over it, however late it deploys.
+    expect(await applyGuestListUpload(d, earlier, at(30 * 60_000))).toEqual({ status: 'older_than_site', lines: 1 });
+    expect(await guestNamed('Order', 'Zeroquill')).toHaveLength(0);
+    // The copies are dated by when the sheet was read, not by when the deploy ran.
+    const mine = (await copies()).filter((c) => c.uploadedAt.getTime() >= T - day / 2);
+    expect(mine.map((c) => c.uploadedAt.getTime()).sort()).toEqual([at(0).getTime(), at(5 * 60_000).getTime()]);
+    // The marker is unique: a second copy under one upload's digest cannot be saved.
+    await expect(d.insert(guestSheetCopies).values({ id: 'dup-digest', rows: [], uploadDigest: mine[0]!.uploadDigest })).rejects.toThrow();
+    await d.delete(guestSheetCopies).where(inArray(guestSheetCopies.id, mine.map((c) => c.id)));
+  });
+
   it('seals only what the site reads: no address, phone, dietary need or note is in the upload at all', () => {
     const text = textForSealing(tab(SHEET));
     expect(text).not.toMatch(/Secret St|Hiddenville|60000|555-0100|Peanuts|private note|53760/);
@@ -428,6 +451,81 @@ describe('what the couple changed by hand is not undone by the next load of the 
     expect(again.guests).toMatchObject({ created: 0, found: 3 });
   });
 
+  it('someone moved into another line’s household is found there, and not made again in the one they left', async () => {
+    const d = await db();
+    const sheet = [row('Ava and Ben Hopquill', 2), row('Zed Hopquill', 1)];
+    await load(sheet);
+    const [zed] = await guestNamed('Zed', 'Hopquill');
+    const [ava] = await guestNamed('Ava', 'Hopquill');
+    await upsertGuest(d, { id: zed!.id, householdId: ava!.householdId, firstName: 'Zed' });
+    const r = await load(sheet);
+    expect(r.guests).toEqual({ created: 0, found: 3, completed: 0, unnamedCreated: 0 });
+    expect(await all(/Hopquill/)).toHaveLength(3);
+  });
+
+  it('a head the line still counts is never renamed to someone the load did not recognise', async () => {
+    const d = await db();
+    const sheet = [row('Amy and Kristofer Countquill', 2, '', 1)];
+    await load(sheet);
+    const [amy] = await guestNamed('Amy', 'Countquill');
+    const [kris] = await guestNamed('Kristofer', 'Countquill');
+    const before = (await d.select().from(guests).where(eq(guests.householdId, amy!.householdId))).filter((g) => !g.isNamed);
+    expect(before).toHaveLength(1);
+    await upsertGuest(d, { id: kris!.id, householdId: kris!.householdId, firstName: 'Christopher', lastName: 'Countquill-Hale' });
+    await load(sheet);
+    const after = await d.select().from(guests).where(eq(guests.householdId, amy!.householdId));
+    // The plus-one the line still counts is the same record, still unnamed; no second one was made.
+    expect(after.filter((g) => !g.isNamed).map((g) => [g.id, g.firstName, g.kind])).toEqual([[before[0]!.id, 'Guest', 'plus_one']]);
+  });
+
+  it('a new line never adopts the household of someone another line already has under a corrected name', async () => {
+    const d = await db();
+    await load([row('Rob Halequill', 1)]);
+    const [son] = await guestNamed('Rob', 'Halequill');
+    await upsertGuest(d, { id: son!.id, householdId: son!.householdId, firstName: 'Robert' });
+    // His grandfather, of the same name, is added to the sheet with an address.
+    const r = await load([row('Rob Halequill', 1), row('Robert Halequill', 1, '', '', 'grandfather.halequill@example.test')]);
+    expect(r).toMatchObject({ households: { created: 1, found: 1 }, guests: { created: 1, found: 1 }, emailsAdded: 1 });
+    const roberts = await guestNamed('Robert', 'Halequill');
+    expect(roberts).toHaveLength(2);
+    expect(new Set(roberts.map((g) => g.householdId)).size).toBe(2);
+    expect(roberts.find((g) => g.id === son!.id)!.email).toBeNull();
+    expect(roberts.find((g) => g.id !== son!.id)!.email).toBe('grandfather.halequill@example.test');
+  });
+
+  it('a father and son in households the couple renamed each keep their own, whichever line comes first', async () => {
+    const d = await db();
+    const sheet = [row('Barton Orderquill', 1), row('Barton Orderquill and Mara Orderquill', 2)];
+    await load(sheet);
+    for (const h of new Set((await all(/Orderquill/)).map((g) => g.householdId))) await d.update(households).set({ name: `Renamed ${h}` }).where(eq(households.id, h));
+    const r = await load(sheet);
+    expect(r.skipped).toEqual([]);
+    expect(r).toMatchObject({ households: { created: 0, found: 2 }, guests: { created: 0, found: 3 } });
+    expect(await all(/Orderquill/)).toHaveLength(3);
+  });
+
+  it('an address is given only to the person on the line it names, and only while they are in the line’s household', async () => {
+    const d = await db();
+    const sheet = [row('Ava and Ben Mailquill', 2, '', '', 'ben.mailquill@example.test'), row('Mr and Mrs Tom Wedquill', 2, '', '', 'mary.wedquill@example.test')];
+    await load([row('Ava and Ben Mailquill', 2)]);
+    const elsewhere = await upsertHousehold(d, { name: 'Ben Mailquill, moved' });
+    if (!elsewhere.ok) throw elsewhere.error;
+    const [ben] = await guestNamed('Ben', 'Mailquill');
+    await upsertGuest(d, { id: ben!.id, householdId: elsewhere.value.id, firstName: 'Ben' });
+    const r = await load(sheet);
+    // Ben's address is not Ava's because she is the one left; his wife's is not Tom's because he is the one named.
+    expect(r.emailsAdded).toBe(0);
+    expect((await guestNamed('Ava', 'Mailquill'))[0]!.email).toBeNull();
+    expect((await guestNamed('Tom', 'Wedquill'))[0]!.email).toBeNull();
+  });
+
+  it('a tally or a typo for a head count is left alone and said', async () => {
+    const r = await load([row('Total', 120), row('Bigge Countquill', 2026), row('Fine Countquill', 2)]);
+    expect(r.skipped).toEqual([{ sheetRow: 2, reason: 'nobody_named' }, { sheetRow: 3, reason: 'too_many_heads' }]);
+    expect(r.guests).toMatchObject({ created: 1, unnamedCreated: 1 });
+    expect(await guestNamed('Bigge', 'Countquill')).toHaveLength(0);
+  });
+
   it('a second address on a line does not replace the first', async () => {
     await load([row('Solo Mailquill', 1, '', '', 'first.address@example.test; second.address@example.test')]);
     expect((await guestNamed('Solo', 'Mailquill'))[0]!.email).toBe('first.address@example.test');
@@ -505,6 +603,21 @@ describe('signing in with Google or Facebook, by name, as either person on a lin
     // A slip in the surname alone, under her given name as listed, is plainly her.
     expect((await signIn({ name: 'Odessa Belquill' })).r.ok).toBe(true);
     expect(await whoIs('Odessa', 'Bellquill')).toBe(1);
+  });
+
+  it('two guests a name nearly fits do not turn away a verified email that is one guest’s', async () => {
+    const d = await db();
+    await sync([row('Zorande Nearquill', 1, '', '', 'zorande@example.test'), row('Zoranda Nearquill', 1)]);
+    await markSent('Zorande', 'Nearquill');
+    const { r, sink } = await signIn({ name: 'Zorandi Nearquill', email: 'zorande@example.test', emailVerified: true });
+    expect(r.ok).toBe(true);
+    expect(sink.setCookies.length).toBeGreaterThan(0);
+    expect(await whoIs('Zorande', 'Nearquill')).toBe(1);
+    // Without the email the same name signs in nobody, and both are kept for the couple.
+    const near = await signIn({ name: 'Zorandi Nearquill' });
+    expect(near.r).toEqual({ ok: false, redirectTo: GUEST_SIGN_IN_FAIL_PATH });
+    expect((await boundGuestOf(near.accountId)).reviews[0]).toMatchObject({ reason: 'no_match' });
+    expect(d).toBeTruthy();
   });
 
   it('someone whose save-the-date has not gone out is not signed in, whichever name they use', async () => {

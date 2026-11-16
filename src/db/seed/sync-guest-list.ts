@@ -19,8 +19,8 @@ import { SheetSyncError, sheetSyncLines, syncGuestsFromSheet, type SheetSyncResu
  * An upload is applied once. The sealed file stays in the repository and every later deploy reads
  * it again, so a deploy that finds its upload already applied does nothing: whatever the couple
  * have done in /admin/guests since (a newer copy of the sheet, a guest removed, a name corrected)
- * stands. An upload read from the sheet before the newest copy the site holds is not applied at
- * all, for the same reason.
+ * stands. An upload read from the sheet before the newest copy the site holds was read is not
+ * applied at all, for the same reason.
  *
  * It never fails the build. A list that will not open, or a sync that goes wrong, is said in the
  * build log and the site deploys with the guests it had: an upload of the guest list must not be
@@ -71,20 +71,40 @@ export function readUpload(sealedJson: string, secret: string): { ok: true; uplo
 /** What makes an upload this upload: when it was read, and what it says. */
 export const uploadDigest = (upload: GuestListUpload) => createHash('sha256').update(`${upload.readAt}\n${upload.text}`).digest('hex').slice(0, 32);
 
-/** Saves the upload as the newest planning-sheet copy and syncs the guest records, in one transaction, once. */
+/** When the upload says the sheet was read, or null when it does not say, or says something that is not a time. */
+export const readAtOf = (upload: GuestListUpload): Date | null => {
+  const at = Date.parse(upload.readAt);
+  return Number.isFinite(at) ? new Date(at) : null;
+};
+
+/**
+ * Saves the upload as the newest planning-sheet copy and syncs the guest records, in one transaction, once.
+ *
+ * "Newest" is by when the sheet was read: the copy is dated by the upload's reading time (never
+ * later than now), and an upload is applied only if it was read after the newest copy the site
+ * holds. So two uploads apply in the order they were read whatever order they deploy in, and one
+ * read before an administrator's own paste is not laid over it.
+ */
 export async function applyGuestListUpload(db: Db, upload: GuestListUpload, now: Date = new Date()): Promise<GuestListOutcome> {
   const { parse, lines } = sheetSyncLines(upload.text);
   if (!lines.length) return { status: 'empty' };
   const digest = uploadDigest(upload);
+  const readAt = readAtOf(upload);
   return db.transaction(async (tx) => {
     const t = tx as unknown as Db;
     const [applied] = await t.select({ id: guestSheetCopies.id }).from(guestSheetCopies).where(eq(guestSheetCopies.uploadDigest, digest)).limit(1);
     if (applied) return { status: 'already_applied' as const, lines: lines.length };
     const [latest] = await t.select({ uploadedAt: guestSheetCopies.uploadedAt }).from(guestSheetCopies).orderBy(desc(guestSheetCopies.uploadedAt)).limit(1);
-    const readAt = Date.parse(upload.readAt);
     // No reading time is no proof of being newer: with a copy already here, that one stands.
-    if (latest && !(Number.isFinite(readAt) && readAt > latest.uploadedAt.getTime())) return { status: 'older_than_site' as const, lines: lines.length };
-    await t.insert(guestSheetCopies).values({ id: newId(), rows: parse.rows, withheldColumns: parse.withheldColumns, missingColumns: parse.missingColumns, source: upload.source.slice(0, 120), uploadedBy: null, uploadDigest: digest, uploadedAt: now });
+    if (latest && !(readAt && readAt.getTime() > latest.uploadedAt.getTime())) return { status: 'older_than_site' as const, lines: lines.length };
+    // The marker goes in first, and is unique: of two builds running at once, one waits here and then finds it taken.
+    const asOf = readAt && readAt.getTime() < now.getTime() ? readAt : now;
+    const saved = await t
+      .insert(guestSheetCopies)
+      .values({ id: newId(), rows: parse.rows, withheldColumns: parse.withheldColumns, missingColumns: parse.missingColumns, source: upload.source.slice(0, 120), uploadedBy: null, uploadDigest: digest, uploadedAt: asOf })
+      .onConflictDoNothing({ target: guestSheetCopies.uploadDigest })
+      .returning({ id: guestSheetCopies.id });
+    if (!saved.length) return { status: 'already_applied' as const, lines: lines.length };
     const result = await syncGuestsFromSheet(t, lines);
     return { status: 'synced' as const, lines: lines.length, result };
   });
@@ -110,7 +130,8 @@ if (isMain) {
         if (!read.ok) say(read.status === 'other_key' ? 'the sealed list is for another key (seal it again to the key above); skipped' : `the sealed list did not open (${read.status}); skipped`);
         else {
           const outcome = await applyGuestListUpload(db, read.upload);
-          const read_at = read.upload.readAt || 'at an unknown time';
+          // Only ever a time: never whatever text the file put there.
+          const read_at = readAtOf(read.upload)?.toISOString() ?? 'at an unknown time';
           if (outcome.status === 'synced') say(`read ${read_at}: ${JSON.stringify(outcome.result)}`);
           else if (outcome.status === 'already_applied') say(`read ${read_at}: applied by an earlier deploy; the guest records are left as they are`);
           else if (outcome.status === 'older_than_site') say(`read ${read_at}: the site already holds a newer copy of the sheet; not applied`);

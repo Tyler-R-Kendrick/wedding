@@ -120,4 +120,39 @@ describe('the people on a line of the planning sheet', () => {
     expect(names('Linh Le', 1)).toEqual(['Linh|Le']);
     expect(names('Minh Van and Thu Van', 2)).toEqual(['Minh|Van', 'Thu|Van']);
   });
+
+  it('a surname that is also an ordinary word, or a single letter, is a surname', () => {
+    expect(names('Tom House', 1)).toEqual(['Tom|House']);
+    expect(names('Amanda Crew', 1)).toEqual(['Amanda|Crew']);
+    expect(names('Bram and Nora House', 2)).toEqual(['Bram|House', 'Nora|House']);
+    expect(names('Mike S and Sarah T', 2)).toEqual(['Mike|S', 'Sarah|T']);
+    expect(names('Jin Park and So', 2)).toEqual(['Jin|Park', 'So|']);
+  });
+
+  it('a plus-one written against a name is counted, however it is written', () => {
+    for (const written of ['Ana Ruizdale +1', 'Ana Ruizdale plus one', 'Ana Ruizdale + 1', 'Ana Ruizdale plus-one']) {
+      expect(names(written, 1, 0, 1), written).toEqual(['Ana|Ruizdale']);
+      expect(line(written, 1, 0, 1), written).toMatchObject({ unnamedAdults: 0, unnamedPlusOnes: 1 });
+    }
+  });
+
+  it('titles with only a surname between them name nobody', () => {
+    const l = line('Dr. and Mrs. Bakewell', 2);
+    expect(l.named).toEqual([]);
+    expect(l).toMatchObject({ unnamedAdults: 2, notes: ['not_a_given_name'] });
+  });
+
+  it('brackets are never split into people, and are a name only where a maiden name is written', () => {
+    // A business, a role, a note: nobody's name, and nobody to sign in as.
+    expect(line('Ana Ruizdale (Petal & Twine)', 1).named).toEqual([{ firstName: 'Ana', lastName: 'Ruizdale', kind: 'adult', alternateNames: [] }]);
+    expect(line('Tom Bakewell (boss)', 1).named[0]).toMatchObject({ firstName: 'Tom', lastName: 'Bakewell', alternateNames: [] });
+    expect(line("Rico (Tess's brother) and Tess Bakewell", 2).named.map((p) => [p.firstName, p.alternateNames])).toEqual([['Rico', []], ['Tess', []]]);
+    // Between the given name and the surname, or said to be one.
+    expect(line('Nora (Halloran) Fitzwilliam', 1).named[0]!.alternateNames).toEqual(['Nora Halloran']);
+    expect(line('Nora Fitzwilliam (born Halloran)', 1).named[0]!.alternateNames).toEqual(['Nora Halloran']);
+  });
+
+  it('the sheet’s own tally labels name nobody', () => {
+    for (const written of ['Total', 'Totals', 'Subtotal', 'Count']) expect(line(written, 120).named, written).toEqual([]);
+  });
 });

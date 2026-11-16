@@ -49,7 +49,7 @@ export interface SheetSyncResult {
   /** Lines with people who cannot be found by name alone, by what is missing. Counts only. */
   notes: Partial<Record<SheetLineNote, number>>;
   /** Lines the sync left alone, and why. */
-  skipped: { sheetRow: number; reason: 'nobody_named' | 'ambiguous_existing' | 'duplicate_line' }[];
+  skipped: { sheetRow: number; reason: 'nobody_named' | 'ambiguous_existing' | 'duplicate_line' | 'too_many_heads' }[];
 }
 
 /** A failure of the sync whose words are safe to print: a row number and a code, never anything a line says. */
@@ -110,6 +110,9 @@ function samePerson(g: Pick<GuestRow, 'firstName' | 'lastName'>, p: Pick<SheetPe
   return theirLast === last || !theirLast || !last || (theirLast.length >= 3 && last.startsWith(theirLast)) || (last.length >= 3 && theirLast.startsWith(last)) || (theirLast.length >= 5 && last.length >= 5 && editDistanceAtMostOne(theirLast, last));
 }
 
+/** More heads than this on one line is a tally or a typo, not a household: the line is left alone and reported. */
+const MAX_HEADS_ON_A_LINE = 20;
+
 export async function syncGuestsFromSheet(db: Db, lines: readonly SheetSyncLine[]): Promise<SheetSyncResult> {
   const result: SheetSyncResult = { lines: lines.length, households: { created: 0, found: 0 }, guests: { created: 0, found: 0, completed: 0, unnamedCreated: 0 }, emailsAdded: 0, notes: {}, skipped: [] };
   const allHouseholds = await db.select().from(households);
@@ -119,7 +122,8 @@ export async function syncGuestsFromSheet(db: Db, lines: readonly SheetSyncLine[
   const takenEmails = new Set((await db.select({ value: guestContacts.value }).from(guestContacts).where(eq(guestContacts.kind, 'email'))).map((c) => c.value));
   for (const g of live) if (g.email) takenEmails.add(g.email);
 
-  type Entry = { line: SheetSyncLine; people: SheetLinePeople; householdId: string | null; made: boolean };
+  /** A line, the household that is its own, and who of its people is already here (`slots`, one per person named). */
+  type Entry = { line: SheetSyncLine; people: SheetLinePeople; householdId: string | null; made: boolean; slots: (GuestRow | 'elsewhere' | null)[] };
   const entries: Entry[] = [];
   const seenLines = new Set<string>();
   for (const line of lines) {
@@ -129,6 +133,10 @@ export async function syncGuestsFromSheet(db: Db, lines: readonly SheetSyncLine[
       result.skipped.push({ sheetRow: line.sheetRow, reason: 'nobody_named' });
       continue;
     }
+    if (Math.max(0, line.adults) + Math.max(0, line.plusOnes) > MAX_HEADS_ON_A_LINE) {
+      result.skipped.push({ sheetRow: line.sheetRow, reason: 'too_many_heads' });
+      continue;
+    }
     // Two lines written the same cannot be told apart, here or on any later run: the first stands.
     const key = norm(people.householdName);
     if (seenLines.has(key)) {
@@ -136,71 +144,97 @@ export async function syncGuestsFromSheet(db: Db, lines: readonly SheetSyncLine[
       continue;
     }
     seenLines.add(key);
-    entries.push({ line, people, householdId: null, made: false });
+    entries.push({ line, people, householdId: null, made: false, slots: people.named.map(() => null) });
   }
 
-  // ---- Which household is each line's? ----
-  // A guest is one line's person at most. `claimed` is who has been spoken for so far.
+  // ---- Who is already here, and whose ----
+  // A guest is one line's person at most: `claimed` is who has been spoken for. Every line that has
+  // a household claims its people before anyone is made, so that no line makes, or adopts the
+  // household of, somebody another line already has.
   const claimed = new Set<string>();
-  const exactMatches = (p: SheetPerson, among: readonly GuestRow[]) => among.filter((g) => g.isNamed && !claimed.has(g.id) && personKey(g.firstName, g.lastName) === personKey(p.firstName, p.lastName));
+  const keyOf = (p: SheetPerson) => personKey(p.firstName, p.lastName);
+  const unclaimedNamed = (among: readonly GuestRow[]) => among.filter((g) => g.isNamed && !claimed.has(g.id));
+  const membersOf = (householdId: string) => live.filter((g) => g.householdId === householdId);
+  const claimExact = (e: Entry) => {
+    e.people.named.forEach((p, i) => {
+      if (e.slots[i] || !e.householdId) return;
+      const here = unclaimedNamed(membersOf(e.householdId)).find((g) => personKey(g.firstName, g.lastName) === keyOf(p));
+      if (!here) return;
+      e.slots[i] = here;
+      claimed.add(here.id);
+    });
+  };
+  // A name that is plainly the same (a corrected spelling, a short form): only after everyone's
+  // exact name, so that "Jon and Jan" never takes the Jan who is here for Jon; and only when one
+  // person here could be them, and they could be nobody else still unplaced on the line.
+  const claimAlike = (e: Entry) => {
+    e.people.named.forEach((p, i) => {
+      if (e.slots[i] || !e.householdId) return;
+      const alike = unclaimedNamed(membersOf(e.householdId)).filter((g) => samePerson(g, p));
+      if (alike.length !== 1) return;
+      if (e.people.named.some((o, j) => j !== i && !e.slots[j] && samePerson(alike[0]!, o))) return;
+      e.slots[i] = alike[0]!;
+      claimed.add(alike[0]!.id);
+    });
+  };
 
   // 1. The household that carries the line's name (one only: two households of one name are not told apart by it).
   const byName = new Map<string, string[]>();
   for (const h of allHouseholds) byName.set(norm(h.name), [...(byName.get(norm(h.name)) ?? []), h.id]);
-  for (const e of entries) {
+  const named = entries.filter((e) => {
     const ids = byName.get(norm(e.people.householdName)) ?? [];
-    if (ids.length !== 1) continue;
-    e.householdId = ids[0]!;
-    for (const p of e.people.named) {
-      const here = exactMatches(p, live.filter((g) => g.householdId === e.householdId));
-      if (here[0]) claimed.add(here[0].id);
-    }
-  }
+    if (ids.length === 1) e.householdId = ids[0]!;
+    return ids.length === 1;
+  });
+  for (const e of named) claimExact(e);
+  for (const e of named) claimAlike(e);
 
-  // 2. Else the household that already holds the line's people, the fullest fits first, so that of
-  //    two lines sharing a name ("Barton Barnaby", father and son) each takes its own.
+  // 2. Else the household that already holds the line's people (whatever the couple have since
+  //    called it). The line with the most of its people in one place goes first, so that of two
+  //    lines sharing a name ("Barton Barnaby", father and son) each takes its own.
   const fit = (e: Entry) => {
     const perHousehold = new Map<string, number>();
-    for (const p of e.people.named) for (const id of new Set(exactMatches(p, live).map((g) => g.householdId))) perHousehold.set(id, (perHousehold.get(id) ?? 0) + 1);
-    const ranked = [...perHousehold.entries()].sort((a, b) => b[1] - a[1]);
+    for (const p of e.people.named) {
+      const homes = new Set(unclaimedNamed(live).filter((g) => personKey(g.firstName, g.lastName) === keyOf(p)).map((g) => g.householdId));
+      for (const id of homes) perHousehold.set(id, (perHousehold.get(id) ?? 0) + 1);
+    }
+    const ranked = [...perHousehold.entries()].sort((x, y) => y[1] - x[1]);
     return { best: ranked[0] ?? null, tie: ranked.length > 1 && ranked[0]![1] === ranked[1]![1] };
   };
-  const unresolved = entries.filter((e) => !e.householdId);
-  const order = unresolved.map((e) => ({ e, score: (fit(e).best?.[1] ?? 0) / e.people.named.length })).sort((a, b) => b.score - a.score);
   const leftAlone = new Set<Entry>();
-  for (const { e } of order) {
-    const { best, tie } = fit(e);
-    if (!best) continue; // nobody on the line is here yet: a new household
-    if (tie) {
-      // Its people are in two households, or two existing guests answer to one name on it: which
-      // is which is the couple's to say, on /admin/guests.
-      result.skipped.push({ sheetRow: e.line.sheetRow, reason: 'ambiguous_existing' });
-      leftAlone.add(e);
+  let waiting = entries.filter((e) => !e.householdId);
+  while (waiting.length) {
+    // Chosen afresh each round: what one line claims changes what is left for the others.
+    const scored = waiting.map((e) => ({ e, ...fit(e) })).filter((x) => x.best);
+    if (!scored.length) break; // nobody on the lines still waiting is here yet: new households
+    scored.sort((x, y) => Number(x.tie) - Number(y.tie) || y.best![1] - x.best![1] || y.best![1] / y.e.people.named.length - x.best![1] / x.e.people.named.length);
+    const next = scored[0]!;
+    waiting = waiting.filter((e) => e !== next.e);
+    if (next.tie) {
+      // Its people are in two households, or two existing guests answer to one name on it, and no
+      // other line settles which: that is the couple's to say, on /admin/guests.
+      result.skipped.push({ sheetRow: next.e.line.sheetRow, reason: 'ambiguous_existing' });
+      leftAlone.add(next.e);
       continue;
     }
-    e.householdId = best[0];
-    for (const p of e.people.named) {
-      const here = exactMatches(p, live.filter((g) => g.householdId === e.householdId));
-      if (here[0]) claimed.add(here[0].id);
-    }
+    next.e.householdId = next.best![0];
+    claimExact(next.e);
+    claimAlike(next.e);
   }
-  const linked = new Set(entries.flatMap((e) => (e.householdId ? [e.householdId] : [])));
 
   // ---- Its people ----
   for (const e of entries) {
     if (leftAlone.has(e)) continue;
-    const { line, people } = e;
+    const { line, people, slots } = e;
     if (e.householdId) result.households.found += 1;
     else {
       const made = await upsertHousehold(db, { name: people.householdName });
       if (!made.ok) throw new SheetSyncError(`sheet row ${line.sheetRow}: the household could not be made`);
       e.householdId = made.value.id;
       e.made = true;
-      linked.add(e.householdId);
       result.households.created += 1;
     }
     const householdId = e.householdId;
-    const members = () => live.filter((g) => g.householdId === householdId);
     const save = async (input: Parameters<typeof upsertGuest>[1]): Promise<GuestRow> => {
       const saved = await upsertGuest(db, input);
       // Never the error's own words: they can carry what was typed.
@@ -208,30 +242,16 @@ export async function syncGuestsFromSheet(db: Db, lines: readonly SheetSyncLine[
       live = [...live.filter((g) => g.id !== saved.value.id), saved.value];
       return saved.value;
     };
-    const fresh = (id: string) => live.find((g) => g.id === id)!;
-
-    // Who on the line is here already. Everyone's exact name first, and only then names that are
-    // plainly the same, so that "Jon and Jan" never takes the Jan who is here for Jon.
-    const slots: (GuestRow | 'elsewhere' | null)[] = people.named.map(() => null);
-    const taken = () => new Set(slots.flatMap((g) => (g && g !== 'elsewhere' ? [g.id] : [])));
-    const free = () => members().filter((g) => g.isNamed && !taken().has(g.id));
-    people.named.forEach((p, i) => {
-      slots[i] = free().find((g) => personKey(g.firstName, g.lastName) === personKey(p.firstName, p.lastName)) ?? null;
-    });
-    people.named.forEach((p, i) => {
-      if (slots[i]) return;
-      const alike = free().filter((g) => samePerson(g, p));
-      // One person here could be them, and they could be nobody else still unplaced on the line.
-      if (alike.length !== 1) return;
-      const rivals = people.named.filter((o, j) => j !== i && !slots[j] && samePerson(alike[0]!, o));
-      if (rivals.length === 0) slots[i] = alike[0]!;
-    });
+    const here = () => new Set(slots.flatMap((g) => (g && g !== 'elsewhere' ? [g.id] : [])));
+    /** The heads this line counted and did not name: unnamed plus-ones of its own people (or of nobody), never a child. */
+    const countedHeads = () => membersOf(householdId).filter((g) => !g.isNamed && g.kind === 'plus_one' && !g.isMinor && (!g.plusOneOfGuestId || here().has(g.plusOneOfGuestId)));
+    const wanted = people.unnamedAdults + people.unnamedPlusOnes;
 
     for (let i = 0; i < people.named.length; i++) {
       const p = people.named[i]!;
-      const k = personKey(p.firstName, p.lastName);
-      let found = slots[i] && slots[i] !== 'elsewhere' ? (slots[i] as GuestRow) : null;
-      if (found) {
+      const slot = slots[i];
+      if (slot && slot !== 'elsewhere') {
+        let found = slot;
         result.guests.found += 1;
         // A surname that was missing or cut short is completed from the sheet. Any other difference
         // is the couple's correction, and stands.
@@ -246,26 +266,24 @@ export async function syncGuestsFromSheet(db: Db, lines: readonly SheetSyncLine[
         const extra = p.alternateNames.filter((n) => !have.has(norm(n)));
         if (extra.length) found = await save({ id: found.id, householdId: found.householdId, firstName: found.firstName, alternateNames: [...found.alternateNames, ...extra] });
         slots[i] = found;
-        claimed.add(found.id);
         continue;
       }
-      // Moved by the couple to a household that is no line's, or merged into another guest: they
-      // are a guest already, and are neither moved back nor made again.
-      const elsewhere = live.filter((g) => g.isNamed && !claimed.has(g.id) && !linked.has(g.householdId) && personKey(g.firstName, g.lastName) === k);
-      const mergedAway = merged.some((g) => g.householdId === householdId && personKey(g.firstName, g.lastName) === k);
-      if (elsewhere.length === 1 || mergedAway) {
+      // Moved by the couple to another household (any other, a line's own or not), or merged into
+      // another guest: they are a guest already, and are neither moved back nor made again.
+      const elsewhere = unclaimedNamed(live).find((g) => personKey(g.firstName, g.lastName) === keyOf(p));
+      const mergedAway = merged.some((g) => g.householdId === householdId && personKey(g.firstName, g.lastName) === keyOf(p));
+      if (elsewhere || mergedAway) {
         result.guests.found += 1;
-        if (elsewhere.length === 1) claimed.add(elsewhere[0]!.id);
+        if (elsewhere) claimed.add(elsewhere.id);
         slots[i] = 'elsewhere';
         continue;
       }
-      // A head this line only counted until now: the sheet has named them. Only a head that is this
-      // line's own to name: an unnamed plus-one of someone on it, never a child, never another's guest.
-      const hosts = taken();
-      const counted = hosts.size > 0 ? members().find((g) => !g.isNamed && g.kind === 'plus_one' && !g.isMinor && (!g.plusOneOfGuestId || hosts.has(g.plusOneOfGuestId))) : undefined;
-      if (counted) {
-        slots[i] = await save({ id: counted.id, householdId, firstName: p.firstName, lastName: p.lastName, kind: p.kind, isNamed: true, alternateNames: p.alternateNames });
-        claimed.add(counted.id);
+      // A head this line only counted until now, which the sheet has since named: there is one more
+      // counted head here than the line still counts, and someone on the line to be the guest of.
+      const heads = countedHeads();
+      if (here().size > 0 && heads.length > wanted) {
+        slots[i] = await save({ id: heads[0]!.id, householdId, firstName: p.firstName, lastName: p.lastName, kind: p.kind, isNamed: true, alternateNames: p.alternateNames });
+        claimed.add(heads[0]!.id);
         result.guests.completed += 1;
         continue;
       }
@@ -274,15 +292,11 @@ export async function syncGuestsFromSheet(db: Db, lines: readonly SheetSyncLine[
       claimed.add(made.id);
       result.guests.created += 1;
     }
-    const placed = slots.flatMap((g) => (g && g !== 'elsewhere' ? [fresh(g.id)] : []));
-    const host = placed[0];
+    const host = slots.find((g): g is GuestRow => !!g && g !== 'elsewhere');
     if (!host) continue; // everyone on the line lives elsewhere now: nothing here is this line's to add to
 
     // The heads the line counts and does not name: guests of the first person on it.
-    const hostIds = new Set(placed.map((g) => g.id));
-    const wanted = people.unnamedAdults + people.unnamedPlusOnes;
-    const have = members().filter((g) => !g.isNamed && g.kind === 'plus_one' && (!g.plusOneOfGuestId || hostIds.has(g.plusOneOfGuestId))).length;
-    for (let i = have; i < wanted; i++) {
+    for (let i = countedHeads().length; i < wanted; i++) {
       await save({ householdId, firstName: 'Guest', lastName: '', kind: 'plus_one', isNamed: false, plusOneOfGuestId: host.id });
       result.guests.unnamedCreated += 1;
     }
@@ -290,11 +304,14 @@ export async function syncGuestsFromSheet(db: Db, lines: readonly SheetSyncLine[
     // Someone to answer for a household this run made. One the couple made is theirs to arrange.
     if (e.made) await db.update(households).set({ managerGuestId: host.id, updatedAt: new Date() }).where(eq(households.id, householdId));
 
-    // An email on the line, for the person it is plainly for, where they have none.
+    // An email on the line, for the person on it that it is plainly for, where they are here and have none.
     for (const raw of line.emails ?? []) {
       const email = normalizeEmail(raw);
       if (!isEmailShape(email) || takenEmails.has(email)) continue;
-      const owner = emailOwner(email, placed.map((g) => fresh(g.id)));
+      const at = emailOwnerIndex(email, people.named, wanted);
+      const slot = at === null ? null : slots[at];
+      if (!slot || slot === 'elsewhere') continue;
+      const owner = live.find((g) => g.id === slot.id);
       if (!owner || owner.email) continue;
       await save({ id: owner.id, householdId: owner.householdId, firstName: owner.firstName, email });
       takenEmails.add(email);
@@ -305,32 +322,52 @@ export async function syncGuestsFromSheet(db: Db, lines: readonly SheetSyncLine[
 }
 
 /**
- * Whose address an email on a line is. A lone person's line: theirs. A couple's: the one person
- * the address names, by a given name standing as a word of its own ("neal.k@", "zeke.fitz@"), by a
- * given name run into a surname ("nealk@", "nealkendall@"), or by an initial and a surname
- * ("bfitzwilliam@" on "Bram and Nora Fitzwilliam" is Bram's). Letters that only happen to sit
- * inside a longer word name nobody ("dan" inside "jordan"). An address that names neither, or
- * both, is nobody's: it stays in the sheet for the couple to put on the right guest. A verified
- * email signs a guest in on its own, so a wrong guess here would sign in the wrong person.
+ * Whose address an email on a line is: the index of that person among those the line names, or null.
+ *
+ * A line that is one person and nobody else: theirs. Otherwise the one person the address names: by
+ * a given name standing as a word of its own ("neal.k@", "zeke.fitz@"), by a given name run into a
+ * surname ("nealk@", "nealkendall@"), or by an initial and a surname ("bfitzwilliam@" on "Bram and
+ * Nora Fitzwilliam" is Bram's). Letters that only happen to sit inside a longer word name nobody
+ * ("dan" inside "jordan"). An address that names neither or both is nobody's; so is one that names
+ * someone whose given name is a short or long form of another's on the line ("chris@" on "Chris and
+ * Christine"); and so is any address on a line that counts a head it does not name, unless it
+ * names the person it does. It then stays in the sheet for the couple to put on the right guest: a
+ * verified email signs a guest in on its own, so a wrong guess here would sign in the wrong person.
  */
-export function emailOwner<T extends { firstName: string; lastName: string }>(email: string, people: readonly T[]): T | null {
-  if (people.length === 1) return people[0]!;
+export function emailOwnerIndex(email: string, people: readonly { firstName: string; lastName: string }[], unnamedHeads = 0): number | null {
+  if (people.length === 0) return null;
+  if (people.length === 1 && unnamedHeads === 0) return 0;
   const local = (email.split('@')[0] ?? '').toLowerCase();
   const words = local.split(/[^a-z]+/).filter(Boolean);
   const letters = words.join('');
-  const surnames = [...new Set(people.map((g) => norm(g.lastName).replace(/[^a-z]/g, '')).filter((s) => s.length >= 3))];
-  const named = people.filter((g) => {
-    const given = (norm(g.firstName).split(' ')[0] ?? '').replace(/[^a-z]/g, '');
-    if (given.length < 2) return false;
-    if (given.length >= 3 && words.includes(given)) return true;
+  const given = (g: { firstName: string }) => (norm(g.firstName).split(' ')[0] ?? '').replace(/[^a-z]/g, '');
+  const surnames = [...new Set(people.map((g) => norm(g.lastName).replace(/[^a-z]/g, '')).filter((x) => x.length >= 3))];
+  const names = (g: { firstName: string }) => {
+    const first = given(g);
+    if (first.length < 2) return false;
+    if (first.length >= 3 && words.includes(first)) return true;
     for (const w of new Set([...words, letters])) {
-      if (given.length < 3 || !w.startsWith(given) || w.length === given.length) continue;
-      const rest = w.slice(given.length);
-      if (surnames.some((s) => s.startsWith(rest))) return true;
+      if (first.length < 3 || !w.startsWith(first) || w.length === first.length) continue;
+      const rest = w.slice(first.length);
+      if (surnames.some((x) => x.startsWith(rest))) return true;
     }
-    return surnames.some((s) => letters === given[0] + s || (words.length === 2 && words[0] === given[0] && words[1] === s));
+    return surnames.some((x) => letters === first[0] + x || (words.length === 2 && words[0] === first[0] && words[1] === x));
+  };
+  const matched = people.map((g, i) => (names(g) ? i : -1)).filter((i) => i >= 0);
+  if (matched.length !== 1) return null;
+  const mine = given(people[matched[0]!]!);
+  const lookalike = people.some((o, i) => {
+    if (i === matched[0]) return false;
+    const theirs = given(o);
+    return theirs.length >= 2 && (theirs.startsWith(mine) || mine.startsWith(theirs) || sameGivenName(theirs, mine));
   });
-  return named.length === 1 ? named[0]! : null;
+  return lookalike ? null : matched[0]!;
+}
+
+/** `emailOwnerIndex`, as the person. */
+export function emailOwner<T extends { firstName: string; lastName: string }>(email: string, people: readonly T[], unnamedHeads = 0): T | null {
+  const at = emailOwnerIndex(email, people, unnamedHeads);
+  return at === null ? null : people[at]!;
 }
 
 /**

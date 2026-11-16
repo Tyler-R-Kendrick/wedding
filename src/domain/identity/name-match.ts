@@ -418,6 +418,19 @@ interface PreparedProfile {
   heads: string[];
   /** What was cut from around the name ("| Acme Events"), which is sometimes what a guest is listed under. */
   decor: string[];
+  /** The name is two people's ("Tom & Mary Bakewell"): it is nobody's own, and matches only as a whole other name. */
+  joint: boolean;
+  /** A generational suffix the profile carries ("Jr."), if any. */
+  suffix: string | null;
+}
+
+const JOINT = /(^|\s)(&|\+|and)(\s|$)/i;
+/** "Jr.", "Sr.", "II", "III", "IV" as one comparable word, or null. Tells a father from a son of one name. */
+export function generationalSuffix(raw: string): string | null {
+  const m = /(?:^|[\s,])(jr|sr|junior|senior|ii|iii|iv)\.?\s*$/i.exec(raw.trim());
+  if (!m) return null;
+  const w = m[1]!.toLowerCase();
+  return w === 'junior' ? 'jr' : w === 'senior' ? 'sr' : w;
 }
 
 function prepareProfile(profile: ProviderProfileName): PreparedProfile {
@@ -426,15 +439,29 @@ function prepareProfile(profile: ProviderProfileName): PreparedProfile {
   const whole = (v: string) => tokenizeName(v).join(' ');
   const heads = [...shown.heads, [capped.givenName, capped.familyName].filter(Boolean).join(' ')].map(whole).filter(Boolean);
   const decor = shown.decor.map(whole).filter((d) => d && !heads.includes(d));
-  return { p: parseProviderProfile(capped), heads: [...new Set(heads)], decor: [...new Set(decor)] };
+  const head = shown.heads.at(-1) ?? '';
+  const joint = JOINT.test(capped.givenName) || (!capped.givenName && JOINT.test(head));
+  const suffix = generationalSuffix(capped.familyName) ?? generationalSuffix(head);
+  return { p: parseProviderProfile(capped), heads: [...new Set(heads)], decor: [...new Set(decor)], joint, suffix };
 }
 
 /** How strongly a profile fits a guest, or null when it does not. See the tiers at the top. */
 export function matchRank(profile: ProviderProfileName, guest: GuestNameRecord): MatchRank | null {
-  return rankOf(prepareProfile(profile), guest);
+  return fitOf(prepareProfile(profile), guest).rank;
 }
 
-function rankOf({ p, heads, decor }: PreparedProfile, guest: GuestNameRecord): MatchRank | null {
+/** A fit, and whether it is a short form of the given name under the guest's own surname: see `matchGuestsByName`. */
+interface Fit {
+  rank: MatchRank | null;
+  shortFormOwnSurname: boolean;
+}
+
+function fitOf(profile: PreparedProfile, guest: GuestNameRecord): Fit {
+  const flags = { shortFormOwnSurname: false };
+  return { rank: rankOf(profile, guest, flags), shortFormOwnSurname: flags.shortFormOwnSurname };
+}
+
+function rankOf({ p, heads, decor, joint, suffix }: PreparedProfile, guest: GuestNameRecord, flags: { shortFormOwnSurname: boolean }): MatchRank | null {
   const alternates = (guest.alternateNames ?? []).map((a) => tokenizeName(a)).filter((t) => t.length > 0);
   const wholeNames = alternates.filter((alt) => alt.length >= 2).map((alt) => alt.join(' '));
   let best: MatchRank | null = null;
@@ -446,6 +473,15 @@ function rankOf({ p, heads, decor }: PreparedProfile, guest: GuestNameRecord): M
   // as decoration around another name it is weaker than anyone that name itself fits.
   if (wholeNames.some((w) => heads.includes(w))) reach(1);
   else if (wholeNames.some((w) => decor.includes(w))) reach(3);
+  // A business's name with more after it ("Bustle & Lace Events") is still that business. Only for a
+  // name that is plainly not a person's: a maiden name with more after it is somebody else.
+  else if (wholeNames.some((w) => JOINT.test(w) && heads.some((h) => h.startsWith(`${w} `)))) reach(3);
+
+  // Two people's name is nobody's own. And a father is not his son: where the profile and the guest
+  // both carry a generational suffix, they have to agree.
+  if (joint) return best;
+  const theirSuffix = generationalSuffix(guest.lastName);
+  if (suffix && theirSuffix && suffix !== theirSuffix) return best;
 
   const coreGiven = p.given[0] ?? '';
   const saidFamily = surnameForms(p.family);
@@ -470,6 +506,8 @@ function rankOf({ p, heads, decor }: PreparedProfile, guest: GuestNameRecord): M
 
   if (short !== null) {
     if (ownAsFamily) reach(short === 0 ? 1 : 2);
+    // ...and the whole of the profile's surname is theirs: "Janet Fitzwilliam-Marlow" is no Jan Fitzwilliam.
+    if (ownAsFamily && short === 1 && weighty(p.family).every((t) => theirs.includes(t))) flags.shortFormOwnSurname = true;
     if (householdAsFamily) reach(short === 0 ? 2 : 3);
     if (ownAsMiddle) reach(short === 0 ? 3 : 4);
   }
@@ -506,23 +544,32 @@ export type NameMatchConfidence = 'none' | 'one' | 'ambiguous';
 type Candidate = { id: string; firstName: string; lastName: string; alternateNames?: readonly string[] | null; householdSurnames?: readonly string[] | null };
 
 /**
- * The guest a profile is, among `candidates`: the strongest tier anyone reaches, and only when one
- * guest alone reaches it. Two guests at the same tier are `ambiguous` (both are returned, for the
+ * The guest a profile is, among `candidates`: the strongest rank anyone reaches, and only when one
+ * guest alone reaches it. Two guests at the same rank are `ambiguous` (both are returned, for the
  * couple to sort out), whatever weaker matches exist. `rank` says how strong the fit was: a caller
  * that signs someone in must not do so past `SIGN_IN_MAX_RANK`.
+ *
+ * One exception to "the strongest decides". A guest named exactly does not beat another guest of
+ * the same surname whose name is a short or long form of it: with a Chris Millwick and a Christine
+ * Millwick on the list, the profile "Chris Millwick" may be either of them (the sheet writes what
+ * the couple call someone; a profile writes what they call themselves). Both are returned as
+ * `ambiguous`, and neither is signed in.
  */
 export function matchGuestsByName<T extends Candidate>(profile: ProviderProfileName, candidates: readonly T[]): { confidence: NameMatchConfidence; matches: T[]; rank: MatchRank | null } {
   const prepared = prepareProfile(profile);
   let best: MatchRank | null = null;
   let matches: T[] = [];
+  const rivals: T[] = [];
   for (const g of candidates) {
-    const rank = rankOf(prepared, g);
-    if (rank === null) continue;
-    if (best === null || rank < best) {
-      best = rank;
+    const fit = fitOf(prepared, g);
+    if (fit.rank === null) continue;
+    if (fit.rank === 2 && fit.shortFormOwnSurname) rivals.push(g);
+    if (best === null || fit.rank < best) {
+      best = fit.rank;
       matches = [g];
-    } else if (rank === best) matches.push(g);
+    } else if (fit.rank === best) matches.push(g);
   }
   if (best === null) return { confidence: 'none', matches: [], rank: null };
+  if (best === 1 && rivals.length) matches = [...matches, ...rivals];
   return { confidence: matches.length === 1 ? 'one' : 'ambiguous', matches, rank: best };
 }

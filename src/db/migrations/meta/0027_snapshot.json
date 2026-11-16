@@ -1,5 +1,5 @@
 {
-  "id": "7e6d6907-e4fd-418f-bb03-60871450aee2",
+  "id": "dd444c4a-2233-4e7b-be2e-a9a35f111df8",
   "prevId": "2e01397d-6d42-4e4f-94ad-a3c47e49f764",
   "version": "7",
   "dialect": "postgresql",
@@ -3913,6 +3913,21 @@
             }
           ],
           "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "guest_sheet_copies_upload_digest_uq": {
+          "name": "guest_sheet_copies_upload_digest_uq",
+          "columns": [
+            {
+              "expression": "upload_digest",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
           "concurrently": false,
           "method": "btree",
           "with": {}

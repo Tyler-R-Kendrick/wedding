@@ -41,4 +41,21 @@ describe('whose address an email on a line is', () => {
     expect(owner('bfitzwilliam@example.test', 'Bram Fitzwilliam', 'Bea Fitzwilliam')).toBeNull();
     expect(owner('', 'Bram Fitzwilliam', 'Nora Fitzwilliam')).toBeNull();
   });
+
+  it('a line that counts a head it does not name: only an address that names the person it does', () => {
+    const tom = people('Tom Mailzill');
+    // "Mr and Mrs Tom Mailzill", two adults: the address may be his wife's.
+    expect(emailOwner('mary.mailzill@example.test', tom, 1)).toBeNull();
+    expect(emailOwner('sunflower88@example.test', tom, 1)).toBeNull();
+    expect(emailOwner('tom.mailzill@example.test', tom, 1)?.firstName).toBe('Tom');
+    expect(emailOwner('edgar.i.marrow22@example.test', people('Edgar'), 1)?.firstName).toBe('Edgar');
+  });
+
+  it('two people whose given names are forms of one another: an address under the shared name is nobody’s', () => {
+    expect(owner('chris.millwick@example.test', 'Chris Millwick', 'Christine Millwick')).toBeNull();
+    expect(owner('chrism@example.test', 'Chris Millwick', 'Christine Millwick')).toBeNull();
+    expect(owner('samc@example.test', 'Sam Cartwell', 'Samantha Cartwell')).toBeNull();
+    expect(owner('alexh@example.test', 'Alex Hartwell', 'Alexandra Hartwell')).toBeNull();
+    expect(owner('bill.rowan@example.test', 'Bill Rowan', 'William Rowan')).toBeNull();
+  });
 });

@@ -80,6 +80,7 @@ Guest matching uses **verified provider email OR fuzzy name** (see `docs/design/
   4. a short form with their surname kept only as a middle name;
   5. the given name exactly as listed and one letter out in the surname, never on a name shorter than five letters;
   6. one letter out in the given name, or a short form together with a slip in the surname. **Rank 6 signs in nobody** (`SIGN_IN_MAX_RANK = 5`): Frances and Francis, Mario and Maria are as often two people as one slip, so the attempt is queued as `no_match` with the guest it nearly was, for the couple to link in **Sign-in reviews**.
+  Three more rules keep the wrong person out. A guest named exactly does not beat another guest of the same surname whose given name is a short or long form of it (Chris and Christine Millwick, profile "Chris Millwick"): both are `ambiguous`. A name that is two people's ("Tom & Mary Bakewell") is nobody's own and matches only as a whole other name. And where a profile and a guest both carry `Jr.`, `Sr.`, `II`… they have to agree.
   Middle initials, titles, diacritics, apostrophes, hyphens, emoji and decoration ("Name | Business", "(she/her)") are set aside, and decoration is ignored altogether when the name itself fits someone. Name fields are read to 200 characters. A profile with no surname never matches by name, and neither does a guest with no surname and nobody in the household to be known by.
 - Email match wins when name differs; **email + name → different guests** → no session (`email_name_conflict`).
 - **Invitation sent** required for both paths.

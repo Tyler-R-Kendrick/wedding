@@ -51,11 +51,14 @@ so that everyone a line names can sign in under their own name:
   the same are loaded once and the second is reported; tell them apart in the sheet (`Sr.`, `Jr.`,
   a middle name). A line whose people already sit in two households is left alone and reported.
 - **Email is the one contact column read**: an address on a line becomes the sign-in address of the
-  person it is plainly for: a lone person, or on a couple's line the one person the address names
-  (`neal.k@`, `nealkendall@`, or an initial and the surname, `bfitzwilliam@`). One that names both,
-  or neither, stays in the sheet for you to put on the right guest: a verified email signs a guest
-  in on its own, so a wrong guess would sign in the wrong person. Addresses, phones, dietary needs
-  and notes are still never read.
+  person on it that it is plainly for: the only person on a line that counts nobody else, or the
+  one person the address names (`neal.k@`, `nealkendall@`, or an initial and the surname,
+  `bfitzwilliam@`). One that names both or neither stays in the sheet for you to put on the right
+  guest; so does one on a line that counts a head it does not name (it may be theirs), and one under
+  a name two people on the line share a form of (`chris@` on "Chris and Christine"). A verified
+  email signs a guest in on its own, so a wrong guess would sign in the wrong person. Addresses,
+  phones, dietary needs and notes are still never read.
+- **A line of more than 20 heads** is taken for a tally or a typo, left alone and reported.
 
 ### Writing a line so its people can sign in by name
 
@@ -64,7 +67,10 @@ so that everyone a line names can sign in under their own name:
 | `Bram and Nora Fitzwilliam` | Both found by name. |
 | `Alma Jarvik and Jody O'Brennan` | Both found, under either surname. |
 | `Neal Kendall and Tilly` | Tilly is found as "Tilly Kendall" only. Write her surname if it differs. |
-| `Nora (Halloran) Fitzwilliam`, or `Nora Fitzwilliam née Halloran` | Also found under her maiden name. |
+| `Nora (Halloran) Fitzwilliam`, or `Nora Fitzwilliam née Halloran` | Also found under her maiden name. Brackets after the whole name (`Tom Bakewell (boss)`) are a note, not a name. |
+| `Ana Ruiz +1`, `Ana Ruiz and guest`, `Mr and Mrs Tom Bakewell` | The person named, and a head counted. |
+| `The Bakewell Family`, `Dr. and Mrs. Bakewell` | Nobody is named, so nobody is found by name: write their given names. |
+| `Corwin Zarkov Sr.` and `Corwin Zarkov Jr.` | Two people. A profile that says which it is finds that one; one that does not finds neither. |
 | `Mick and Christa`, `Edmund`, `Grandma Winslow`, `Rico Tess's bro` | Not found by name: a first name alone, or a relation, is not enough to sign someone in. They can still sign in with an email or phone on their guest record, or be linked by hand under **Sign-in reviews**. |
 
 The save reports how many lines have someone who cannot be found by name.
@@ -94,9 +100,13 @@ in the file at all.
 
 **An upload is applied once.** The sealed file stays in the repository and every later deploy reads
 it again; a deploy that finds its upload already applied does nothing, so whatever you have done in
-`/admin/guests` since (a newer copy, a guest removed, a name corrected) stands. An upload read from
-the sheet before the newest copy the site already holds is not applied either. To load the sheet
+`/admin/guests` since (a newer copy, a guest removed, a name corrected) stands. To load the sheet
 again, seal it again.
+
+**Uploads apply in the order the sheet was read.** The sealed file carries when the sheet was read
+(the moment of sealing, or `--read-at <ISO time>` if you copied the tab out earlier), and the copy
+it saves is dated by that. An upload read before the newest copy the site holds, yours pasted in
+the console included, is not applied over it.
 
 **A change to the sealed file is a change to the guest list**, and it cannot be read in review:
 anyone can seal a file to the public key, so merge a change to `ops/guest-list/` only when you made

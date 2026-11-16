@@ -2,7 +2,7 @@
  * Seals a copy of the planning sheet's Guests tab so it can be committed (the repository is public;
  * the guest list is not). See src/domain/guests/sealed-list.ts and docs/ops/guest-sheet.md.
  *
- *   npm run guests:seal -- <guests.tsv> --key <public key> [--source "S+T Wedding, Guests tab"]
+ *   npm run guests:seal -- <guests.tsv> --key <public key> [--source "S+T Wedding, Guests tab"] [--read-at <ISO time>]
  *
  * <guests.tsv> is the tab as copied out of the sheet (tab-separated, header row first) or a CSV
  * export of it; keep that file out of the repository. The key is the production deployment's
@@ -14,6 +14,10 @@
  * Email column. Addresses, phones, dietary needs and notes are blanked before sealing, so they are
  * not in the file at all. The sealed copy is written to ops/guest-list/guest-list.sealed.json, and
  * the next production deploy loads it, once.
+ *
+ * Uploads are applied in the order the sheet was read, and never over a copy read later. The
+ * reading time is now unless --read-at says otherwise: seal a file when you copy it out of the
+ * sheet, or say when you did.
  */
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
@@ -28,9 +32,15 @@ const flag = (name: string) => {
 };
 const source = flag('source') ?? 'planning sheet, Guests tab';
 const key = flag('key');
+const readAtArg = flag('read-at');
+const readAt = readAtArg ? new Date(readAtArg) : new Date();
+if (Number.isNaN(readAt.getTime()) || readAt.getTime() > Date.now()) {
+  console.error('--read-at must be a time, not in the future, e.g. 2026-11-16T00:50:00Z');
+  process.exit(2);
+}
 const file = args[0];
 if (!file || !key) {
-  console.error('usage: npm run guests:seal -- <guests.tsv> --key <public key from the production build log> [--source "..."]');
+  console.error('usage: npm run guests:seal -- <guests.tsv> --key <public key from the production build log> [--source "..."] [--read-at <ISO time>]');
   process.exit(2);
 }
 const text = textForSealing(readFileSync(file, 'utf8'));
@@ -39,7 +49,7 @@ if (!lines.length) {
   console.error('No guest lines were found. Give the whole Guests tab, header row first.');
   process.exit(1);
 }
-const upload: GuestListUpload = { v: 1, readAt: new Date().toISOString(), source, text };
+const upload: GuestListUpload = { v: 1, readAt: readAt.toISOString(), source, text };
 mkdirSync(dirname(SEALED_LIST_PATH), { recursive: true });
 writeFileSync(SEALED_LIST_PATH, `${JSON.stringify(sealGuestList(JSON.stringify(upload), key), null, 2)}\n`);
 // Counts only: nothing of the list is printed.

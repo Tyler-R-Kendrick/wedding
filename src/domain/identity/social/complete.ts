@@ -247,11 +247,12 @@ export async function completeSocialSignIn(
   const emailGuest = emailMatches.length === 1 ? emailMatches[0]! : emailMatches.length > 1 ? null : null;
   // A fit that rests on a slip in the given name is one letter from being someone else: it is kept
   // for the couple to look at (with who it nearly was), and signs in nobody.
-  const nearMiss = confidence === 'one' && rank !== null && rank > SIGN_IN_MAX_RANK;
+  const nearMiss = confidence !== 'none' && rank !== null && rank > SIGN_IN_MAX_RANK;
   const nameGuest = confidence === 'one' && !nearMiss ? nameMatches[0]! : null;
 
   if (emailMatches.length > 1) return finishGuestFailure('ambiguous', emailMatches.map((m) => m.id));
-  if (confidence === 'ambiguous') return finishGuestFailure('ambiguous', nameMatches.map((m) => m.id));
+  // Two guests the name nearly fits are no reason to turn away a verified email that is one guest's.
+  if (confidence === 'ambiguous' && !nearMiss) return finishGuestFailure('ambiguous', nameMatches.map((m) => m.id));
 
   if (emailGuest && nameGuest && emailGuest.id !== nameGuest.id) {
     return finishGuestFailure('email_name_conflict', [emailGuest.id, nameGuest.id]);

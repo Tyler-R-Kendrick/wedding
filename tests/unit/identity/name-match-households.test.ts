@@ -364,6 +364,45 @@ describe('names that must not sign in the wrong person', () => {
     expect(who({ name: 'Corwin Zarkov' })).toBe('ambiguous:junior+senior');
   });
 
+  it('S-22: a guest named exactly does not beat a relative whose name is a short or long form of it', () => {
+    const who = findIn([
+      { id: 'chris', householdId: 'a', firstName: 'Chris', lastName: 'Millwick' },
+      { id: 'christine', householdId: 'a', firstName: 'Christine', lastName: 'Millwick' },
+      { id: 'sam', householdId: 'b', firstName: 'Sam', lastName: 'Cartwell' },
+      { id: 'samantha', householdId: 'c', firstName: 'Samantha', lastName: 'Cartwell' },
+      { id: 'sam-other', householdId: 'd', firstName: 'Sam', lastName: 'Ellery' },
+    ]);
+    // The sheet writes what the couple call someone; a profile writes what they call themselves.
+    expect(who({ name: 'Chris Millwick' })).toBe('ambiguous:chris+christine');
+    expect(who({ name: 'Christine Millwick' })).toBe('ambiguous:chris+christine');
+    expect(who({ givenName: 'Sam', familyName: 'Cartwell' })).toBe('ambiguous:sam+samantha');
+    // A short form under another surname is nobody's rival.
+    expect(who({ name: 'Sam Ellery' })).toBe('sam-other');
+    expect(who({ name: 'Samantha Ellery' })).toBe('sam-other');
+  });
+
+  it('a name that is two people’s is nobody’s own', () => {
+    const who = findIn([
+      { id: 'tom', householdId: 'a', firstName: 'Tom', lastName: 'Bakewell' },
+      { id: 'mary', householdId: 'a', firstName: 'Mary', lastName: 'Bakewell' },
+    ]);
+    for (const name of ['Tom & Mary Bakewell', 'Tom and Mary Bakewell', 'Mary + Tom Bakewell']) expect(who({ name }), name).toBe('none');
+    expect(who({ givenName: 'Tom & Mary', familyName: 'Bakewell' })).toBe('none');
+    expect(who({ name: 'Tom Bakewell' })).toBe('tom');
+  });
+
+  it('a profile that says which of a father and son it is finds that one, and never the other', () => {
+    const who = findIn([
+      { id: 'senior', householdId: 'a', firstName: 'Corwin', lastName: 'Zarkov Sr.' },
+      { id: 'junior', householdId: 'b', firstName: 'Corwin', lastName: 'Zarkov Jr.' },
+    ]);
+    expect(who({ name: 'Corwin Zarkov Jr.' })).toBe('junior');
+    expect(who({ name: 'Corwin Zarkov, Jr' })).toBe('junior');
+    expect(who({ givenName: 'Corwin', familyName: 'Zarkov Sr' })).toBe('senior');
+    expect(who({ name: 'Corwin Zarkov Senior' })).toBe('senior');
+    expect(who({ name: 'Corwin Zarkov III' })).toBe('none');
+  });
+
   it('a very long or bracket-heavy name costs nothing and matches nobody', () => {
     const many: G[] = Array.from({ length: 200 }, (_v, i) => ({ id: `g${i}`, householdId: `h${i}`, firstName: `Given${i}`, lastName: `Surname${i}` }));
     const who = findIn(many);
