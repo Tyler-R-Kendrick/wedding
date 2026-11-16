@@ -801,3 +801,181 @@ textarea.flow-input {
   margin: 0;
   color: var(--color-on-surface-muted);
 }
+
+/*
+ * A saved group and the actions on it (the bulk group on /admin/invitations): tick boxes down the
+ * rows, and above them a line that says how many are in the group and the actions on all of them.
+ *
+ * What stays at the top of the viewport while the admin works down the list depends on the room.
+ * From tablet up it is the whole bar, one line. On a phone the actions wrap to three or four lines,
+ * and a bar that tall would cover a quarter of the screen (and all of it at 400% zoom), so there
+ * only the first line sticks (who is in the group) and the actions scroll away with the page.
+ */
+.flow-bulk {
+  display: grid;
+}
+
+/* On a phone the bar is no box of its own: its two lines are laid out by the list's column, so the first can stick. */
+.flow-bulk__bar {
+  display: contents;
+}
+
+.flow-bulk__head {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm) var(--spacing-md);
+  align-items: center;
+  padding-block: var(--spacing-sm);
+  background: var(--color-neutral);
+  border-block-end: 1px solid var(--color-outline);
+}
+
+.flow-bulk__all,
+.flow-bulk__pick {
+  display: inline-flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+  min-height: 2.75rem;
+  cursor: pointer;
+}
+
+.flow-bulk__pick {
+  justify-content: center;
+  min-width: 2.75rem;
+}
+
+.flow-bulk__all input,
+.flow-bulk__pick input {
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: 0;
+  accent-color: var(--color-secondary);
+}
+
+/* A tick box brought into view by the keyboard comes to rest below whatever is stuck, never under it. */
+.flow-bulk__pick input {
+  scroll-margin-block-start: calc(var(--flow-bulk-stuck, 4rem) + var(--spacing-md));
+}
+
+.flow-bulk__count {
+  color: var(--color-on-surface-muted);
+}
+
+.flow-bulk__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  align-items: center;
+  padding-block: var(--spacing-sm);
+  border-block-end: 1px solid var(--color-outline);
+}
+
+.flow-bulk__actions .flow-anchor {
+  display: contents;
+}
+
+.flow-bulk__actions .flow-announce {
+  flex-basis: auto;
+}
+
+/* Unavailable, drawn one way for every action: muted ink and a dashed edge, never opacity (admin-media.css). */
+.flow-bulk__actions [aria-disabled="true"] {
+  color: var(--color-on-surface-muted);
+  text-decoration: none;
+  cursor: not-allowed;
+  background: transparent;
+  border: 1px dashed var(--color-on-surface-muted);
+}
+
+.flow-bulk__all input:focus-visible,
+.flow-bulk__pick input:focus-visible,
+.flow-bulk__actions [aria-disabled="true"]:focus-visible {
+  outline: 2px solid var(--color-secondary);
+  outline-offset: 2px;
+}
+
+.flow-bulk__hint,
+.flow-bulk__note {
+  max-width: 62ch;
+  margin-block: var(--spacing-sm);
+}
+
+.flow-bulk__hint {
+  color: var(--color-on-surface-muted);
+}
+
+.flow-bulk__note[data-tone="error"] {
+  color: var(--color-error);
+}
+
+/* The list runs as wide as the bar, and the bar's rule is its top edge: one hairline, not two. */
+.flow-bulk .flow-rows {
+  max-width: none;
+  border-top: 0;
+}
+
+/* Tick box, then the record. */
+.flow-bulk__row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--spacing-sm) var(--spacing-md);
+  align-items: center;
+  justify-content: stretch;
+}
+
+.flow-bulk__row[data-selected] {
+  background: var(--color-surface);
+}
+
+@media (width >= 48rem) {
+  .flow-bulk__bar {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm) var(--spacing-md);
+    align-items: center;
+    padding-block: var(--spacing-sm);
+    background: var(--color-neutral);
+    border-block-end: 1px solid var(--color-outline);
+  }
+
+  .flow-bulk__head {
+    position: static;
+    padding-block: 0;
+    border-block-end: 0;
+  }
+
+  .flow-bulk__actions {
+    padding-block: 0;
+    border-block-end: 0;
+  }
+}
+
+/* The links a bulk "make links" shows once: a household, then its link, one under another. */
+.flow-bulk__links {
+  display: grid;
+  gap: var(--spacing-sm);
+  max-height: 24rem;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+
+.flow-bulk__links li {
+  display: grid;
+  gap: var(--spacing-xs);
+  padding-block-end: var(--spacing-sm);
+  border-block-end: 1px solid var(--color-outline);
+}
+
+.flow-bulk__names {
+  max-height: 12rem;
+  margin: 0;
+  overflow: auto;
+}

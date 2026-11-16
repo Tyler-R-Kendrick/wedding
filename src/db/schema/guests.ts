@@ -38,6 +38,12 @@ export const households = pgTable('households', {
    * sheet find the household again after either name changes (src/domain/guests/sheet-reconcile).
    */
   sheetLabel: text('sheet_label'),
+  /**
+   * In the couple's bulk group on /admin/invitations: the households the next bulk action (make
+   * links, mark as sent) applies to. Saved, so the group is still there on the next visit and is
+   * the same for both of them. It says nothing about the household itself.
+   */
+  inBulkGroup: boolean('in_bulk_group').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 });

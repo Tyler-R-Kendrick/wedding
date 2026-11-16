@@ -2,8 +2,9 @@ import type { Metadata } from 'next';
 import { FilterBar } from '@/components/admin/flow/records';
 import { hasEntitlement } from '@/contracts/principal';
 import { adminInvoke, adminPrincipal } from '../_lib/invoke';
-import { Checkbox } from '../_components/ops';
+import { Checkbox, Input } from '../_components/ops';
 import { ConsoleGate, ConsolePage, DataTable, Day, Note, Section, Stamp } from '../_components/console';
+import { HouseholdGroup, type HouseholdGroupRow } from './_components/HouseholdGroup';
 import { IssueLinkFlow } from './_components/InvitationFlows';
 import { InvitationList, type InvitationRowView } from './_components/InvitationList';
 
@@ -28,6 +29,15 @@ type Inv = {
   rotatedFromId: string | null;
 };
 
+/** What the household list can be narrowed to. */
+const STATES = [
+  { value: 'all', label: 'Every household' },
+  { value: 'group', label: 'In the group' },
+  { value: 'nolink', label: 'No link yet' },
+  { value: 'notsent', label: 'Link made, not sent' },
+  { value: 'sent', label: 'Sent' },
+];
+
 const count = (n: number, one: string, many: string) => (n === 0 ? `no ${many}` : `${n} ${n === 1 ? one : many}`);
 
 /**
@@ -43,11 +53,12 @@ export default async function InvitationsPage({ searchParams }: { searchParams: 
   const sp = await searchParams;
   const principal = await adminPrincipal();
   if (principal.kind !== 'admin') return <ConsoleGate what="Invitations" />;
-  const [inv, hh, ev] = await Promise.all([
+  const [inv, hh, ev, standing] = await Promise.all([
     adminInvoke<{ invitations: Inv[]; truncated: boolean }>('admin_list_invitations', {}, { method: 'GET' }),
     adminInvoke<{ households: { id: string; name: string }[]; truncated: boolean }>('admin_list_households', {}, { method: 'GET' }),
     // Needs content access as well as guest access; without it the flow asks for event keys as text.
     hasEntitlement(principal, 'admin_content') ? adminInvoke<{ events: { slug: string; name: string }[] }>('admin_list_events', {}, { method: 'GET' }) : null,
+    adminInvoke<{ households: HouseholdGroupRow[] }>('admin_list_invitation_households', {}, { method: 'GET' }),
   ]);
   const rows = inv.ok ? inv.value.data.invitations : [];
   const households = (hh.ok ? hh.value.data.households : []).map((h) => ({ value: h.id, label: h.name }));
@@ -57,6 +68,16 @@ export default async function InvitationsPage({ searchParams }: { searchParams: 
   const usual = known.filter((k) => k === 'ceremony' || k === 'reception');
   const defaultEvents = usual.length ? usual : known;
   const showRevoked = sp.revoked === 'on';
+
+  // The households and the group. The search and the filter change which rows are drawn, never who
+  // is in the group; and the list is not paged, because a group is gathered across all of it.
+  const everyHousehold = standing.ok ? standing.value.data.households : [];
+  const q = (sp.q ?? '').trim().toLowerCase();
+  const stateFilter = STATES.some((x) => x.value === sp.state) ? (sp.state as string) : 'all';
+  const shownIds = everyHousehold
+    .filter((h) => !q || h.name.toLowerCase().includes(q))
+    .filter((h) => (stateFilter === 'group' ? h.inGroup : stateFilter === 'nolink' ? h.link === 'none' : stateFilter === 'notsent' ? h.link !== 'none' && !h.sentAt : stateFilter === 'sent' ? Boolean(h.sentAt) : true))
+    .map((h) => h.id);
 
   const view: InvitationRowView[] = rows.map((r) => ({
     id: r.id,
@@ -74,16 +95,28 @@ export default async function InvitationsPage({ searchParams }: { searchParams: 
   return (
     <ConsolePage
       title="Invitations"
-      lede="Each household’s link to its invitation. A link shows who is invited and lets them claim their place; it is shown once when made, and replaced if it leaks or is lost."
-      notice={{ error: !inv.ok ? inv.error.message : undefined }}
+      lede="Each household’s link to its invitation, and whether it has been sent. A link shows who is invited and lets them claim their place; it is shown once when made, and replaced if it leaks or is lost."
+      notice={{ error: !inv.ok ? inv.error.message : !standing.ok ? standing.error.message : undefined }}
       actions={<IssueLinkFlow households={households} events={events} defaultEvents={defaultEvents} />}
     >
       {(inv.ok && inv.value.data.truncated) || (hh.ok && hh.value.data.truncated) ? (
         <Note>There are more links or households than this screen lists at once. Only the first {rows.length} links and {households.length} households are shown.</Note>
       ) : null}
+      <Section title="Households" id="households">
+        <Note>Marking a household as sent is what lets its guests sign in with Google or Facebook by name.</Note>
+        <FilterBar submitLabel="Show">
+          <Input id="q" name="q" label="Household name" defaultValue={sp.q ?? ''} />
+          <Input id="state" name="state" label="Which households" defaultValue={stateFilter} options={STATES} />
+          {showRevoked ? <input type="hidden" name="revoked" value="on" /> : null}
+        </FilterBar>
+        <HouseholdGroup rows={everyHousehold} shownIds={shownIds} events={events} defaultEvents={defaultEvents} filtered={Boolean(q) || stateFilter !== 'all'} />
+      </Section>
+
       <Section title="Links" id="links">
         <FilterBar submitLabel="Show">
           <Checkbox id="revoked" name="revoked" label="Show replaced and revoked links" defaultChecked={showRevoked} />
+          {sp.q ? <input type="hidden" name="q" value={sp.q} /> : null}
+          {stateFilter !== 'all' ? <input type="hidden" name="state" value={stateFilter} /> : null}
         </FilterBar>
         <InvitationList rows={view} showRevoked={showRevoked} />
       </Section>

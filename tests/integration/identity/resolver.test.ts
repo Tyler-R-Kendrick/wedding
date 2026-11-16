@@ -213,13 +213,15 @@ describe('principal resolver', () => {
     // `admin_mark_invitation_sent`), ui-only navigate/read/write.
     // 93 -> 94: `admin_guest_sheet`, the planning sheet on /admin/guests (ui-only read).
     // 94 -> 95: `admin_upload_guest_sheet`, saving a new copy of it (ui-only action).
-    // 95 -> 99: first-party visit telemetry (`admin_site_traffic`, `admin_list_sessions`,
+    // 95 -> 99: the bulk group on /admin/invitations (`admin_list_invitation_households`,
+    // `admin_set_bulk_group`, `admin_mark_households_sent`, `admin_issue_invitations`), ui only.
+    // 99 -> 103: first-party visit telemetry (`admin_site_traffic`, `admin_list_sessions`,
     // `admin_session_detail`, `admin_site_errors`), ui-only reads behind `admin_integrations`.
-    // 99 -> 100: `admin_assistant_answer` (ui-only read), the admin console's assistant.
-    // 100 -> 103: the planning sheet against the guest list (`admin_guest_sheet_sync`, `admin_link_sheet_line`,
+    // 103 -> 104: `admin_assistant_answer` (ui-only read), the admin console's assistant.
+    // 104 -> 107: the planning sheet against the guest list (`admin_guest_sheet_sync`, `admin_link_sheet_line`,
     // `admin_add_household_from_sheet`).
-    // 103 -> 105: the Details screen (`admin_site_details`, `admin_update_site_details`).
-    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(105);
+    // 107 -> 109: the Details screen (`admin_site_details`, `admin_update_site_details`).
+    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(109);
     expect(names({ principal: ap, exposure: 'ai' }).filter((n) => n.startsWith('admin_'))).toEqual([]);
     // Level 15. The counts above are of the `admin_` namespace, so nothing here ever pinned the
     // GUEST-facing capabilities an admin's list also contains — and `meetsAuthLevel('guest', admin)`

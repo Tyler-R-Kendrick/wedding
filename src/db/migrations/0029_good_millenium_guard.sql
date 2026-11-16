@@ -1,0 +1,1 @@
+ALTER TABLE "households" ADD COLUMN "in_bulk_group" boolean DEFAULT false NOT NULL;

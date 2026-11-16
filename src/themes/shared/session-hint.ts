@@ -21,9 +21,9 @@ export interface SessionHint {
 
 export const SIGNED_OUT: SessionHint = { resolved: false, signedIn: false, distinctId: null, admin: false, viewAs: null, viewRole: null, viewing: false, portals: [] };
 
-/** The answer for one page. Keyed by its path: a tab outlives a page, and who is reading can change between two of them. */
-let probe: { path: string; asked: Promise<SessionHint> } | null = null;
-const currentPath = () => (typeof window === 'undefined' ? '' : window.location.pathname);
+let probe: Promise<SessionHint> | null = null;
+/** The page the kept answer was asked on. */
+let probedOn: string | null = null;
 
 function viewAsOf(v: unknown): SessionHint['viewAs'] {
   if (!v || typeof v !== 'object') return null;
@@ -52,16 +52,16 @@ function viewRoleOf(v: unknown): SessionHint['viewRole'] {
  * One request per page, whichever instance asks first. Only an answer is kept: a failed request
  * reads as signed out for now and is forgotten, so the next instance (or the next page) asks again
  * rather than showing "Sign in" to a signed-in guest for the rest of the visit.
- *
- * "Per page" is the path, not the tab. The root layout asks on every page (PostHog's identity),
- * including the console, and a move between pages does not reload the tab: an answer kept for the
- * tab would tell the guest pages what the console page heard, so an administrator who starts
- * browsing as a guest would get no "Inspecting as" band until they reloaded.
  */
 export function sessionProbe(fresh = false): Promise<SessionHint> {
-  const path = currentPath();
-  if (fresh || probe?.path !== path) probe = null;
-  if (probe) return probe.asked;
+  // An answer is for the page it was asked on. The root layout asks on every page now (analytics),
+  // the console included, and a move from there to the guest site without a reload ("Browse as a
+  // guest") is a move to a different session view: the band and the menu there must ask again, not
+  // be told what was true in the console.
+  const here = typeof window === 'undefined' ? '' : window.location.pathname;
+  if (fresh || probedOn !== here) probe = null;
+  if (probe) return probe;
+  probedOn = here;
   const asked: Promise<SessionHint> = fetch('/api/session', { credentials: 'same-origin', cache: 'no-store', headers: { accept: 'application/json' } })
     .then(async (r) => {
       if (!r.ok) throw new Error(`session probe: ${r.status}`);
@@ -83,9 +83,9 @@ export function sessionProbe(fresh = false): Promise<SessionHint> {
       };
     })
     .catch(() => {
-      if (probe?.asked === asked) probe = null;
+      if (probe === asked) probe = null;
       return SIGNED_OUT;
     });
-  probe = { path, asked };
+  probe = asked;
   return asked;
 }
