@@ -356,16 +356,18 @@ export function sheetSyncLines(text: string): { parse: GuestSheetParse; lines: S
  * The Guests tab with everything the site does not read taken out, for sealing: same header row
  * (so the copy still says which columns the sheet has and the site leaves alone), same lines, and
  * every cell of an address, phone, dietary or notes column blank. The Email column stays: it is
- * the one contact column the sync reads. Lines below the list's first blank line (the sheet's own
- * tallies) are dropped. Tab-separated, whatever came in.
+ * the one contact column the sync reads. Lines below the last one that names someone (the sheet's
+ * own tallies) are dropped. Tab-separated, whatever came in.
  */
 export function textForSealing(text: string): string {
   const firstLine = text.replace(/^﻿/, '').split(/\r?\n/, 1)[0] ?? '';
   const values = parseCsv(text.replace(/^﻿/, ''), { delimiter: firstLine.includes('\t') ? '\t' : ',', keepBlankRows: true });
   const [header = [], ...body] = values;
   const blank = header.map((h) => WITHHELD_FROM_SEALING(String(h ?? '')));
-  const end = body.findIndex((row) => row.every((v) => String(v ?? '').trim() === ''));
-  const kept = (end < 0 ? body : body.slice(0, end)).map((row) => header.map((_h, i) => (blank[i] ? '' : String(row[i] ?? ''))));
+  // Up to the last line that names someone: below it the sheet keeps its own tallies, with or
+  // without a blank line between, and those sit under whatever column they happen to be in.
+  const last = Math.max(0, ...parseGuestSheetText(text).rows.map((r) => r.sheetRow - 1));
+  const kept = body.slice(0, last).map((row) => header.map((_h, i) => (blank[i] ? '' : String(row[i] ?? ''))));
   const cellOut = (v: string) => v.replace(/[\t\r\n]+/g, ' ').trim();
   return [header.map((h) => cellOut(String(h ?? ''))), ...kept.map((row) => row.map(cellOut))].map((row) => row.join('\t')).join('\n');
 }

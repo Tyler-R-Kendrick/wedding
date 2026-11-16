@@ -263,6 +263,9 @@ describe('the sealed upload a deploy loads', () => {
     const b = sheetSyncLines(text);
     expect(b.lines).toEqual(a.lines);
     expect(b.parse).toEqual(a.parse);
+    // Tallies straight under the list, with no blank line between, are not part of it either.
+    const tallies = [HEADER, ...SHEET, ['', '', '', '', '', '', '', '', '', '', '', 'Adults', 'Kids'], ['', '', '', '', '', '', '53760', '', '', '', '1s', '28', '6']].map((r) => r.join('\t')).join('\n');
+    expect(textForSealing(tallies)).toBe(text);
     // A CSV export comes out the same.
     const csv = [HEADER, ...SHEET].map((r) => r.map((c) => (/[",]/.test(c) ? `"${c.replace(/"/g, '""')}"` : c)).join(',')).join('\n');
     expect(sheetSyncLines(textForSealing(csv)).lines).toEqual(a.lines);
