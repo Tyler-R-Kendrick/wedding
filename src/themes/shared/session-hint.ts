@@ -22,6 +22,8 @@ export interface SessionHint {
 export const SIGNED_OUT: SessionHint = { resolved: false, signedIn: false, distinctId: null, admin: false, viewAs: null, viewRole: null, viewing: false, portals: [] };
 
 let probe: Promise<SessionHint> | null = null;
+/** The page the kept answer was asked on. */
+let probedOn: string | null = null;
 
 function viewAsOf(v: unknown): SessionHint['viewAs'] {
   if (!v || typeof v !== 'object') return null;
@@ -52,8 +54,14 @@ function viewRoleOf(v: unknown): SessionHint['viewRole'] {
  * rather than showing "Sign in" to a signed-in guest for the rest of the visit.
  */
 export function sessionProbe(fresh = false): Promise<SessionHint> {
-  if (fresh) probe = null;
+  // An answer is for the page it was asked on. The root layout asks on every page now (analytics),
+  // the console included, and a move from there to the guest site without a reload ("Browse as a
+  // guest") is a move to a different session view: the band and the menu there must ask again, not
+  // be told what was true in the console.
+  const here = typeof window === 'undefined' ? '' : window.location.pathname;
+  if (fresh || probedOn !== here) probe = null;
   if (probe) return probe;
+  probedOn = here;
   const asked: Promise<SessionHint> = fetch('/api/session', { credentials: 'same-origin', cache: 'no-store', headers: { accept: 'application/json' } })
     .then(async (r) => {
       if (!r.ok) throw new Error(`session probe: ${r.status}`);
