@@ -140,14 +140,16 @@ jobs:
         include:
           - { kind: production, shard: 1, of: 2 }
           - { kind: production, shard: 2, of: 2 }
-          - { kind: test-server, shard: 1, of: 8 }
-          - { kind: test-server, shard: 2, of: 8 }
-          - { kind: test-server, shard: 3, of: 8 }
-          - { kind: test-server, shard: 4, of: 8 }
-          - { kind: test-server, shard: 5, of: 8 }
-          - { kind: test-server, shard: 6, of: 8 }
-          - { kind: test-server, shard: 7, of: 8 }
-          - { kind: test-server, shard: 8, of: 8 }
+          - { kind: test-server, shard: 1, of: 10 }
+          - { kind: test-server, shard: 2, of: 10 }
+          - { kind: test-server, shard: 3, of: 10 }
+          - { kind: test-server, shard: 4, of: 10 }
+          - { kind: test-server, shard: 5, of: 10 }
+          - { kind: test-server, shard: 6, of: 10 }
+          - { kind: test-server, shard: 7, of: 10 }
+          - { kind: test-server, shard: 8, of: 10 }
+          - { kind: test-server, shard: 9, of: 10 }
+          - { kind: test-server, shard: 10, of: 10 }
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: ./.github/actions/setup

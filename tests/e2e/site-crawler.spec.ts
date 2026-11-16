@@ -121,10 +121,12 @@ const REMOVED = ['/explore-caa', '/explore-caa/white-city-ballroom', '/things-to
 
 // A walk is cut into parts, each its own test, so no single test holds a worker for minutes and the
 // parts can run side by side: the administrator's 68 routes were one 100-second test, and the four
-// view-role previews one 140-second test. Every route is still opened by exactly one part.
+// view-role previews one 140-second test. Every route is still opened by exactly one part (for a
+// view role, by one part for each role).
 const ANON_PARTS = 2;
-const GUEST_PARTS = 2;
-const ADMIN_PARTS = 4;
+const GUEST_PARTS = 3;
+const ADMIN_PARTS = 6;
+const VIEW_ROLE_PARTS = 2;
 const WALK_MS = 240_000;
 
 test.describe.configure({ timeout: WALK_MS });
@@ -383,7 +385,7 @@ for (let index = 0; index < ADMIN_PARTS; index++) {
   });
 }
 
-for (const role of VIEW_ROLES) test(`the ${role} view-role preview opens the guest site read-only`, async ({ browser, request }, testInfo) => {
+for (const role of VIEW_ROLES) for (let index = 0; index < VIEW_ROLE_PARTS; index++) test(`the ${role} view-role preview opens the guest site read-only (part ${index + 1} of ${VIEW_ROLE_PARTS})`, async ({ browser, request }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile', 'view-role crawl is desktop review viewport only');
   const device = testInfo.project.use;
   const ctx = await browser.newContext({
@@ -404,6 +406,6 @@ for (const role of VIEW_ROLES) test(`the ${role} view-role preview opens the gue
   expect(body.ok, JSON.stringify(body)).toBe(true);
   expect(body.data?.token, role).toBeTruthy();
   await ctx.addCookies([{ name: VIEW_ROLE_COOKIE, value: body.data!.token!, url: BASE_URL, httpOnly: true, sameSite: 'Lax' }]);
-  await walk(page, 'view-role', role);
+  await walk(page, 'view-role', role, { index, parts: VIEW_ROLE_PARTS });
   await ctx.close();
 });
