@@ -721,12 +721,15 @@ interface SheetResult {
   people: number;
   withheldColumns: string[];
   missingColumns: string[];
+  guests?: { added: number; alreadyThere: number; completed: number; counted: number; cannotBeFoundByName: number; skippedLines: number };
 }
 
 /**
  * Update the console's copy of the planning sheet: paste the Guests tab (copied straight out of the
- * sheet, or a CSV export), read what would be saved, then save. Only the planning columns are kept;
- * the server drops addresses, emails, phones, dietary needs and notes before anything is stored.
+ * sheet, or a CSV export), read what would be saved, then save. Only the planning columns are kept
+ * in the copy; the server drops addresses, phones, dietary needs and notes before anything is
+ * stored. Saving also adds everyone a line names to the guest list, if they are not on it yet (an
+ * email on a line becomes that guest's sign-in address), so either person on a line can sign in.
  *
  * `secret`: the pasted tab (with those columns in it) is never kept on this device.
  */
@@ -743,7 +746,7 @@ export function UpdatePlanningSheetFlow({ hasCopy }: { hasCopy: boolean }) {
           title: 'Paste the Guests tab',
           lede: 'In the sheet, open the Guests tab, select everything (Ctrl or Cmd + A), copy it, and paste it here. A CSV export of the tab works too.',
           fields: ['text'],
-          render: (ctx) => <TextField ctx={ctx} name="text" label="The Guests tab" multiline rows={10} spellCheck={false} hint="Header row first. Addresses, emails, phones, dietary needs and notes are dropped before anything is saved." />,
+          render: (ctx) => <TextField ctx={ctx} name="text" label="The Guests tab" multiline rows={10} spellCheck={false} hint="Header row first. Addresses, phones, dietary needs and notes are dropped before anything is saved. An email on a line is kept as that guest’s sign-in address." />,
           ready: (v) => v.text.trim().length > 0,
           readyHint: { field: 'text', message: 'Paste the tab first.' },
           next: async (v) => {
@@ -759,7 +762,7 @@ export function UpdatePlanningSheetFlow({ hasCopy }: { hasCopy: boolean }) {
         },
         {
           title: 'Check it',
-          lede: 'Nothing has been saved yet. This is what the console will show.',
+          lede: 'Nothing has been saved yet. This is what the console will show. Saving also adds everyone a line names to the guest list, if they are not on it yet, so each of them can sign in under their own name. Nobody is removed or changed.',
           render: (ctx) => (
             <>
               <p className="flow-copy">{ctx.values.summary}</p>
@@ -781,7 +784,15 @@ export function UpdatePlanningSheetFlow({ hasCopy }: { hasCopy: boolean }) {
         input: (v) => ({ text: v.text, source: v.source, dryRun: false }),
         result: (data) => {
           const d = data as SheetResult;
-          return <p>{`Saved ${d.lines} lines, ${d.people} people.`}</p>;
+          const g = d.guests;
+          return (
+            <>
+              <p>{`Saved ${d.lines} lines, ${d.people} people.`}</p>
+              {g ? <p>{`Guest list: ${g.added} added, ${g.alreadyThere} already there${g.completed ? `, ${g.completed} completed` : ''}${g.counted ? `, ${g.counted} counted but not named` : ''}.`}</p> : null}
+              {g && g.cannotBeFoundByName ? <p>{`${g.cannotBeFoundByName} ${g.cannotBeFoundByName === 1 ? 'line has' : 'lines have'} someone with no surname or no given name, who cannot sign in with Google or Facebook by name until the sheet has both.`}</p> : null}
+              {g && g.skippedLines ? <p>{`${g.skippedLines} ${g.skippedLines === 1 ? 'line was' : 'lines were'} left alone: two guests already answer to a name on it. Sort those out below, then update again.`}</p> : null}
+            </>
+          );
         },
       }}
     />
