@@ -1,4 +1,3 @@
-import type { Instrumentation } from 'next';
 
 /**
  * Next.js instrumentation hook: runs once when a server process starts, before its first request.
@@ -105,13 +104,14 @@ export async function register() {
 type LocationSuggestionResolver = import('@/domain/travel/profile').LocationSuggestionResolver;
 
 /**
- * Next calls this for every error the server hits while answering a request (a render, a route
- * handler, a server action). The error is kept as a `source: 'server'` telemetry event so
- * `/admin` can show what visitors ran into; the request's headers, cookies and query string are
- * never read. Everything is loaded on first use, it does nothing under `TELEMETRY=off`, and it
- * swallows its own failures (src/lib/telemetry.ts).
+ * Every server-side failure Next catches, on every route: logged with its digest (the reference the
+ * error page shows), and sent to the hosted error tracker when one is connected. It is also kept as
+ * a `source: 'server'` telemetry event, so `/admin/errors` and the console's assistant can show what
+ * visitors ran into; that reads the request's path and method only, does nothing under
+ * `TELEMETRY=off`, and swallows its own failures (src/lib/telemetry.ts). Both are loaded on first
+ * use so a start that never fails pays nothing for them.
  */
-export const onRequestError: Instrumentation.onRequestError = async (error, request, context) => {
+export const onRequestError: import('next').Instrumentation.onRequestError = async (error, request, context) => {
   if (process.env.NEXT_RUNTIME !== 'nodejs') return;
   try {
     const { reportRequestError } = await import('@/lib/telemetry');
@@ -119,4 +119,6 @@ export const onRequestError: Instrumentation.onRequestError = async (error, requ
   } catch {
     // Never a second error on top of the first.
   }
+  const { recordRequestError } = await import('@/lib/observe/request-error');
+  await recordRequestError(error, request, context);
 };

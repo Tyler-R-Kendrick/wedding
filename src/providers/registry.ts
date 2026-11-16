@@ -37,6 +37,8 @@ import type { TwilioVerifyProvider } from './twilio-verify/types';
 import type { PlaceSearchProvider } from './place-search/types';
 import { createPlaceSearchProvider } from './place-search';
 import { createTwilioVerifyProvider } from './twilio-verify';
+import type { IssueTrackerProvider } from './issue-tracker/types';
+import { createIssueTrackerProvider } from './issue-tracker';
 
 /** Typed map from provider kind to its interface. */
 export interface ProviderMap {
@@ -58,6 +60,7 @@ export interface ProviderMap {
   jobs: JobsProvider;
   'twilio-verify': TwilioVerifyProvider;
   'place-search': PlaceSearchProvider;
+  'issue-tracker': IssueTrackerProvider;
 }
 
 type Factories = { [K in ProviderKind]: (deps: RegistryDeps) => ProviderMap[K] };
@@ -89,6 +92,7 @@ const factories: Factories = {
   },
   'twilio-verify': () => createTwilioVerifyProvider(env),
   'place-search': () => createPlaceSearchProvider(env),
+  'issue-tracker': () => createIssueTrackerProvider(env),
 };
 
 type Cache = Partial<{ [K in ProviderKind]: ProviderMap[K] }>;

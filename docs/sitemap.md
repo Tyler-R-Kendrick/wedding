@@ -118,7 +118,7 @@ A dynamic route’s Example column is the path the crawler opens. Further seed p
 | URL | Example | Audience | Method | Purpose | Expected |
 | --- | --- | --- | --- | --- | --- |
 | /api/health | /api/health | api | GET | Liveness. Public body is ok, db and time. Inventory (driver, providers, lifecycle) is for an admin or the HEALTH_TOKEN bearer. | 200 when the database is up, 503 when it is not. No guest data. |
-| /api/session | /api/session | api | GET | Whether this browser is signed in, for the account menu. Not a gate. | 200. Anonymous: signedIn false. A view-role preview names the role and nothing about a real guest. |
+| /api/session | /api/session | api | GET | Whether this browser is signed in, for the account menu, and whether the reader is an owner (who is then given the problem reporter’s pass). Not a gate. | 200. Anonymous: signedIn false. A view-role preview names the role and nothing about a real guest. |
 | /api/capabilities/[name] | /api/capabilities/admin_list_view_roles | api | GET | The capability door does not answer GET. | 405 Allow: POST. POST runs one capability. The crawler never POSTs except admin_set_view_role on the test server, to mint a preview. |
 | /api/capabilities/[name] | /api/capabilities/admin_list_view_roles | api | POST | The only HTTP door into the capability pipeline (CSRF, rate limit, audit). | 200 with { ok: true } when the principal may run it. 401 signed out, 403 without the entitlement, 405 is not used for POST. |
 | /api/ai/chat | /api/ai/chat | api | GET | The concierge stream is POST only. | 405 Allow: POST. |
@@ -144,6 +144,10 @@ A dynamic route’s Example column is the path the crawler opens. Further seed p
 | /api/uploads/jobs/run | /api/uploads/jobs/run | api | POST | Cron alias, same handler as GET. | 401 without the CRON_SECRET bearer. Never called by the crawler. |
 | /api/webhooks/resend | /api/webhooks/resend | api | GET | Resend inbound mail is POST only. | 405 Allow: POST. |
 | /api/webhooks/resend | /api/webhooks/resend | api | POST | Signed Resend inbound events. Forwards mail for the wedding address to the planner. | 401 or 400 without a valid Svix signature. The crawler does not post a body. |
+| /api/feedback | /api/feedback | api | GET | The problem reporter’s plain form, for the couple only (docs/ops/observability.md). | 404 to everyone but an owner: by the signed reporter pass, or a live owner session. 200 HTML for an owner. |
+| /api/feedback | /api/feedback | api | POST | Files a problem report from one of the couple as a Linear or GitHub issue. DELETE forgets the device’s pass. | 404 to everyone but an owner, and to a request another site made. The crawler never posts. |
+| /api/pulse | /api/pulse | api | POST | Where a browser reports an error it caught, with the steps before it. One log line; no identity. | 204 whatever is sent. The crawler never posts. |
+| /api/observe/[...path] | /api/observe/flags | api | POST | Same-origin door to PostHog for session tracing (also GET). Forwards the body and PostHog’s own headers; never a cookie or the visitor’s address. | 404 unless NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN is set. The crawler never posts. |
 | /travel/webhooks/duffel | /travel/webhooks/duffel | api | GET | Duffel booking events are POST only. | 405 Allow: POST. |
 | /travel/webhooks/duffel | /travel/webhooks/duffel | api | POST | Signed Duffel booking webhook. Not a guest page. | 404 when no webhook is configured, 401 when the signature is missing. The crawler does not post a body. |
 | /api/dev/inbox | /api/dev/inbox | api | GET | Development inbox of OTP mail captured by the mock mailer. | 404 when the dev gate is closed (production, and CI without the bearer). Otherwise 200 and the captured messages. The crawler does not call DELETE, which clears the inbox. |

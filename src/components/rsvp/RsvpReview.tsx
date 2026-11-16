@@ -1,6 +1,6 @@
 import { formatDeadline } from '@/domain/events/format';
 import { GuestCard } from '@/themes/guest';
-import posthog from 'posthog-js';
+import posthog from '@/lib/observe/posthog';
 import type { ThemeId } from '@/themes/types';
 import { Button } from './fields';
 import type { RsvpFormState } from './types';

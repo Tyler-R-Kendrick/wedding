@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import posthog from 'posthog-js';
+import posthog from '@/lib/observe/posthog';
 import { AdminFlow, type FieldErrors, type FlowStep } from '@/components/admin/flow/AdminFlow';
 import { Consequences, ReviewList, SelectField, TextField } from '@/components/admin/flow/fields';
 import { callCapability } from '@/components/handoff/client';

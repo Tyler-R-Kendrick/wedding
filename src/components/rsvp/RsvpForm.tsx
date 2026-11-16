@@ -2,7 +2,7 @@
 
 import { Placeholder } from '@/components/provenance/Placeholder';
 import { useRouter } from 'next/navigation';
-import posthog from 'posthog-js';
+import posthog from '@/lib/observe/posthog';
 import { useActionState, useEffect, useState, type ReactNode } from 'react';
 import type { MyRsvp } from '@/capabilities/rsvp';
 import type { RsvpPart } from '@/domain/rsvp/parts';

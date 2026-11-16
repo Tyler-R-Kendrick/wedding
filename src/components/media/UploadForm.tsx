@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import posthog from 'posthog-js';
+import posthog from '@/lib/observe/posthog';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { MyUploadItem } from '@/capabilities/media';
 import { callCapability } from './capabilityClient';
