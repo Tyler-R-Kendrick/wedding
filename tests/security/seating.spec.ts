@@ -10,7 +10,16 @@ test.beforeEach(({}, testInfo) => {
 const TABLE_NAME = 'Security Draft Table';
 let tableId = '';
 
-test.beforeAll(async ({ request }) => {
+test.beforeAll(async ({ request }, testInfo) => {
+  // Once, like the tests: the phone project's worker runs this hook too, at the same moment, and
+  // the two raced to create the same table (one got a 409).
+  if (testInfo.project.name !== 'desktop') return;
+  // The itinerary snapshot below includes the RSVP window, which is one setting for the whole
+  // server. It was recorded with the window open, which was true only because the RSVP specs had
+  // opened it earlier in the same run; on a server where they had not run yet, it failed. Open it
+  // here, as those specs do for themselves.
+  const open = await callCapability(request, 'admin_set_rsvp_window', 'admin', { mode: 'open', deadlineAt: null }, { idempotencyKey: key() });
+  expect(open.status, JSON.stringify(open.body)).toBe(200);
   await callCapability(request, 'admin_unpublish_seating', 'admin', {}, { idempotencyKey: key() });
   const overview = await callCapability(request, 'admin_seating_overview', 'admin', {});
   expect(overview.status).toBe(200);
@@ -23,7 +32,8 @@ test.beforeAll(async ({ request }) => {
   expect(seated.status, JSON.stringify(seated.body)).toBe(200);
 });
 
-test.afterAll(async ({ request }) => {
+test.afterAll(async ({ request }, testInfo) => {
+  if (testInfo.project.name !== 'desktop') return;
   await callCapability(request, 'admin_unpublish_seating', 'admin', {}, { idempotencyKey: key() });
 });
 
