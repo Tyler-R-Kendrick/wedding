@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
-import { WebMcpBridge } from '@/webmcp/WebMcpBridge';
+import { PostHogIdentity, WebMcpBridge } from '@/webmcp/WebMcpBridge';
 import { isWebMcpEnabled } from '@/webmcp/flag';
 import './globals.css';
 
@@ -32,6 +32,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en" suppressHydrationWarning>
       <body>
         {children}
+        <PostHogIdentity />
         {/* Renders nothing; registers WebMCP tools when the browser has document.modelContext. */}
         {isWebMcpEnabled() && <WebMcpBridge />}
       </body>

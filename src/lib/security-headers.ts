@@ -72,6 +72,20 @@ const IMAGE_SOURCES = "'self' data: blob: https:";
  */
 export const MODEL_HOSTS = 'https://huggingface.co https://*.huggingface.co https://*.hf.co';
 
+function posthogCspHosts(): string {
+  const host = process.env.NEXT_PUBLIC_POSTHOG_HOST;
+  if (!host) return '';
+
+  try {
+    const apiHost = new URL(host);
+    const assetsHost = new URL(host);
+    assetsHost.hostname = assetsHost.hostname.replace('.i.', '-assets.i.');
+    return `${apiHost.origin} ${assetsHost.origin}`;
+  } catch {
+    return '';
+  }
+}
+
 /**
  * The browser features this site asks for. The microphone and on-device speech recognition, for
  * the trip planner's dictation, on this origin only; everything else stays off.
@@ -85,19 +99,20 @@ export const PERMISSIONS_POLICY = 'camera=(), microphone=(self), geolocation=(),
  * page shows its captured page in a same-origin frame. The wedding site itself is never framed.
  */
 export function contentSecurityPolicy({ production }: SecurityHeaderOptions, { framing = 'none' }: { framing?: 'none' | 'self' } = {}): string {
+  const posthogHosts = posthogCspHosts();
   const directives: Record<string, string> = {
     'default-src': "'self'",
     // See the header comment: no nonce, so Next's inline RSC payload needs 'unsafe-inline'.
     // React's dev build uses eval() to rebuild server stacks in the browser; production does not.
     // 'wasm-unsafe-eval': WebAssembly compilation only, for the on-device models' runtime.
-    'script-src': production ? "'self' 'unsafe-inline' 'wasm-unsafe-eval'" : "'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'",
+    'script-src': `${production ? "'self' 'unsafe-inline' 'wasm-unsafe-eval'" : "'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'"}${posthogHosts ? ` ${posthogHosts}` : ''}`,
     // Next emits inline <style> for critical CSS, and React writes inline style attributes.
     'style-src': "'self' 'unsafe-inline'",
     'img-src': IMAGE_SOURCES,
     'media-src': "'self' blob: https:",
     'font-src': "'self'",
     // Same-origin, plus the Hub the on-device models download from. `next dev` adds an HMR websocket.
-    'connect-src': production ? `'self' ${MODEL_HOSTS}` : `'self' ${MODEL_HOSTS} ws: wss:`,
+    'connect-src': `${production ? `'self' ${MODEL_HOSTS}` : `'self' ${MODEL_HOSTS} ws: wss:`}${posthogHosts ? ` ${posthogHosts}` : ''}`,
     'worker-src': "'self' blob:",
     'manifest-src': "'self'",
     'object-src': "'none'",
