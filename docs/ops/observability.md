@@ -115,8 +115,15 @@ GitHub Issues is also supported (`GITHUB_ISSUES_TOKEN`, `GITHUB_ISSUES_REPO`), b
 screenshot and **this repository is public**, so a public repository is refused unless
 `GITHUB_ISSUES_ALLOW_PUBLIC=1`.
 
+The task runs in the Claude session that set it up, daily at 10:37 UTC, because a scheduled task
+can only use the connections of the session that made it. If that session is archived or deleted
+the sync stops: reports are still recorded, emailed where the mailer is configured, and logged, but
+no longer reach Linear on their own. Two ways back: set `LINEAR_API_KEY`, or make the task again
+from a Claude session that has the Linear and PostHog connectors, with the instructions in
+[problem-report-sync.md](problem-report-sync.md).
+
 To stop the sync: delete the scheduled task in Claude (it is listed with the account's scheduled
-tasks). Reports are then still recorded, emailed where the mailer is configured, and logged.
+tasks).
 
 ### When things are broken
 

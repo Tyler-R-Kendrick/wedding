@@ -165,9 +165,11 @@ that built this. They are recorded here so they can be changed knowingly.
   supports Turbopack on Next ≥ 15.4.1 (read from the package), but it fails the build when an upload
   fails, and it could not be exercised without a personal API key, so it is not wired in.
 - Triage is off for the Linear team, so reports land in Backlog.
-- The daily sync depends on a scheduled task in one Claude account. If that account's Linear or
-  PostHog connection lapses, reports stop reaching Linear (they are still recorded, emailed and
-  logged). `LINEAR_API_KEY` removes that dependency.
+- The daily sync depends on a scheduled task in one Claude session (a task made by an agent can
+  only use the connections of the session that made it). If that session is archived, or the
+  account's Linear or PostHog connection lapses, reports stop reaching Linear (they are still
+  recorded, emailed and logged). `LINEAR_API_KEY` removes that dependency;
+  `docs/ops/problem-report-sync.md` holds the task's instructions so it can be made again.
 - Server logs still live in Vercel's runtime log beyond what `src/lib/posthog-logs.ts` exports.
 
 ## Alternatives considered
