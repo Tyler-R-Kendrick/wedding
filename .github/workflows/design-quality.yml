@@ -10,6 +10,8 @@ on:
 
 permissions:
   contents: read
+  # To list a pull request's changed files (scripts/ci/reach.mjs).
+  pull-requests: read
 
 # One run per ref at a time; a new commit on a pull request cancels the run for the old one. A run
 # on `main` or in the merge queue is finishing something nobody is about to supersede.
@@ -123,11 +125,21 @@ jobs:
         shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      # On a pull request, with selection on, a suite none of the changed files can reach is skipped
+      # here; the merge queue and main always run it (scripts/ci/reach.mjs, scripts/ci/affected.mjs).
+      - name: Can this change reach the integration suite?
+        id: reach
+        run: node scripts/ci/reach.mjs integration
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CI_SELECTION: ${{ vars.CI_SELECTION }}
       - uses: ./.github/actions/setup
+        if: steps.reach.outputs.run == 'true'
 
       # Four shards of about equal recorded time (scripts/ci/vitest-plan.mjs). In one job the 83
       # files took 3.8 minutes at the median, the longest step outside Playwright.
       - name: Integration tests (vitest + PGlite), shard ${{ matrix.shard }} of 4
+        if: steps.reach.outputs.run == 'true'
         run: npm run test:integration -- $(node scripts/ci/vitest-plan.mjs integration ${{ matrix.shard }}/4)
 
   e2e:
@@ -152,24 +164,37 @@ jobs:
           - { kind: test-server, shard: 10, of: 10 }
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      # On a pull request, with selection on, a suite none of the changed files can reach is skipped
+      # here; the merge queue and main always run it (scripts/ci/reach.mjs, scripts/ci/affected.mjs).
+      - name: Can this change reach the e2e suite?
+        id: reach
+        run: node scripts/ci/reach.mjs e2e
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CI_SELECTION: ${{ vars.CI_SELECTION }}
       - uses: ./.github/actions/setup
+        if: steps.reach.outputs.run == 'true'
 
       # The key is the resolved Playwright version, so a version bump misses once. Headless shell
       # only: the specs never open a headed browser, and it is a third of the download.
       - name: Playwright version
+        if: steps.reach.outputs.run == 'true'
         id: pw
         run: echo "v=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
       - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        if: steps.reach.outputs.run == 'true'
         with:
           path: ~/.cache/ms-playwright
           key: pw-shell-${{ runner.os }}-${{ steps.pw.outputs.v }}
       # No `--with-deps`: the runner image already has Chromium's libraries, and installing them
       # again from Ubuntu's mirrors took 12 s at the median and 25 at p95 in every job.
       - run: npx playwright install chromium --only-shell
+        if: steps.reach.outputs.run == 'true'
 
       # Turbopack's build cache, seeded by main (the `build-cache` job) and only restored here.
       # With it the compile is a few seconds instead of half a minute.
       - uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        if: steps.reach.outputs.run == 'true'
         with:
           path: .next/cache
           key: next-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ github.sha }}
@@ -178,13 +203,14 @@ jobs:
       # Each shard builds for itself: with the cache that is quicker than waiting for a build job
       # and downloading its 480 MB. The typecheck `next build` repeats is the `static` job's.
       - name: Build
+        if: steps.reach.outputs.run == 'true'
         run: npm run build
         env:
           PGLITE_MEMORY: '1'
           BUILD_SKIP_TYPECHECK: '1'
 
       - name: Production-build specs against `next start`
-        if: matrix.kind == 'production'
+        if: steps.reach.outputs.run == 'true' && matrix.kind == 'production'
         # These assert production behaviour, including the proxy's `private, no-store` on
         # cookie-resolved public URLs. Phone and desktop are the review viewports.
         run: node scripts/ci/e2e-shard.mjs production ${{ matrix.shard }}/${{ matrix.of }}
@@ -210,7 +236,7 @@ jobs:
           TRUSTED_PROXY_HOPS: '1'
 
       - name: Identity, RSVP and security specs against a NODE_ENV=test server
-        if: matrix.kind == 'test-server'
+        if: steps.reach.outputs.run == 'true' && matrix.kind == 'test-server'
         # Two things exist only on this server, and both are deliberate:
         #   * the dev inbox and fixtures route, refused outright under NODE_ENV=production
         #     (security review S5); on a hosted runner they also require the DEV_INBOX_TOKEN
@@ -228,7 +254,7 @@ jobs:
       # The JSON report carries each test's time; `npm run e2e:durations` turns a run's reports
       # into tests/e2e/durations.json, which the shard plan reads. The HTML report rides along.
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        if: always()
+        if: always() && steps.reach.outputs.run == 'true'
         with:
           name: playwright-${{ matrix.kind }}-${{ matrix.shard }}
           path: |
@@ -238,9 +264,7 @@ jobs:
 
   build-cache:
     name: seed the build cache (main only)
-    # TEMPORARY, this pull request only: also seed from here, once, so the next run can show what a
-    # warm cache does before any of this is on main. Reverted in the next commit.
-    if: github.ref == 'refs/heads/main' || github.head_ref == 'claude/relaxed-wright-hk7l1o'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
