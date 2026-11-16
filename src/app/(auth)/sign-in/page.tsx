@@ -6,7 +6,15 @@ import { currentPrincipal } from '../_lib/invoke';
 import { isSafeReturnPath } from '@/domain/identity/routes';
 import { guestSignInLandingPath } from '@/domain/lifecycle/guest-portal';
 import { errorCopy } from '../_lib/errors';
-import { GUEST_SAVE_THE_DATE_PATH, SIGN_IN_CODE_PROMISE_EMAIL, SIGN_IN_CODE_PROMISE_PHONE, SIGN_IN_SAVE_THE_DATE_NOTE } from '../_lib/guest-auth-copy';
+import {
+  GUEST_SAVE_THE_DATE_PATH,
+  SIGN_IN_CODE_PROMISE_EMAIL,
+  SIGN_IN_CODE_PROMISE_PHONE,
+  SIGN_IN_SAVE_THE_DATE_NOTE,
+  SIGN_IN_TROUBLE_FOLLOW,
+  SIGN_IN_TROUBLE_LEAD,
+} from '../_lib/guest-auth-copy';
+import { GUEST_CONTACT_EMAIL, guestContactMailtoHref } from '@/domain/contact/copy';
 import { Actions, AuthShell, Button, Field, Notice } from '../_components/kit';
 import { isPhoneSignInAvailable } from '@/lib/phone-sign-in';
 import { OtherSignInMethods } from './_components/OtherSignInMethods';
@@ -58,8 +66,8 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
       title="Sign in"
       lede={
         <p>
-          {texting ? 'Sign in with a six-digit code by text or email — no password needed.' : 'Sign in with a six-digit code by email — no password needed.'}{' '}
-          {SIGN_IN_SAVE_THE_DATE_NOTE}
+          {SIGN_IN_SAVE_THE_DATE_NOTE}{' '}
+          {texting ? 'We’ll send you a six-digit code by text or email — no password needed.' : 'We’ll email you a six-digit code — no password needed.'}
         </p>
       }
     >
@@ -78,7 +86,7 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
         <>
           <form action={sendPhoneSignInCode}>
             {next ? <input type="hidden" name="next" value={next} /> : null}
-            <Field id="phone" label="Mobile number" hint="US numbers only for now. Include area code.">
+            <Field id="phone" label="Mobile number" hint="The number from your save-the-date details. US numbers only, with area code.">
               <input id="phone" name="phone" type="tel" className="auth-input" autoComplete="tel" inputMode="tel" required maxLength={32} aria-describedby="phone-hint" />
             </Field>
             <Actions>
@@ -91,7 +99,7 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
         <>
           <form action={sendSignInCode}>
             {next ? <input type="hidden" name="next" value={next} /> : null}
-            <Field id="email" label="Email address" hint="Use the email you expect correspondence on.">
+            <Field id="email" label="Email address" hint="The address from your save-the-date details.">
               <input id="email" name="email" type="email" className="auth-input" autoComplete="email" inputMode="email" required maxLength={254} aria-describedby="email-hint" />
             </Field>
             <Actions>
@@ -102,8 +110,22 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
         </>
       )}
       <OtherSignInMethods next={sp.next} />
+      <SignInHelp />
       <AdminSignInHint />
     </AuthShell>
+  );
+}
+
+/** For a guest whose save-the-date contact detail doesn't work: write to the couple with the one they want. */
+function SignInHelp() {
+  return (
+    <p className="auth-hint">
+      {SIGN_IN_TROUBLE_LEAD} Email{' '}
+      <a className="auth-link" href={guestContactMailtoHref()}>
+        {GUEST_CONTACT_EMAIL}
+      </a>{' '}
+      {SIGN_IN_TROUBLE_FOLLOW}
+    </p>
   );
 }
 

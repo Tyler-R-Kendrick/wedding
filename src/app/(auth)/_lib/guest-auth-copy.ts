@@ -19,5 +19,10 @@ export const SIGN_IN_CODE_PROMISE_EMAIL =
   'If this matches our records, you’ll get a six-digit code within about a minute.';
 export const SIGN_IN_CODE_PROMISE_PHONE =
   'If this matches our records, we’ll text you a six-digit code within about a minute.';
+/** Which contact detail signs a guest in: the one collected with their save-the-date details. */
 export const SIGN_IN_SAVE_THE_DATE_NOTE =
-  'Still waiting on details? Your save-the-date will have what you need — there’s no rush.';
+  'Use the email address or mobile number we collected for your save-the-date.';
+/** The way out when that detail no longer works (or never reached us): write to the couple. */
+export const SIGN_IN_TROUBLE_LEAD = 'Having trouble signing in?';
+export const SIGN_IN_TROUBLE_FOLLOW =
+  'and tell us the email address or mobile number you’d like to sign in with. We’ll get you set up.';
