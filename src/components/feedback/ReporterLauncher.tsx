@@ -2,7 +2,7 @@
 
 import { Component, useEffect, useState, useSyncExternalStore, type ComponentType, type ReactNode } from 'react';
 import { FEEDBACK_PATH, REPORTER_EVENT, REPORTER_GLOBAL } from '@/lib/feedback/constants';
-import { onSessionHint, sessionProbe, type SessionHint } from '@/themes/shared/session-hint';
+import { askSession, onSessionHint, sessionAsked, type SessionHint } from '@/themes/shared/session-hint';
 import { fallbackHref, flushOutbox, isArmed, setArmed, subscribeArmed, type ReportRequest } from './reporter-client';
 
 /**
@@ -53,10 +53,13 @@ export function ReporterLauncher() {
   const armed = useSyncExternalStore(subscribeArmed, isArmed, () => false);
   const [opened, setOpened] = useState<{ Dialog: Dialog; request: ReportRequest & { n: number } } | null>(null);
 
-  // Learn from every session answer the page gets; ask for one only where an owner is likely.
+  // Learn from every session answer the page gets. Where the chrome has already asked (the account
+  // menu's effect runs before this one), that answer is on its way and nothing more is sent.
+  // Otherwise ask only where an owner is likely, and without becoming the page's remembered answer:
+  // that one outlives a soft navigation, and "Browse as a guest" leaves an admin page by one.
   useEffect(() => {
     const stop = onSessionHint(applyHint);
-    if (isArmed() || location.pathname.startsWith('/admin')) void sessionProbe();
+    if (!sessionAsked() && (isArmed() || location.pathname.startsWith('/admin'))) void askSession();
     return stop;
   }, []);
 

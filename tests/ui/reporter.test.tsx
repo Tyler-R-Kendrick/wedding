@@ -136,6 +136,42 @@ describe('the launcher', () => {
   });
 });
 
+describe('the launcher and the page’s session answer', () => {
+  const adminAnswer = () => answer({ signedIn: true, admin: true, reporter: true, viewAs: null, viewRole: null, portals: [] });
+  afterEach(() => window.history.pushState({}, '', '/'));
+
+  it('asks on an admin page without becoming the answer the chrome remembers', async () => {
+    // "Browse as a guest" leaves an admin page without reloading. If the launcher's question were
+    // the page's remembered answer, the guest page's band would read "nobody is being browsed as".
+    window.history.pushState({}, '', '/admin/guests');
+    const fetchMock = vi.fn(async () => adminAnswer());
+    vi.stubGlobal('fetch', fetchMock);
+    const { sessionAsked, sessionProbe } = await import('@/themes/shared/session-hint');
+    render(<ReporterLauncher />);
+    await waitFor(() => expect(isArmed()).toBe(true));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(sessionAsked()).toBe(false);
+
+    // The guest page's own question is a new request, with the new answer.
+    fetchMock.mockImplementation(async () => answer({ signedIn: true, admin: true, reporter: true, viewAs: { name: 'Ana', household: 'Testhouse', readOnly: true }, viewRole: null, portals: [] }));
+    const hint = await sessionProbe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(hint.viewAs).toEqual({ name: 'Ana', household: 'Testhouse', readOnly: true });
+  });
+
+  it('sends nothing of its own when the chrome has already asked, and still hears the answer', async () => {
+    window.history.pushState({}, '', '/admin');
+    const fetchMock = vi.fn(async () => adminAnswer());
+    vi.stubGlobal('fetch', fetchMock);
+    const { sessionProbe } = await import('@/themes/shared/session-hint');
+    const chrome = sessionProbe(true);
+    render(<ReporterLauncher />);
+    await chrome;
+    await waitFor(() => expect(isArmed()).toBe(true));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('the error-page button', () => {
   it('is not there for a guest', () => {
     const { container } = render(<ReportProblemButton digest="123" />);
