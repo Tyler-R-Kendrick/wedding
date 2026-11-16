@@ -41,6 +41,9 @@ export default async function VerifyPage({ searchParams }: { searchParams: Promi
   const isSms = usable?.kind === 'phone_sign_in';
   // The couple's own sign-in: the guest help line (write to the couple) would point them at themselves.
   const isAdmin = usable?.kind === 'admin_sign_in';
+  // Only a guest who typed the address or number can be told to check it: an invitation link's code
+  // goes to the email on file, which they never chose.
+  const typedContact = usable?.kind === 'sign_in' || usable?.kind === 'phone_sign_in';
   const lockedTime = usable?.lockedUntil ? new Date(usable.lockedUntil).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Chicago', timeZoneName: 'short' }) : null;
   return (
     <AuthShell
@@ -68,17 +71,17 @@ export default async function VerifyPage({ searchParams }: { searchParams: Promi
           .{' '}
           {isAdmin ? null : (
             <>
-              {isSms ? (
+              {!typedContact ? null : isSms ? (
                 <>
                   Make sure it’s the mobile number we collected for your save-the-date, or try{' '}
                   <Link className="auth-link" href="/sign-in?method=email">
                     email sign-in
                   </Link>{' '}
-                  instead.
+                  instead.{' '}
                 </>
               ) : (
-                'Make sure it’s the email address we collected for your save-the-date.'
-              )}{' '}
+                'Make sure it’s the email address we collected for your save-the-date. '
+              )}
               <SignInHelp lead="Still having trouble?" />
             </>
           )}
