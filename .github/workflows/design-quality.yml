@@ -161,26 +161,27 @@ jobs:
     timeout-minutes: 5
     strategy:
       fail-fast: false
+      # 14 test-server shards, for 25 jobs in this workflow. With stages.yml's 5 beside them that
+      # is 30; at 32 exactly one job waited 38 s for a runner on two runs in a row, and that wait
+      # was the whole run's.
       matrix:
         include:
           - { kind: production, shard: 1, of: 2 }
           - { kind: production, shard: 2, of: 2 }
-          - { kind: test-server, shard: 1, of: 16 }
-          - { kind: test-server, shard: 2, of: 16 }
-          - { kind: test-server, shard: 3, of: 16 }
-          - { kind: test-server, shard: 4, of: 16 }
-          - { kind: test-server, shard: 5, of: 16 }
-          - { kind: test-server, shard: 6, of: 16 }
-          - { kind: test-server, shard: 7, of: 16 }
-          - { kind: test-server, shard: 8, of: 16 }
-          - { kind: test-server, shard: 9, of: 16 }
-          - { kind: test-server, shard: 10, of: 16 }
-          - { kind: test-server, shard: 11, of: 16 }
-          - { kind: test-server, shard: 12, of: 16 }
-          - { kind: test-server, shard: 13, of: 16 }
-          - { kind: test-server, shard: 14, of: 16 }
-          - { kind: test-server, shard: 15, of: 16 }
-          - { kind: test-server, shard: 16, of: 16 }
+          - { kind: test-server, shard: 1, of: 14 }
+          - { kind: test-server, shard: 2, of: 14 }
+          - { kind: test-server, shard: 3, of: 14 }
+          - { kind: test-server, shard: 4, of: 14 }
+          - { kind: test-server, shard: 5, of: 14 }
+          - { kind: test-server, shard: 6, of: 14 }
+          - { kind: test-server, shard: 7, of: 14 }
+          - { kind: test-server, shard: 8, of: 14 }
+          - { kind: test-server, shard: 9, of: 14 }
+          - { kind: test-server, shard: 10, of: 14 }
+          - { kind: test-server, shard: 11, of: 14 }
+          - { kind: test-server, shard: 12, of: 14 }
+          - { kind: test-server, shard: 13, of: 14 }
+          - { kind: test-server, shard: 14, of: 14 }
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       # On a pull request, with selection on, a suite none of the changed files can reach is skipped

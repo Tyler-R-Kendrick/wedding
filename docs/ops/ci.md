@@ -14,7 +14,7 @@ whether all of them passed and is the one check to require in branch protection.
 | unit · ui · stage tests (2 shards) | `npm run test:unit` | 3 min |
 | integration (6 shards) | `npm run test:integration`, files dealt out by recorded time | 4 min |
 | e2e production (2 shards) | the `PRODUCTION_SPECS` against `next start` | 5 min |
-| e2e test-server (16 shards) | the `TEST_SERVER_SPECS` against the production build started with `NODE_ENV=test` | 5 min |
+| e2e test-server (14 shards) | the `TEST_SERVER_SPECS` against the production build started with `NODE_ENV=test` | 5 min |
 
 The budget is the job's `timeout-minutes`. A job that outgrows it fails, so CI getting slower is a
 red build. The budgets are loose on purpose (a slow runner should not fail a build); tighten them
@@ -43,7 +43,9 @@ Setup is the same in every job (`.github/actions/setup`): Node from `.nvmrc`, bu
 - A file with a serial block stays whole within a project. A file that changes something for the
   whole server names it in a `// @server-state <name>` comment; every unit with the same name gets a
   shard, and so a server, of its own.
-- Changing the number of shards is one edit to the matrix in the workflow. The plan needs at least
+- Changing the number of shards is one edit to the matrix in the workflow. Count the jobs first:
+  this workflow has 25 and `stages.yml` 5, and at 32 running together one job waited 38 s for a
+  runner, which set the time of the whole run. The plan needs at least
   as many test-server shards as there are units sharing one `@server-state` name (four today) and
   fails if it has fewer.
 
