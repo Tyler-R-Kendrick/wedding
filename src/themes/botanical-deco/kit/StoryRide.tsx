@@ -143,6 +143,12 @@ export function StoryRide({ stops, cards, lineName, title }: { stops: RideStop[]
   const userDriven = useRef(false);
   const touchRelease = useRef(0);
   const flight = useRef<{ raf: number; to: number } | null>(null);
+  /**
+   * The station the engine last put the train at. `at` says the same once React has rendered, which
+   * on a slow phone is after the next tap: "Next stop" then "Back a stop" read the station before
+   * the first ride and went back two stops.
+   */
+  const station = useRef(0);
   /** A jump of more than one stop runs express: only the moment you leave and the one you reach are shown. */
   const express = useRef<{ from: number; to: number } | null>(null);
   const reframe = useRef<() => void>(() => {});
@@ -360,6 +366,7 @@ export function StoryRide({ stops, cards, lineName, title }: { stops: RideStop[]
       if (index !== last.index || docked !== last.docked || toward !== last.toward) {
         if (index !== last.index) el.dataset.line = stops[index]?.line ?? 'red';
         last = { index, docked, toward };
+        station.current = index;
         setAt(last);
       }
     };
@@ -664,7 +671,7 @@ export function StoryRide({ stops, cards, lineName, title }: { stops: RideStop[]
   };
 
   /** Queue presses: two quick taps on Next ride two stops, not one. */
-  const step = (delta: number) => go((flight.current?.to ?? at.index) + delta);
+  const step = (delta: number) => go((flight.current?.to ?? station.current) + delta);
 
   const current = stops[at.index];
   const upcoming = at.docked ? stops[at.index + 1] : stops[at.toward];
