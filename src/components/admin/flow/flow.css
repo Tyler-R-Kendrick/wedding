@@ -538,6 +538,10 @@ textarea.flow-input {
   border: 1px solid var(--color-error);
 }
 
+.flow-consequences--note {
+  border-color: var(--ops-outline);
+}
+
 .flow-consequences > * {
   margin: 0;
 }

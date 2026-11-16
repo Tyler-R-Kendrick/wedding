@@ -9,7 +9,7 @@ import { JobQueue } from './queue';
  * Housekeeping: the only scheduler is the cron tick, so the cron route enqueues this job
  * (deduped) and the runner executes it like any other. Everything it deletes is derivable
  * or expired: idempotency rows past their TTL, rate-limit buckets nobody touched for a day
- * (fully refilled by then), and metrics past the retention window.
+ * (fully refilled by then), metrics past the retention window, and visit telemetry past its own.
  */
 export const HOUSEKEEPING_JOB_TYPE = 'housekeeping.purge';
 export const HOUSEKEEPING_MIN_INTERVAL_MS = 60 * 60_000;
@@ -73,7 +73,10 @@ export const housekeepingPurge: JobHandler = async (_payload, _job, ctx) => {
   const { env } = await import('@/lib/env');
   const summary = await purgeHousekeeping(ctx.db, { now: ctx.now, metricsRetentionDays: env.METRICS_RETENTION_DAYS });
   const orphanedJobs = await deadOrphanedJobs(ctx.db, listJobTypes(), { now: ctx.now });
-  ctx.logger.info({ ...summary, orphanedJobs }, 'housekeeping purge');
+  // Visit telemetry past its own retention window (`TELEMETRY_RETENTION_DAYS`), whether or not it is still being recorded.
+  const { purgeTelemetry } = await import('@/domain/ops/telemetry');
+  const telemetry = await purgeTelemetry(ctx.db, new Date(ctx.now.getTime() - env.TELEMETRY_RETENTION_DAYS * 86_400_000));
+  ctx.logger.info({ ...summary, orphanedJobs, telemetrySessions: telemetry.sessions, telemetryEvents: telemetry.events }, 'housekeeping purge');
 };
 
 /** Idempotent (re-registering the same function is a no-op); tests that clear handlers call it again. */

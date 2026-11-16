@@ -101,7 +101,7 @@ describe('admin capability CRUD (integration)', () => {
     await seedSwarmE();
     await grantAdmin('owner+ops@example.test', 'owner');
     const session = await signIn('owner+ops@example.test', {}, 'admin_sign_in');
-    for (const name of ['admin_lifecycle_status', 'admin_search_audit', 'admin_jobs_overview', 'admin_flag_status', 'admin_ops_metrics', 'admin_provider_status'] as const) {
+    for (const name of ['admin_lifecycle_status', 'admin_search_audit', 'admin_jobs_overview', 'admin_flag_status', 'admin_ops_metrics', 'admin_provider_status', 'admin_site_traffic', 'admin_list_sessions', 'admin_site_errors'] as const) {
       const res = expectOkHttp(await call(name, {}, { cookie: session.cookie }));
       expect(res.data).toBeTruthy();
     }

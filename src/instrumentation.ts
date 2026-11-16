@@ -1,3 +1,4 @@
+
 /**
  * Next.js instrumentation hook: runs once when a server process starts, before its first request.
  * It refuses hosted AI models and installs the principal resolver, so every route resolves guests
@@ -104,11 +105,20 @@ type LocationSuggestionResolver = import('@/domain/travel/profile').LocationSugg
 
 /**
  * Every server-side failure Next catches, on every route: logged with its digest (the reference the
- * error page shows), and sent to the hosted error tracker when one is connected. Loaded on first
- * use so a start that never fails pays nothing for it.
+ * error page shows), and sent to the hosted error tracker when one is connected. It is also kept as
+ * a `source: 'server'` telemetry event, so `/admin/errors` and the console's assistant can show what
+ * visitors ran into; that reads the request's path and method only, does nothing under
+ * `TELEMETRY=off`, and swallows its own failures (src/lib/telemetry.ts). Both are loaded on first
+ * use so a start that never fails pays nothing for them.
  */
 export const onRequestError: import('next').Instrumentation.onRequestError = async (error, request, context) => {
   if (process.env.NEXT_RUNTIME !== 'nodejs') return;
+  try {
+    const { reportRequestError } = await import('@/lib/telemetry');
+    await reportRequestError(error, { path: request.path, method: request.method }, { routePath: context.routePath, routeType: context.routeType });
+  } catch {
+    // Never a second error on top of the first.
+  }
   const { recordRequestError } = await import('@/lib/observe/request-error');
   await recordRequestError(error, request, context);
 };

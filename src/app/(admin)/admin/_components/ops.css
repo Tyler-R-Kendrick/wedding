@@ -19,9 +19,11 @@
      than as a raw `font-family` literal further down the file. */
   --font-mono-ops: ui-monospace, "SFMono-Regular", "Liberation Mono", monospace;
 
-  max-width: 72rem;
-  margin-inline: auto;
-  padding: 1.5rem 1rem 4rem;
+  /* Inside the shell the work area starts at the rail, so the page is left-aligned with a measure
+     rather than centred in what is left of the window. */
+  width: 100%;
+  max-width: 76rem;
+  padding: var(--spacing-lg) var(--spacing-lg) var(--spacing-2xl);
 
   /* `var(--font-sans)` and `var(--font-display)` are defined nowhere in src/. They fell through to
      Tailwind's default stack, so the whole console rendered in Roboto / Helvetica Neue / Arial —
@@ -33,12 +35,30 @@
   color: var(--color-primary);
 }
 
+/* A dashboard uses the whole work area; a record screen keeps the measure above. */
+.ops--wide {
+  max-width: none;
+}
+
+/* Signed out there is no shell: the gate is a short centred column. */
+.admin-root--bare .ops {
+  max-width: 40rem;
+  margin-inline: auto;
+}
+
+/*
+ * The title names the screen; it does not announce it. One family across the console (the text
+ * face, at heading weight): the display face DESIGN.md names for headings is not a file this app
+ * ships, so `--font-h1` resolved to Georgia here and the title was the one line on every screen
+ * set in a different typeface from the rest.
+ */
 .ops-title {
-  margin: 1.5rem 0 0.25rem;
-  font-family: var(--font-h1), Georgia, "Times New Roman", serif;
-  font-weight: 400;
-  font-size: 2.25rem;
-  line-height: 1.1;
+  margin: 0;
+  font-weight: 500;
+  font-size: var(--text-h2);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
 }
 
 /*

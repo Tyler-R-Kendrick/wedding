@@ -159,6 +159,15 @@ const serverSchema = z.object({
   JOBS_BATCH_SIZE: intish(10, 1),
   /** housekeeping.purge keeps `metrics` rows this many days. */
   METRICS_RETENTION_DAYS: intish(30, 1),
+  /**
+   * First-party visit telemetry (sessions, page views, web vitals, errors; docs/ops/admin-guide.md).
+   * `off` records nothing and the ingestion route answers 204 without reading the body. Read at
+   * call time by `telemetryEnabled()` (src/lib/telemetry.ts); declared here so a malformed value
+   * fails at boot.
+   */
+  TELEMETRY: requiredBool(true),
+  /** housekeeping.purge keeps `visit_sessions` and `visit_events` rows this many days. */
+  TELEMETRY_RETENTION_DAYS: intish(90, 1),
 
   /**
    * Where a problem report from the couple is filed (src/providers/issue-tracker). Linear when

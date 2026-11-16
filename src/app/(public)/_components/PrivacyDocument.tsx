@@ -39,6 +39,12 @@ export function PrivacyDocument({ reader }: { reader: Reader }) {
               advertising.
             </p>
           </li>
+          <li className="credits__item">
+            <p className="credits__name">Visits</p>
+            <p>
+              Which pages are opened, on what kind of device and browser, how quickly they load, and any errors the site runs into, so we can see what is working and fix what is not. When you are signed in, this is linked to your invitation. We do not record your IP address or your location, and these records stay in this site’s own database. If your browser sends a Do Not Track or Global Privacy Control signal, your visits are not recorded. These records are deleted after about three months.
+            </p>
+          </li>
           {tracing ? (
             <li className="credits__item">
               <p className="credits__name">How a visit went</p>

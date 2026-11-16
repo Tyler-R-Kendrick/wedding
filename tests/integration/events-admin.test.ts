@@ -60,6 +60,15 @@ describe('admin_upsert_event without a position', () => {
     expect(renamed).toMatchObject({ sortOrder: brunch.sortOrder, slug: 'farewell-brunch', name: 'Sunday farewell brunch', placeholder: false });
     await db.delete(events).where(eq(events.id, brunch.id));
   });
+
+  it('lists events in the order they happen, whatever their hand-set place', async () => {
+    // Added last, so it has the highest place; it is a week before everything else.
+    const early = expectOk(await run(adminUpsertEvent, admin, eventInput('Bridal shower', { dateIso: '2027-07-10' }))).data;
+    const listed = expectOk(await run(adminListEvents, admin, {})).data.events;
+    expect(listed[0]!.id).toBe(early.id);
+    expect(listed.map((e) => e.dateIso)).toEqual([...listed.map((e) => e.dateIso)].sort());
+    await db.delete(events).where(eq(events.id, early.id));
+  });
 });
 
 describe('admin_reorder_events', () => {

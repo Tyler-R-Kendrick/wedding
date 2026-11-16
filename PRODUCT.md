@@ -276,7 +276,7 @@ button names the same action for a reader who has not signed in yet.
 | Photos & Video | `/photos` | Guest uploads and the professional galleries by rights. Account menu | Celebrate | Guest | WEDDING_DAY |
 | Invitation discovery | `/i/[token]` | Household preview + claim offer; never a session | Gate | Gate | INVITATIONS_OPEN |
 | Claim | `/claim/verify` | Email OTP → binding; optional passkey (`/claim/welcome`, `/claim/passkey`) | Gate | Gate | INVITATIONS_OPEN |
-| Admin | `/admin/*` | Lifecycle, content + provenance, moderation, tables | Admin | Admin | — |
+| Admin | `/admin/*` | An overview of what needs a person today, an assistant that answers from the site's own records and proposes changes for confirmation, then lifecycle, content + provenance, moderation, tables, sessions and errors | Admin | Admin | — |
 
 Removed in November 2026, each redirecting to where its content went
 (`src/lib/site-redirects.ts`): `/your-weekend` and `/the-wedding` (the dashboard), `/travel`,

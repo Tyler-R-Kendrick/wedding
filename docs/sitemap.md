@@ -54,12 +54,15 @@ A dynamic route’s Example column is the path the crawler opens. Further seed p
 | /claim/welcome | /claim/welcome | gate | GET | You are in: what you can do now, and an optional passkey for next time. | 200. The door into a session. Signing out is a form; it does not end the session until submitted. |
 | /claim/passkey | /claim/passkey | gate | GET | Save a passkey so the next sign-in is one tap. Optional. | 200. The door into a session. Signing out is a form; it does not end the session until submitted. |
 | /admin | /admin | admin | GET | What needs attention today, and a way into every tool. | 200 for an administrator. Anyone else gets the administrator sign-in gate (200 HTML), not a 404. |
+| /admin/assistant | /admin/assistant | admin | GET | Ask about guests, replies, visits and errors; get a plan; review and confirm a change. | 200 for an administrator. Anyone else gets the administrator sign-in gate (200 HTML), not a 404. |
+| /admin/details | /admin/details | admin | GET | Dates and facts that show on several pages: what each says, where it shows, and one place to change it. | 200 for an administrator. Anyone else gets the administrator sign-in gate (200 HTML), not a 404. |
 | /admin/lifecycle | /admin/lifecycle | admin | GET | Move the site between states, preview any state, see what the calendar suggests. | 200 for an administrator. Anyone else gets the administrator sign-in gate (200 HTML), not a 404. |
 | /admin/content | /admin/content | admin | GET | Every editable table, with provenance and freshness. | 200 for an administrator. Anyone else gets the administrator sign-in gate (200 HTML), not a 404. |
 | /admin/content/[table] | /admin/content/story_sections | admin | GET | Rows of one content table. | 200 for an administrator. Anyone else gets the administrator sign-in gate (200 HTML), not a 404. |
 | /admin/content/[table]/new | /admin/content/story_sections/new | admin | GET | Add a row, with its source. | 200 for an administrator. Anyone else gets the administrator sign-in gate (200 HTML), not a 404. |
 | /admin/content/[table]/[id] | /admin/content/story_sections/01SEED00000000000000000200 | admin | GET | Edit one row and its source. | 200 for an administrator. Anyone else gets the administrator sign-in gate (200 HTML), not a 404. |
 | /admin/guests | /admin/guests | admin | GET | Everyone invited, by person. | 200 for an administrator. Anyone else gets the administrator sign-in gate (200 HTML), not a 404. |
+| /admin/guests/sheet | /admin/guests/sheet | admin | GET | Sync the planning spreadsheet, then settle what differs from the site. | 200 for an administrator. Anyone else gets the administrator sign-in gate (200 HTML), not a 404. |
 | /admin/households | /admin/households | admin | GET | Who is invited together, and who may answer for whom. | 200 for an administrator. Anyone else gets the administrator sign-in gate (200 HTML), not a 404. |
 | /admin/invitations | /admin/invitations | admin | GET | Issue, resend and revoke invitation links. | 200 for an administrator. Anyone else gets the administrator sign-in gate (200 HTML), not a 404. |
 | /admin/rsvp | /admin/rsvp | admin | GET | Replies by event, meal counts and needs. | 200 for an administrator. Anyone else gets the administrator sign-in gate (200 HTML), not a 404. |
@@ -79,6 +82,8 @@ A dynamic route’s Example column is the path the crawler opens. Further seed p
 | /admin/providers | /admin/providers | admin | GET | Which external service backs each feature, and whether it is healthy. | 200 for an administrator. Anyone else gets the administrator sign-in gate (200 HTML), not a 404. |
 | /admin/jobs | /admin/jobs | admin | GET | Background work: queued, running, failed. | 200 for an administrator. Anyone else gets the administrator sign-in gate (200 HTML), not a 404. |
 | /admin/metrics | /admin/metrics | admin | GET | Visits, replies and the numbers that matter this week. | 200 for an administrator. Anyone else gets the administrator sign-in gate (200 HTML), not a 404. |
+| /admin/sessions | /admin/sessions | admin | GET | Who visited, the pages they opened, and where they left. | 200 for an administrator. Anyone else gets the administrator sign-in gate (200 HTML), not a 404. |
+| /admin/errors | /admin/errors | admin | GET | What broke for visitors, grouped by fault, with the page it broke on. | 200 for an administrator. Anyone else gets the administrator sign-in gate (200 HTML), not a 404. |
 | /admin/audit | /admin/audit | admin | GET | Who changed what, and when. | 200 for an administrator. Anyone else gets the administrator sign-in gate (200 HTML), not a 404. |
 | /admin/sitemap | /admin/sitemap | admin | GET | Every endpoint the app serves: pages, redirects, APIs and what each one should do. | 200 for an administrator. Anyone else gets the administrator sign-in gate (200 HTML), not a 404. |
 
@@ -122,6 +127,8 @@ A dynamic route’s Example column is the path the crawler opens. Further seed p
 | /api/auth/[...all] | /api/auth/sign-out | api | POST | Better Auth mutations (sign-out, passkey). Same-origin only. | 403 when Origin is not this site. Otherwise Better Auth’s response. The crawler does not call it. |
 | /api/auth/social/[provider]/start | /api/auth/social/google/start | api | GET | Starts Google or Facebook sign-in. The button is hidden when that provider is not configured. | 307 to the provider when it is configured, otherwise 307 to /sign-in. The crawler does not call it. |
 | /api/auth/social/[provider]/callback | /api/auth/social/google/callback | api | GET | OAuth callback. Binds a matching guest, or sends the reader to the social sign-in holding page. | 307 to /sign-in/save-the-date when the state or code is missing. A match continues into the session. The crawler does not call it. |
+| /api/telemetry | /api/telemetry | api | GET | The telemetry beacon is POST only. | 405 Allow: POST. |
+| /api/telemetry | /api/telemetry | api | POST | First-party telemetry from the page itself: page views, web vitals and errors. No IP address, location or raw User-Agent is stored. | 204 with no body, whatever was kept. Stores nothing under TELEMETRY=off, from another origin, or over 16 KB; with Sec-GPC or DNT only errors are kept. The crawler does not call it. |
 | /api/webmcp/manifest | /api/webmcp/manifest | api | GET | WebMCP tools the current principal may see. | 200 JSON manifest. POST is 405. |
 | /api/webmcp/manifest | /api/webmcp/manifest | api | POST | Manifest is read-only. | 405 Allow: GET. |
 | /api/webmcp/invoke/[name] | /api/webmcp/invoke/example | api | GET | WebMCP invoke is POST only. | 405 Allow: POST. |

@@ -186,12 +186,15 @@ export const PAGES: SitemapPage[] = [
 
   // ── Admin ─────────────────────────────────────────────────────────────────────────────────────
   { id: 'admin', path: '/admin', title: 'Admin', parent: null, audience: 'admin', mode: ['admin'], visibleFrom: null, job: 'What needs attention today, and a way into every tool.' },
+  { id: 'admin-assistant', path: '/admin/assistant', title: 'Assistant', parent: 'admin', audience: 'admin', mode: ['admin'], visibleFrom: null, job: 'Ask about guests, replies, visits and errors; get a plan; review and confirm a change.' },
+  { id: 'admin-details', path: '/admin/details', title: 'Details', parent: 'admin', audience: 'admin', mode: ['admin'], visibleFrom: null, job: 'Dates and facts that show on several pages: what each says, where it shows, and one place to change it.' },
   { id: 'admin-lifecycle', path: '/admin/lifecycle', title: 'Lifecycle', parent: 'admin', audience: 'admin', mode: ['admin'], visibleFrom: null, job: 'Move the site between states, preview any state, see what the calendar suggests.' },
   { id: 'admin-content', path: '/admin/content', title: 'Content', parent: 'admin', audience: 'admin', mode: ['admin'], visibleFrom: null, job: 'Every editable table, with provenance and freshness.' },
   { id: 'admin-content-table', path: '/admin/content/[table]', example: '/admin/content/example', title: 'Content table', parent: 'admin-content', audience: 'admin', mode: ['admin'], visibleFrom: null, job: 'Rows of one content table.' },
   { id: 'admin-content-new', path: '/admin/content/[table]/new', example: '/admin/content/example/new', title: 'New row', parent: 'admin-content-table', audience: 'admin', mode: ['admin'], visibleFrom: null, job: 'Add a row, with its source.' },
   { id: 'admin-content-row', path: '/admin/content/[table]/[id]', example: '/admin/content/example/row', title: 'Edit row', parent: 'admin-content-table', audience: 'admin', mode: ['admin'], visibleFrom: null, job: 'Edit one row and its source.' },
   { id: 'admin-guests', path: '/admin/guests', title: 'Guests', parent: 'admin', audience: 'admin', mode: ['admin'], visibleFrom: null, job: 'Everyone invited, by person.' },
+  { id: 'admin-guests-sheet', path: '/admin/guests/sheet', title: 'Guest sheet', parent: 'admin-guests', audience: 'admin', mode: ['admin'], visibleFrom: null, job: 'Sync the planning spreadsheet, then settle what differs from the site.' },
   { id: 'admin-households', path: '/admin/households', title: 'Households', parent: 'admin', audience: 'admin', mode: ['admin'], visibleFrom: null, job: 'Who is invited together, and who may answer for whom.' },
   { id: 'admin-invitations', path: '/admin/invitations', title: 'Invitations', parent: 'admin', audience: 'admin', mode: ['admin'], visibleFrom: null, job: 'Issue, resend and revoke invitation links.' },
   { id: 'admin-rsvp', path: '/admin/rsvp', title: 'RSVPs', parent: 'admin', audience: 'admin', mode: ['admin'], visibleFrom: null, job: 'Replies by event, meal counts and needs.' },
@@ -211,6 +214,8 @@ export const PAGES: SitemapPage[] = [
   { id: 'admin-providers', path: '/admin/providers', title: 'Providers', parent: 'admin', audience: 'admin', mode: ['admin'], visibleFrom: null, job: 'Which external service backs each feature, and whether it is healthy.' },
   { id: 'admin-jobs', path: '/admin/jobs', title: 'Jobs', parent: 'admin', audience: 'admin', mode: ['admin'], visibleFrom: null, job: 'Background work: queued, running, failed.' },
   { id: 'admin-metrics', path: '/admin/metrics', title: 'Metrics', parent: 'admin', audience: 'admin', mode: ['admin'], visibleFrom: null, job: 'Visits, replies and the numbers that matter this week.' },
+  { id: 'admin-sessions', path: '/admin/sessions', title: 'Sessions', parent: 'admin', audience: 'admin', mode: ['admin'], visibleFrom: null, job: 'Who visited, the pages they opened, and where they left.' },
+  { id: 'admin-errors', path: '/admin/errors', title: 'Errors', parent: 'admin', audience: 'admin', mode: ['admin'], visibleFrom: null, job: 'What broke for visitors, grouped by fault, with the page it broke on.' },
   { id: 'admin-audit', path: '/admin/audit', title: 'Audit log', parent: 'admin', audience: 'admin', mode: ['admin'], visibleFrom: null, job: 'Who changed what, and when.' },
   { id: 'admin-sitemap', path: '/admin/sitemap', title: 'Sitemap', parent: 'admin', audience: 'admin', mode: ['admin'], visibleFrom: null, job: 'Every endpoint the app serves: pages, redirects, APIs and what each one should do.' },
 ];
