@@ -2,7 +2,7 @@
 
 ```bash
 nvm use                 # Node 22
-npm install             # or npm ci
+bun install             # bun.lock is the lockfile; scripts still run with `npm run`
 cp .env.example .env    # optional: everything runs with no variables set
 npm run dev             # http://localhost:3000
 ```

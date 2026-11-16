@@ -119,12 +119,21 @@ import { WEDDING_DETAILS } from './helpers/wedding-details';
 /** Addresses that used to be aliases and are now nothing: neither a page nor a redirect. */
 const REMOVED = ['/explore-caa', '/explore-caa/white-city-ballroom', '/things-to-do', '/wedding-day'] as const;
 
-const ANON_MS = 480_000;
-const GUEST_MS = 480_000;
-const ADMIN_MS = 900_000;
-const VIEW_ROLE_MS = 1_500_000;
+// A walk is cut into parts, each its own test, so no single test holds a worker for minutes and the
+// parts can run side by side: the administrator's 68 routes were one 100-second test, and the four
+// view-role previews one 140-second test. Every route is still opened by exactly one part.
+const ANON_PARTS = 2;
+const GUEST_PARTS = 2;
+const ADMIN_PARTS = 4;
+const WALK_MS = 240_000;
 
-test.describe.configure({ mode: 'serial', timeout: VIEW_ROLE_MS });
+test.describe.configure({ timeout: WALK_MS });
+
+/** Part `index` of `parts` of a list, contiguous and in order. */
+function partOf<T>(rows: readonly T[], index: number, parts: number): T[] {
+  const size = Math.ceil(rows.length / parts);
+  return rows.slice(index * size, (index + 1) * size);
+}
 
 test.beforeEach(({}, testInfo) => {
   test.skip(testInfo.project.name === 'tablet', 'phone and desktop are the review viewports');
@@ -275,7 +284,7 @@ async function assertDocument(page: Page, row: InventoryRow, kind: CrawlPersonaK
   }
 }
 
-async function walk(page: Page, kind: CrawlPersonaKind, role?: ViewRoleKey) {
+async function walk(page: Page, kind: CrawlPersonaKind, role?: ViewRoleKey, part?: { index: number; parts: number }) {
   page.setDefaultNavigationTimeout(60_000);
   // The fixture sign-in pass submits itself. Letting that finish replaces the persona: a signed-out
   // crawl becomes a guest, and a view-role session is no longer the administrator who minted it.
@@ -285,7 +294,8 @@ async function walk(page: Page, kind: CrawlPersonaKind, role?: ViewRoleKey) {
   });
   const errors = watch(page);
   const seen = new Map<string, string[]>();
-  for (const row of routesForPersona(kind)) {
+  const rows = routesForPersona(kind);
+  for (const row of part ? partOf(rows, part.index, part.parts) : rows) {
     const url = crawlUrl(row);
     const mark = errors.length;
     await assertDocument(page, row, kind, role);
@@ -298,8 +308,7 @@ async function walk(page: Page, kind: CrawlPersonaKind, role?: ViewRoleKey) {
   await assertNoDeadLinks(page, seen);
 }
 
-test('a signed-out visitor can open every public, gate and alias route', async ({ browser, request }) => {
-  test.setTimeout(ANON_MS);
+test('a signed-out request gets the right answer from every probe, redirect and gate', async ({ request }) => {
   for (const row of inventory()) {
     if (row.probe == null || !row.examples[0]) continue;
     const res = await request.get(row.examples[0], { maxRedirects: 0 });
@@ -341,33 +350,40 @@ test('a signed-out visitor can open every public, gate and alias route', async (
     expect(await res.text(), `${path} signed out`).not.toMatch(WEDDING_DETAILS);
   }
 
-  const ctx = await contextAs(browser, null);
-  const page = await ctx.newPage();
-  await walk(page, 'anonymous');
-  await ctx.close();
 });
 
-test('guest A1 can open every guest route', async ({ browser }) => {
-  test.setTimeout(GUEST_MS);
-  // After the wedding, when every guest page is open: before the day, photos, uploads and gifts send
-  // a guest to the dashboard, and the walk would be reading that page under their names.
-  const ctx = await contextAs(browser, 'A1' satisfies PrincipalName, { lifecycle: 'POST_WEDDING' });
-  const page = await ctx.newPage();
-  await walk(page, 'guest');
-  await ctx.close();
-});
+for (let index = 0; index < ANON_PARTS; index++) {
+  test(`a signed-out visitor can open every public, gate and alias page (part ${index + 1} of ${ANON_PARTS})`, async ({ browser }) => {
+    const ctx = await contextAs(browser, null);
+    const page = await ctx.newPage();
+    await walk(page, 'anonymous', undefined, { index, parts: ANON_PARTS });
+    await ctx.close();
+  });
+}
 
-test('an administrator can open every console route', async ({ browser }) => {
-  test.setTimeout(ADMIN_MS);
-  const ctx = await contextAs(browser, 'admin');
-  const page = await ctx.newPage();
-  await walk(page, 'admin');
-  await expect(page.locator('body')).toContainText('Sitemap');
-  await ctx.close();
-});
+for (let index = 0; index < GUEST_PARTS; index++) {
+  test(`guest A1 can open every guest route (part ${index + 1} of ${GUEST_PARTS})`, async ({ browser }) => {
+    // After the wedding, when every guest page is open: before the day, photos, uploads and gifts send
+    // a guest to the dashboard, and the walk would be reading that page under their names.
+    const ctx = await contextAs(browser, 'A1' satisfies PrincipalName, { lifecycle: 'POST_WEDDING' });
+    const page = await ctx.newPage();
+    await walk(page, 'guest', undefined, { index, parts: GUEST_PARTS });
+    await ctx.close();
+  });
+}
 
-test('each view-role preview opens the guest site read-only', async ({ browser, request }, testInfo) => {
-  test.setTimeout(VIEW_ROLE_MS);
+for (let index = 0; index < ADMIN_PARTS; index++) {
+  test(`an administrator can open every console route (part ${index + 1} of ${ADMIN_PARTS})`, async ({ browser }) => {
+    const ctx = await contextAs(browser, 'admin');
+    const page = await ctx.newPage();
+    await walk(page, 'admin', undefined, { index, parts: ADMIN_PARTS });
+    // The walk ends on the console's own sitemap, the last route of the last part.
+    if (index === ADMIN_PARTS - 1) await expect(page.locator('body')).toContainText('Sitemap');
+    await ctx.close();
+  });
+}
+
+for (const role of VIEW_ROLES) test(`the ${role} view-role preview opens the guest site read-only`, async ({ browser, request }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile', 'view-role crawl is desktop review viewport only');
   const device = testInfo.project.use;
   const ctx = await browser.newContext({
@@ -382,14 +398,12 @@ test('each view-role preview opens the guest site read-only', async ({ browser, 
   const fixtures = await seedFixtures(request);
   const session = await signInAdminViaApi(request, page, fixtures.emails.admin!);
 
-  for (const role of VIEW_ROLES) {
-    const minted = await cap(request, 'admin_set_view_role', { role }, { cookie: session });
-    expect(minted.status(), role).toBe(200);
-    const body = (await minted.json()) as { ok?: boolean; data?: { token?: string; label?: string } };
-    expect(body.ok, JSON.stringify(body)).toBe(true);
-    expect(body.data?.token, role).toBeTruthy();
-    await ctx.addCookies([{ name: VIEW_ROLE_COOKIE, value: body.data!.token!, url: BASE_URL, httpOnly: true, sameSite: 'Lax' }]);
-    await walk(page, 'view-role', role);
-  }
+  const minted = await cap(request, 'admin_set_view_role', { role }, { cookie: session });
+  expect(minted.status(), role).toBe(200);
+  const body = (await minted.json()) as { ok?: boolean; data?: { token?: string; label?: string } };
+  expect(body.ok, JSON.stringify(body)).toBe(true);
+  expect(body.data?.token, role).toBeTruthy();
+  await ctx.addCookies([{ name: VIEW_ROLE_COOKIE, value: body.data!.token!, url: BASE_URL, httpOnly: true, sameSite: 'Lax' }]);
+  await walk(page, 'view-role', role);
   await ctx.close();
 });

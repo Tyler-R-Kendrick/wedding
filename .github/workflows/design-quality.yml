@@ -2,16 +2,17 @@ name: design-quality
 
 on:
   pull_request:
+  # The merge queue runs the full suite on what will actually land (the pull request merged onto
+  # the tip of main). Selection, where a pull request uses it, only narrows pull-request feedback.
+  merge_group:
   push:
     branches: [main]
 
 permissions:
   contents: read
 
-# One run per ref at a time. Without this every push starts a fresh set of four jobs while the
-# superseded ones keep running to completion — six pushes to one branch in a morning meant six
-# concurrent Playwright jobs, each holding a runner for eleven minutes. Only pull requests cancel:
-# a run on `main` is finishing something nobody is about to supersede, and is left alone.
+# One run per ref at a time; a new commit on a pull request cancels the run for the old one. A run
+# on `main` or in the merge queue is finishing something nobody is about to supersede.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -19,20 +20,24 @@ concurrency:
 env:
   # Node's http client does not read HTTPS_PROXY by itself; harmless on GitHub runners.
   NODE_USE_ENV_PROXY: '1'
+  NEXT_TELEMETRY_DISABLED: '1'
 
+# Every job runs side by side. Each has a budget (`timeout-minutes`): a job that outgrows it fails,
+# so CI getting slower is a red build rather than something noticed a month later.
 jobs:
-  quality:
-    name: DESIGN.md lint · anti-slop detect · stylelint
+  static:
+    name: lint · typecheck · design gates
     runs-on: ubuntu-latest
+    timeout-minutes: 3
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: ./.github/actions/setup
 
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-        with:
-          node-version-file: .nvmrc
-          cache: npm
+      - name: Typecheck
+        run: npm run -s typecheck
 
-      - run: npm ci
+      - name: ESLint
+        run: npm run -s lint
 
       - name: Lint DESIGN.md (Google design.md spec + WCAG contrast)
         run: npm run design:lint
@@ -43,149 +48,140 @@ jobs:
       # impeccable only ADVISES when a size, colour or radius is off the DESIGN.md scale, and an
       # advisory never changes its exit code: fifteen off-ramp font sizes accumulated with this step
       # green, one of them 15px text under the 17px floor. check-design-drift.mjs fails on those too.
-      - name: impeccable detect (anti-slop rules + DESIGN.md scale drift over src/, the version in package-lock)
+      - name: impeccable detect (anti-slop rules + DESIGN.md scale drift over src/)
         run: node scripts/check-design-drift.mjs src/
 
       - name: stylelint
         run: npm run lint:css
 
-      # Level 17. `wedding-site-standards` asks 44px of a link that is the whole of its paragraph,
-      # and two mechanisms carried that rule — a call-site `standalone` prop and a hand-maintained
-      # selector list — either of which a call site could forget. Six did in one commit. This is a
-      # check, so forgetting is a red build; it reads the source rather than the page because the
-      # links that got missed sit behind `venue.block.url` and `h.bookingUrl`, which no fixture
-      # renders. Like check-css-vars above it also runs inside `npm run test:unit`, so it cannot
-      # become a gate that exists only in a workflow file.
+      # Level 17. `wedding-site-standards` asks 44px of a link that is the whole of its paragraph.
+      # This reads the source rather than the page because the links that got missed sit behind
+      # `venue.block.url` and `h.bookingUrl`, which no fixture renders. It also runs inside
+      # `npm run test:unit`, so it cannot become a gate that exists only in a workflow file.
       - name: Every paragraph-only link carries a 44px target
         run: npm run -s targets:check
 
       # Level 15. stylelint matches literal `font-family` values and cannot see through an
       # indirection that resolves to one: `ops.css` referenced `var(--font-sans)`, defined nowhere,
-      # and the whole admin console rendered in Roboto / Helvetica Neue / Arial with every check in
-      # this job green. This compares references against definitions, which nothing else here does.
-      # It also runs inside `npm run test:unit` (tests/unit/css-vars.test.ts) so it cannot be a gate
-      # that exists only in a workflow file.
+      # and the whole admin console rendered in Roboto / Helvetica Neue / Arial with every check
+      # green. This compares references against definitions. Also inside `npm run test:unit`.
       - name: Every var(--token) a component references is defined
         run: node scripts/check-css-vars.mjs
 
-      # Level 17. Documentation is the one artifact here with no compiler behind it, and this run
-      # kept finding pages that described a version of the site that no longer existed. Three
-      # mechanical guarantees, so the same class cannot come back through the docs:
-      #   * every path a living document points at exists (vendored skills and dated records of a
-      #     moment — reviews, critiques — are out of scope, and the script says why);
-      #   * `.env.example` documents every variable the app reads, exactly once, and nothing dead;
-      #   * the activation matrix is regenerated from `flags.ts` and the provider registry, so an
-      #     operator's table of what is switched off cannot drift from the code that switches it.
+      # Level 17. Every path a living document points at exists; `.env.example` documents every
+      # variable the app reads, exactly once; the activation matrix is regenerated from `flags.ts`.
       - name: Documentation references resolve · .env.example complete · activation matrix current
         run: npm run docs:check
 
-  verify:
-    name: typecheck · lint · unit · integration · build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - run: npm ci
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: ESLint
-        run: npm run lint
-
-      - name: Unit tests (vitest)
-        run: npm run test:unit
-
-      - name: Integration tests (vitest + PGlite)
-        run: npm run test:integration
-
-      # The concierge eval gate: 26 questions through the real pipeline against the deterministic
-      # mock model, scored on grounding, tool selection, refusal correctness and authorization
-      # violations. It is inside `npm run verify`, but this job runs the vitest projects one by one
-      # and never calls `verify` — so without this line the gate ran on a developer's machine and
-      # nowhere else. Same defect class as a Playwright spec belonging to no arrangement, which is
-      # what `scripts/check-spec-coverage.mjs` exists to stop; the step below now stops this one.
-      - name: Concierge evals (vitest, deterministic mock model)
-        run: npm run test:evals
-
       - name: Every vitest project runs in CI
         run: node scripts/check-vitest-coverage.mjs
+
+      - name: Every spec runs in exactly one arrangement
+        run: node scripts/check-spec-coverage.mjs
 
       - name: Migrations are committed and current
         run: |
           npm run db:generate
           git diff --exit-code -- src/db/migrations || { echo "::error::run npm run db:generate and commit the result"; exit 1; }
 
-      - name: Build (Next.js)
-        run: npm run build
-        env:
-          PGLITE_MEMORY: '1'
+      # The one place bun's download cache is saved, and only from main: every other job and every
+      # pull request restores it (.github/actions/setup).
+      - if: github.ref == 'refs/heads/main'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
 
-  e2e:
-    name: Playwright smoke (production build)
+  unit:
+    name: unit · ui · stage tests · concierge evals
     runs-on: ubuntu-latest
-    # No job-level concurrency group: the workflow's own group (one run per ref, superseded pushes
-    # to a pull request cancelled) is the only one this job needs.
-    #
-    # It used to share ONE group across the whole repository, to keep two copies from running at
-    # once after two runs on main died with "the runner has received a shutdown signal". The
-    # swap step below found the cause: `next dev` warming every route runs a 16 GB runner out of
-    # memory, with or without another run in the repository. The group stayed, and it cost more
-    # than it saved. GitHub keeps one running and ONE pending job per group and cancels an older
-    # pending one when another arrives, so with a few pull requests open a PR's Playwright job was
-    # cancelled before it ever got a runner (#56's run 36287088103: queued 01:57, dropped 02:01
-    # when #57 queued) and its check read "cancelled" on a commit nothing had tested.
+    timeout-minutes: 4
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: ./.github/actions/setup
 
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-        with:
-          node-version-file: .nvmrc
-          cache: npm
+      - name: Unit tests (vitest)
+        run: npm run test:unit
 
-      - run: npm ci
+      # The concierge eval gate: 26 questions through the real pipeline against the deterministic
+      # mock model, scored on grounding, tool selection, refusal correctness and authorization
+      # violations. scripts/check-vitest-coverage.mjs (the static job) fails if this line goes.
+      - name: Concierge evals (vitest, deterministic mock model)
+        run: npm run test:evals
 
-      # Every run was downloading Chrome for Testing (184 MiB), chrome-headless-shell (115 MiB)
-      # and ffmpeg from scratch. The key is the resolved Playwright version, so a version bump
-      # misses the cache and re-downloads exactly once.
+  integration:
+    name: integration ${{ matrix.shard }}/4
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: ./.github/actions/setup
+
+      # Four shards of about equal recorded time (scripts/ci/vitest-plan.mjs). In one job the 83
+      # files took 3.8 minutes at the median, the longest step outside Playwright.
+      - name: Integration tests (vitest + PGlite), shard ${{ matrix.shard }} of 4
+        run: npm run test:integration -- $(node scripts/ci/vitest-plan.mjs integration ${{ matrix.shard }}/4)
+
+  e2e:
+    name: e2e ${{ matrix.kind }} ${{ matrix.shard }}/${{ matrix.of }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { kind: production, shard: 1, of: 2 }
+          - { kind: production, shard: 2, of: 2 }
+          - { kind: test-server, shard: 1, of: 8 }
+          - { kind: test-server, shard: 2, of: 8 }
+          - { kind: test-server, shard: 3, of: 8 }
+          - { kind: test-server, shard: 4, of: 8 }
+          - { kind: test-server, shard: 5, of: 8 }
+          - { kind: test-server, shard: 6, of: 8 }
+          - { kind: test-server, shard: 7, of: 8 }
+          - { kind: test-server, shard: 8, of: 8 }
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: ./.github/actions/setup
+
+      # The key is the resolved Playwright version, so a version bump misses once. Headless shell
+      # only: the specs never open a headed browser, and it is a third of the download.
       - name: Playwright version
         id: pw
         run: echo "v=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
-
       - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
-        id: pw-cache
         with:
           path: ~/.cache/ms-playwright
-          key: pw-browsers-${{ runner.os }}-${{ steps.pw.outputs.v }}
+          key: pw-shell-${{ runner.os }}-${{ steps.pw.outputs.v }}
+      # No `--with-deps`: the runner image already has Chromium's libraries, and installing them
+      # again from Ubuntu's mirrors took 12 s at the median and 25 at p95 in every job.
+      - run: npx playwright install chromium --only-shell
 
-      # `--with-deps` installs system libraries, which the cache cannot hold, so it always runs;
-      # the browser download itself is what the cache skips.
-      # The system packages come from Ubuntu's mirrors; when those cannot be reached the browser
-      # still installs from Playwright's own host, and the runner image already has its libraries.
-      - run: npx playwright install --with-deps chromium || { echo "::warning::Ubuntu mirrors unreachable; installing Chromium without system packages"; npx playwright install chromium; }
+      # Turbopack's build cache, seeded by main (the `build-cache` job) and only restored here.
+      # With it the compile is a few seconds instead of half a minute.
+      - uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: .next/cache
+          key: next-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ github.sha }}
+          restore-keys: next-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
 
+      # Each shard builds for itself: with the cache that is quicker than waiting for a build job
+      # and downloading its 480 MB. The typecheck `next build` repeats is the `static` job's.
       - name: Build
         run: npm run build
         env:
           PGLITE_MEMORY: '1'
-
-      - name: Every spec runs in exactly one arrangement
-        run: node scripts/check-spec-coverage.mjs
+          BUILD_SKIP_TYPECHECK: '1'
 
       - name: Production-build specs against `next start`
+        if: matrix.kind == 'production'
         # These assert production behaviour, including the proxy's `private, no-store` on
-        # cookie-resolved public URLs — `next dev` replaces that header, so they only mean
-        # anything here. The list lives in scripts/check-spec-coverage.mjs, which fails the
-        # build if a spec belongs to neither step.
-        # Phone and desktop are the review viewports (several specs already skip the tablet
-        # profile for that reason); running every spec a third time bought a third more minutes
-        # and no findings.
-        run: npx playwright test --project=mobile --project=desktop $(node -e "import('./scripts/check-spec-coverage.mjs').then(m => console.log(m.PRODUCTION_SPECS.join(' ')))")
+        # cookie-resolved public URLs. Phone and desktop are the review viewports.
+        run: node scripts/ci/e2e-shard.mjs production ${{ matrix.shard }}/${{ matrix.of }}
         env:
           CI: 'true'
           PW_WEB_SERVER_COMMAND: npm run start
@@ -208,33 +204,48 @@ jobs:
           TRUSTED_PROXY_HOPS: '1'
 
       - name: Identity, RSVP and security specs against a NODE_ENV=test server
+        if: matrix.kind == 'test-server'
         # Two things exist only on this server, and both are deliberate:
         #   * the dev inbox and fixtures route, refused outright under NODE_ENV=production
-        #     (security review S5); on a hosted runner (CI/VERCEL) they also require the
-        #     DEV_INBOX_TOKEN bearer, set on the server and on the test runner alike;
+        #     (security review S5); on a hosted runner they also require the DEV_INBOX_TOKEN
+        #     bearer, set on the server and on the test runner alike;
         #   * the test-principal injector, which needs NODE_ENV=test exactly.
-        # tests/security/** never ran in CI before this step existed, which is how a
-        # cross-origin sign-out reached main with a passing suite asserting it was blocked.
-        #
-        # The script is the whole step: it starts `next start` on the build above with the test
-        # settings, runs the TEST_SERVER_SPECS, and stops the server. It is the same command a
-        # developer runs (`npm run test:e2e:server`), so the two cannot drift.
-        #
-        # The server is the production build, not `next dev`: every gate these specs need reads the
-        # environment at start-up, so the build that ships is the build under test. On `next dev`
-        # this step compiled eighty routes before its first spec, once per project, and took 22
-        # minutes at the median and 30 at p95 over 150 runs, with a 16 GB swap file to survive it.
-        run: node scripts/test-server-specs.mjs --no-build --project=mobile --project=desktop
+        # The shard runner hands this shard's tests to scripts/test-server-specs.mjs, which starts
+        # `next start` on the build above with the test settings, runs them, and stops the server.
+        # That is the same script a developer runs (`npm run test:e2e:server`), so the server
+        # settings cannot drift.
+        run: node scripts/ci/e2e-shard.mjs test-server ${{ matrix.shard }}/${{ matrix.of }}
         env:
           CI: 'true'
           PORT: '3000'
 
+      # The JSON report carries each test's time; `npm run e2e:durations` turns a run's reports
+      # into tests/e2e/durations.json, which the shard plan reads. The HTML report rides along.
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        if: failure()
+        if: always()
         with:
-          name: playwright-report
-          path: playwright-report
+          name: playwright-${{ matrix.kind }}-${{ matrix.shard }}
+          path: |
+            playwright-report
+            test-results/report.json
           retention-days: 7
+
+  build-cache:
+    name: seed the build cache (main only)
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: ./.github/actions/setup
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: .next/cache
+          key: next-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ github.sha }}
+          restore-keys: next-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
+      - run: npm run build
+        env:
+          PGLITE_MEMORY: '1'
 
   a11y:
     name: axe-core accessibility against a deployed preview (BASE_URL)
@@ -243,14 +254,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
-      # The system packages come from Ubuntu's mirrors; when those cannot be reached the browser
-      # still installs from Playwright's own host, and the runner image already has its libraries.
-      - run: npx playwright install --with-deps chromium || { echo "::warning::Ubuntu mirrors unreachable; installing Chromium without system packages"; npx playwright install chromium; }
+      - uses: ./.github/actions/setup
+      - run: npx playwright install chromium --only-shell
       - run: npx playwright test tests/a11y.spec.ts
         env:
           BASE_URL: ${{ vars.BASE_URL }}
+
+  # One check to require in branch protection and the merge queue, whatever the shards are called.
+  ci:
+    name: CI
+    if: always()
+    needs: [static, unit, integration, e2e]
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Every job passed
+        run: |
+          echo '${{ toJSON(needs) }}'
+          [ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped') }}" = "false" ]

@@ -1,0 +1,23 @@
+name: Set up Node, bun and node_modules
+description: >
+  Node from .nvmrc, bun, and `bun install` from bun's download cache. `npm ci` took 26 s at the
+  median over 150 runs and ran once in every job; `bun install` with a warm cache is a few seconds.
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      with:
+        node-version-file: .nvmrc
+    - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      with:
+        bun-version-file: .bun-version
+    # bun's own download cache, keyed by the lockfile. Only `main` saves it (the save step is in
+    # design-quality.yml's `static` job), so a pull request restores what main left and never
+    # uploads a second copy.
+    - uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+      with:
+        path: ~/.bun/install/cache
+        key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+        restore-keys: bun-${{ runner.os }}-
+    - run: bun install --frozen-lockfile
+      shell: bash

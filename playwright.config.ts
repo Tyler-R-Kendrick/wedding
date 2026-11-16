@@ -23,7 +23,9 @@ export default defineConfig({
   // No retries, here or in CI. A test that passes on its second attempt has a bug, in the test or in
   // the page, and a retry reports it as green: two of three green runs on 2026-11-16 had one.
   retries: 0,
-  reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'list',
+  // The JSON report carries each test's time, which the shard plan is built from
+  // (scripts/ci/e2e-durations.mjs). Under test-results/, which Playwright empties only at the start.
+  reporter: process.env.CI ? [['github'], ['html', { open: 'never' }], ['json', { outputFile: 'test-results/report.json' }]] : 'list',
   use: {
     baseURL,
     launchOptions,

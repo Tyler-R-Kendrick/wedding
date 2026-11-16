@@ -30,9 +30,11 @@ describe('guest contacts integration', () => {
     const sent = expectOk(await call<{ sent: boolean; challenge: string; deliveredTo?: string }>('request_otp', { purpose: 'sign_in', email: secondary }));
     expect(sent.data.sent).toBe(true);
     expect(sent.data.deliveredTo).toMatch(/•/);
+    // The code is delivered after the capability answers; `latestCode` waits for it. Reading the
+    // inbox first found it empty on a busy machine.
+    const code = await latestCode(secondary);
     const mail = devInbox.latestFor(secondary);
     expect(mail?.to?.toLowerCase()).toBe(secondary.toLowerCase());
-    const code = await latestCode(secondary);
     const ver = expectOk(await call<{ guestId: string | null }>('verify_otp', { challenge: sent.data.challenge, code }));
     expect(ver.data.guestId).toBe(g.id);
   });

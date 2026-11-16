@@ -16,8 +16,10 @@ describe('npm run test:e2e:server is the CI test-server step', () => {
   it('is what CI runs, so there is one set of server settings', () => {
     const step = ciStep();
     expect(step, 'the "Identity, RSVP and security specs" step moved or was renamed').toBeDefined();
-    // The script and nothing else: one server for every project, on the build the job already made.
-    expect(step).toMatch(/^ {8}run: node scripts\/test-server-specs\.mjs --no-build( --project=\w+)*$/m);
+    // The shard runner and nothing else. It goes through scripts/test-server-specs.mjs, so there
+    // is still one server for every project and one set of settings.
+    expect(step).toMatch(/^ {8}run: node scripts\/ci\/e2e-shard\.mjs test-server \$\{\{ matrix\.shard \}\}\/\$\{\{ matrix\.of \}\}$/m);
+    expect(readFileSync('scripts/ci/e2e-shard.mjs', 'utf8')).toContain("['scripts/test-server-specs.mjs', '--no-build', ...select]");
     // No second copy of the routes or the settings in the workflow.
     expect(step).not.toMatch(/for path in|curl /);
     const env = [...step!.slice(step!.indexOf('\n        env:\n')).matchAll(/^ {10}([A-Z0-9_]+):/gm)].map((m) => m[1]);

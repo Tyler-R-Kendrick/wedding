@@ -62,6 +62,11 @@ const sitePostHog = deployedPostHog(process.env);
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
+  // `next build` typechecks the whole project before it emits anything: 43 of a 55-second build
+  // here. CI has a typecheck job of its own, and every browser-test shard builds, so those builds
+  // set BUILD_SKIP_TYPECHECK and leave the check to that job. Nothing else sets it: a deploy build
+  // (Vercel) and a developer's `npm run build` still typecheck.
+  ...(process.env.BUILD_SKIP_TYPECHECK === '1' ? { typescript: { ignoreBuildErrors: true } } : {}),
   // The deployed commit, for the browser: every error report and problem report says which build
   // it came from (src/lib/diagnostics/recorder.ts). Empty off Vercel, where the recorder says `dev`.
   env: {

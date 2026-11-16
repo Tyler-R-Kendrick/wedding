@@ -49,7 +49,7 @@ export function detect(targets) {
   try {
     bin = path.join(path.dirname(manifest), JSON.parse(readFileSync(manifest, 'utf8')).bin.impeccable);
   } catch {
-    return { error: 'impeccable is not installed — run `npm ci` first.' };
+    return { error: 'impeccable is not installed — run `bun install` first.' };
   }
   const r = spawnSync(process.execPath, [bin, 'detect', '--json', ...targets], { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
   if (r.error) return { error: String(r.error) };

@@ -1,8 +1,9 @@
 name: stages
 
 # The design pipeline (stages/README.md): sitemap → wireframe → skeleton → placeholder, each its
-# own project. The jobs are chained in pipeline order because each stage imports the one above it:
-# a broken sitemap fails here, at stage 1, instead of as a strange render three stages later.
+# own project. Each stage imports the one above it, so a broken sitemap fails job 1 and usually the
+# ones after it too; read the lowest-numbered red job first. The jobs run side by side: chained,
+# the five took 7.3 minutes at the median (28 runs) with the longest job at 3.3.
 # The last job assembles the stages into the wedding app, which serves them at
 # <stage>.dev.<domain> (and /<stage> outside production), and probes them through the running app. The real app (stage 5) is held to the sitemap by tests/unit/stages/, in
 # design-quality.yml.
@@ -21,7 +22,7 @@ on:
       - 'public/fonts/**'
       - 'next.config.ts'
       - 'package.json'
-      - 'package-lock.json'
+      - 'bun.lock'
       - '.github/workflows/stages.yml'
   push:
     branches: [main]
@@ -37,7 +38,7 @@ on:
       - 'public/fonts/**'
       - 'next.config.ts'
       - 'package.json'
-      - 'package-lock.json'
+      - 'bun.lock'
       - '.github/workflows/stages.yml'
 
 permissions:
@@ -55,13 +56,10 @@ jobs:
   sitemap:
     name: 1 · sitemap
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
+      - uses: ./.github/actions/setup
       - run: npm run typecheck -w @wedding/sitemap
       - run: npx vitest run --project stage:sitemap
       - run: node scripts/check-design-drift.mjs stages/01-sitemap
@@ -69,15 +67,11 @@ jobs:
 
   wireframe:
     name: 2 · wireframe
-    needs: sitemap
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
+      - uses: ./.github/actions/setup
       - run: npm run typecheck -w @wedding/wireframe
       - run: npx vitest run --project stage:wireframe
       - run: node scripts/check-design-drift.mjs stages/02-wireframe
@@ -85,15 +79,11 @@ jobs:
 
   skeleton:
     name: 3 · skeleton
-    needs: wireframe
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
+      - uses: ./.github/actions/setup
       - run: npm run typecheck -w @wedding/skeleton
       - run: npx vitest run --project stage:skeleton
       - run: node scripts/check-design-drift.mjs stages/03-skeleton
@@ -101,15 +91,11 @@ jobs:
 
   placeholder:
     name: 4 · placeholder
-    needs: skeleton
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
+      - uses: ./.github/actions/setup
       - run: npm run typecheck -w @wedding/placeholder
       - run: npx vitest run --project stage:placeholder
       - run: node scripts/check-design-drift.mjs stages/04-placeholder
@@ -117,24 +103,28 @@ jobs:
 
   dev-host:
     name: 5 · served by the wedding app (every stage by subdomain and by path)
-    needs: placeholder
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
+      - uses: ./.github/actions/setup
       # The hub, board and sign-off command are TypeScript run through tsx; check them first.
       - run: npx tsc -p scripts/stages/tsconfig.json
       # Every stage twice (at a host root for <stage>.dev.<domain>, under /<stage> for previews)
       # plus the hub, into public/_stages/, as the Vercel build does (vercel.json).
       - run: npm run stages:assemble
+      # Turbopack's build cache, seeded by main in design-quality.yml and only restored here.
+      - uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: .next/cache
+          key: next-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ github.sha }}
+          restore-keys: next-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
       - name: Build the wedding app
         run: npm run build
         env:
           PGLITE_MEMORY: '1'
+          # design-quality.yml's typecheck job covers this; see next.config.ts.
+          BUILD_SKIP_TYPECHECK: '1'
       # The app's own rewrites (src/lib/stage-hosting.ts) serve the stages; the probe asks for the
       # hub and each stage at both addresses, every script, stylesheet and font they reference,
       # the 404s (the hub host's other paths, /_stages/ itself), and that the wedding site's own
