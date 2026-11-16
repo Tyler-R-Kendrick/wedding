@@ -32,6 +32,12 @@ export const households = pgTable('households', {
   mailingAddress: jsonb('mailing_address').$type<{ line1?: string; line2?: string; city?: string; region?: string; postalCode?: string; country?: string }>(),
   /** Admin-only notes (never shown to guests, never in default exports). */
   notes: text('notes'),
+  /**
+   * In the couple's bulk group on /admin/invitations: the households the next bulk action (make
+   * links, mark as sent) applies to. Saved, so the group is still there on the next visit and is
+   * the same for both of them. It says nothing about the household itself.
+   */
+  inBulkGroup: boolean('in_bulk_group').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 });

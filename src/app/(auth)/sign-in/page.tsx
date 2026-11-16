@@ -12,10 +12,10 @@ import {
   SIGN_IN_CODE_PROMISE_PHONE,
   SIGN_IN_SAVE_THE_DATE_NOTE,
 } from '../_lib/guest-auth-copy';
-import { GUEST_CONTACT_EMAIL, guestContactMailtoHref } from '@/domain/contact/copy';
 import { Actions, AuthShell, Button, Field, Notice } from '../_components/kit';
 import { isPhoneSignInAvailable } from '@/lib/phone-sign-in';
 import { OtherSignInMethods } from './_components/OtherSignInMethods';
+import { SignInHelp } from '../_components/SignInHelp';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Sign in', robots: { index: false, follow: false } };
@@ -108,22 +108,11 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
         </>
       )}
       <OtherSignInMethods next={sp.next} />
-      <SignInHelp />
+      <p className="auth-hint">
+        <SignInHelp lead="Having trouble signing in?" />
+      </p>
       <AdminSignInHint />
     </AuthShell>
-  );
-}
-
-/** For a guest whose save-the-date contact detail doesn't work: write to the couple with the one they want. */
-function SignInHelp() {
-  return (
-    <p className="auth-hint">
-      Having trouble signing in? Email{' '}
-      <a className="auth-link" href={guestContactMailtoHref()}>
-        {GUEST_CONTACT_EMAIL}
-      </a>{' '}
-      and tell us the email address or mobile number you’d like to sign in with. We’ll get you set up.
-    </p>
   );
 }
 

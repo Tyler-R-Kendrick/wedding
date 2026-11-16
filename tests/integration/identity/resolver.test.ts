@@ -213,7 +213,9 @@ describe('principal resolver', () => {
     // `admin_mark_invitation_sent`), ui-only navigate/read/write.
     // 93 -> 94: `admin_guest_sheet`, the planning sheet on /admin/guests (ui-only read).
     // 94 -> 95: `admin_upload_guest_sheet`, saving a new copy of it (ui-only action).
-    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(95);
+    // 95 -> 99: the bulk group on /admin/invitations (`admin_list_invitation_households`,
+    // `admin_set_bulk_group`, `admin_mark_households_sent`, `admin_issue_invitations`), ui only.
+    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(99);
     expect(names({ principal: ap, exposure: 'ai' }).filter((n) => n.startsWith('admin_'))).toEqual([]);
     // Level 15. The counts above are of the `admin_` namespace, so nothing here ever pinned the
     // GUEST-facing capabilities an admin's list also contains — and `meetsAuthLevel('guest', admin)`

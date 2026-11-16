@@ -22,6 +22,7 @@ const AUTH_GUEST_PATHS = [
   'src/app/(auth)/_lib/errors.ts',
   'src/app/(auth)/_lib/guest-auth-copy.ts',
   'src/app/(auth)/sign-in/page.tsx',
+  'src/app/(auth)/_components/SignInHelp.tsx',
   'src/app/(auth)/sign-in/save-the-date/page.tsx',
   'src/app/(auth)/claim/verify/page.tsx',
   'src/app/(public)/_components/PrivacyDocument.tsx',

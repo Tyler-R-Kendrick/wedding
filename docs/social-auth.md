@@ -86,7 +86,7 @@ Guest matching uses **verified provider email OR fuzzy name** (see `docs/design/
 - **Invitation sent** required for both paths.
 - **Failure** → no session; `/sign-in/save-the-date` (warm save-the-date copy — never implies list membership). Attempts stay in `social_auth_reviews` for `admin_link_social_auth`.
 
-Mark an invitation as sent from the admin console (`admin_mark_invitation_sent`) once the paper or email invitation goes out.
+Mark invitations as sent on `/admin/invitations` once the paper or email invitation goes out: tick the households into the group (it is saved, and shared between administrators), then **Mark as sent** (`admin_mark_households_sent`). A household needs a link first (**Make links**, `admin_issue_invitations`); one without is skipped and named, never given a link quietly. **Mark as not sent** undoes it. `admin_mark_invitation_sent` marks a single invitation by id.
 
 ## Security
 
