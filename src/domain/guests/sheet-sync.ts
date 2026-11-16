@@ -6,7 +6,7 @@ import { isEmailShape, normalizeEmail } from '@/domain/identity/mask';
 import { upsertGuest } from '@/domain/guests/repo';
 import { upsertHousehold } from '@/domain/households/repo';
 import { parseCsv } from './csv';
-import { parseGuestSheetText, WITHHELD_FROM_SEALING, type GuestSheetParse } from './sheet';
+import { parseGuestSheetText, type GuestSheetParse } from './sheet';
 import { peopleOfLine, type SheetLineNote, type SheetLinePeople, type SheetPerson } from './sheet-people';
 
 /**
@@ -407,24 +407,4 @@ export function sheetSyncLines(text: string): { parse: GuestSheetParse; lines: S
     return { sheetRow: r.sheetRow, name: r.name, adults: r.adults, kids: r.kids, plusOnes: r.plusOnes, ...(emails.length ? { emails } : {}) };
   });
   return { parse, lines };
-}
-
-/**
- * The Guests tab with everything the site does not read taken out, for sealing: same header row
- * (so the copy still says which columns the sheet has and the site leaves alone), same lines, and
- * every cell of an address, phone, dietary or notes column blank. The Email column stays: it is
- * the one contact column the sync reads. Lines below the end of the guest list (the sheet's own
- * tallies, see `guestRows`) are dropped. Tab-separated, whatever came in.
- */
-export function textForSealing(text: string): string {
-  const firstLine = text.replace(/^﻿/, '').split(/\r?\n/, 1)[0] ?? '';
-  const values = parseCsv(text.replace(/^﻿/, ''), { delimiter: firstLine.includes('\t') ? '\t' : ',', keepBlankRows: true });
-  const [header = [], ...body] = values;
-  const blank = header.map((h) => WITHHELD_FROM_SEALING(String(h ?? '')));
-  // Up to the last line that names someone: below it the sheet keeps its own tallies, with or
-  // without a blank line between, and those sit under whatever column they happen to be in.
-  const last = Math.max(0, ...guestRows(parseGuestSheetText(text)).map((r) => r.sheetRow - 1));
-  const kept = body.slice(0, last).map((row) => header.map((_h, i) => (blank[i] ? '' : String(row[i] ?? ''))));
-  const cellOut = (v: string) => v.replace(/[\t\r\n]+/g, ' ').trim();
-  return [header.map((h) => cellOut(String(h ?? ''))), ...kept.map((row) => row.map(cellOut))].map((row) => row.join('\t')).join('\n');
 }
