@@ -9,7 +9,16 @@ import { normalizePhoneE164 } from '@/domain/identity/phone';
  * Twilio again. The approval lives only for that one call chain, so nothing else can reuse it, and
  * Better Auth's own phone routes are disabled over HTTP (`DISABLED_AUTH_PATHS`).
  */
-const approved = new AsyncLocalStorage<{ to: string; code: string }>();
+/**
+ * One store for the process, kept on `globalThis`. The Better Auth instance is built once and kept;
+ * its `verifyOTP` hook closes over whichever copy of this module existed then. A dev server loads a
+ * module again as routes compile, and a second copy with its own store would write the approval
+ * where the hook never looks: the code Twilio had just approved read as "Invalid OTP". It showed
+ * only late in a long run, once enough routes had compiled (the mock's pending codes are kept the
+ * same way, for the same reason: src/providers/twilio-verify/mock.ts).
+ */
+const g = globalThis as unknown as { __weddingPhoneApproval?: AsyncLocalStorage<{ to: string; code: string }> };
+const approved = (g.__weddingPhoneApproval ??= new AsyncLocalStorage<{ to: string; code: string }>());
 
 const phoneKey = (to: string) => normalizePhoneE164(to) ?? to;
 
