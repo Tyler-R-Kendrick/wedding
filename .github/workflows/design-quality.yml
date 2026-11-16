@@ -28,7 +28,7 @@ env:
 # so CI getting slower is a red build rather than something noticed a month later.
 jobs:
   static:
-    name: lint · typecheck · design gates
+    name: lint · typecheck · design gates · concierge evals
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
@@ -79,6 +79,12 @@ jobs:
       - name: Documentation references resolve · .env.example complete · activation matrix current
         run: npm run docs:check
 
+      # The concierge eval gate: 26 questions through the real pipeline against the deterministic
+      # mock model, scored on grounding, tool selection, refusal correctness and authorization
+      # violations. The check below fails if this line goes.
+      - name: Concierge evals (vitest, deterministic mock model)
+        run: npm run test:evals
+
       - name: Every vitest project runs in CI
         run: node scripts/check-vitest-coverage.mjs
 
@@ -99,30 +105,29 @@ jobs:
           key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
 
   unit:
-    name: unit · ui · stage tests · concierge evals
+    name: unit · ui · stage tests ${{ matrix.shard }}/2
     runs-on: ubuntu-latest
-    timeout-minutes: 4
+    timeout-minutes: 3
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: ./.github/actions/setup
 
-      - name: Unit tests (vitest)
-        run: npm run test:unit
-
-      # The concierge eval gate: 26 questions through the real pipeline against the deterministic
-      # mock model, scored on grounding, tool selection, refusal correctness and authorization
-      # violations. scripts/check-vitest-coverage.mjs (the static job) fails if this line goes.
-      - name: Concierge evals (vitest, deterministic mock model)
-        run: npm run test:evals
+      # Two halves (vitest's own split, by file): 220 small files, so count is close enough to time.
+      - name: Unit tests (vitest), shard ${{ matrix.shard }} of 2
+        run: npm run test:unit -- --shard=${{ matrix.shard }}/2
 
   integration:
-    name: integration ${{ matrix.shard }}/4
+    name: integration ${{ matrix.shard }}/6
     runs-on: ubuntu-latest
     timeout-minutes: 4
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        shard: [1, 2, 3, 4, 5, 6]
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       # On a pull request, with selection on, a suite none of the changed files can reach is skipped
@@ -136,11 +141,11 @@ jobs:
       - uses: ./.github/actions/setup
         if: steps.reach.outputs.run == 'true'
 
-      # Four shards of about equal recorded time (scripts/ci/vitest-plan.mjs). In one job the 83
+      # Six shards of about equal recorded time (scripts/ci/vitest-plan.mjs). In one job the 83
       # files took 3.8 minutes at the median, the longest step outside Playwright.
-      - name: Integration tests (vitest + PGlite), shard ${{ matrix.shard }} of 4
+      - name: Integration tests (vitest + PGlite), shard ${{ matrix.shard }} of 6
         if: steps.reach.outputs.run == 'true'
-        run: npm run test:integration -- --reporter=default --reporter=json --outputFile.json=test-results/integration-${{ matrix.shard }}.json $(node scripts/ci/vitest-plan.mjs integration ${{ matrix.shard }}/4)
+        run: npm run test:integration -- --reporter=default --reporter=json --outputFile.json=test-results/integration-${{ matrix.shard }}.json $(node scripts/ci/vitest-plan.mjs integration ${{ matrix.shard }}/6)
 
       # Each file's time, for `npm run test:durations`, which the shard plan is built from.
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -160,18 +165,22 @@ jobs:
         include:
           - { kind: production, shard: 1, of: 2 }
           - { kind: production, shard: 2, of: 2 }
-          - { kind: test-server, shard: 1, of: 12 }
-          - { kind: test-server, shard: 2, of: 12 }
-          - { kind: test-server, shard: 3, of: 12 }
-          - { kind: test-server, shard: 4, of: 12 }
-          - { kind: test-server, shard: 5, of: 12 }
-          - { kind: test-server, shard: 6, of: 12 }
-          - { kind: test-server, shard: 7, of: 12 }
-          - { kind: test-server, shard: 8, of: 12 }
-          - { kind: test-server, shard: 9, of: 12 }
-          - { kind: test-server, shard: 10, of: 12 }
-          - { kind: test-server, shard: 11, of: 12 }
-          - { kind: test-server, shard: 12, of: 12 }
+          - { kind: test-server, shard: 1, of: 16 }
+          - { kind: test-server, shard: 2, of: 16 }
+          - { kind: test-server, shard: 3, of: 16 }
+          - { kind: test-server, shard: 4, of: 16 }
+          - { kind: test-server, shard: 5, of: 16 }
+          - { kind: test-server, shard: 6, of: 16 }
+          - { kind: test-server, shard: 7, of: 16 }
+          - { kind: test-server, shard: 8, of: 16 }
+          - { kind: test-server, shard: 9, of: 16 }
+          - { kind: test-server, shard: 10, of: 16 }
+          - { kind: test-server, shard: 11, of: 16 }
+          - { kind: test-server, shard: 12, of: 16 }
+          - { kind: test-server, shard: 13, of: 16 }
+          - { kind: test-server, shard: 14, of: 16 }
+          - { kind: test-server, shard: 15, of: 16 }
+          - { kind: test-server, shard: 16, of: 16 }
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       # On a pull request, with selection on, a suite none of the changed files can reach is skipped
