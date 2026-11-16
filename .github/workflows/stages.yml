@@ -112,7 +112,10 @@ jobs:
       - run: npx tsc -p scripts/stages/tsconfig.json
       # Every stage twice (at a host root for <stage>.dev.<domain>, under /<stage> for previews)
       # plus the hub, into public/_stages/, as the Vercel build does (vercel.json).
+      # Four builds at a time on the runner's four cores; the script's default of two took 106 s.
       - run: npm run stages:assemble
+        env:
+          STAGES_CONCURRENCY: '4'
       # Turbopack's build cache, seeded by main in design-quality.yml and only restored here.
       - uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
