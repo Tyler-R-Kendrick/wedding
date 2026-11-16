@@ -54,7 +54,8 @@ filter, not a broken proxy; add `?__posthog_debug=true` to see "likely bot" in t
 | Recorded | Not recorded |
 |---|---|
 | The page's structure and where the visitor tapped, scrolled and navigated | Any text on the page (masked), anything typed (masked), any photo or video (blocked) |
-| Errors, with stack traces; console output | Who the visitor is: no name, email, guest id, cookie or location |
+| Errors, with stack traces; console output | A name, email, cookie or location. A signed-in visit carries the visitor's opaque account id and nothing else about them |
+| A few named actions (an RSVP sent, a calendar exported, a flight search started) with counts | What was in them; the concierge's question and answer |
 | Page addresses, as paths | Query values, such as an invitation token |
 | Load and interaction timings | A browser with Do Not Track set |
 
@@ -121,7 +122,10 @@ To revoke every device's pass at once, rotate `BETTER_AUTH_SECRET` (which also s
 - The proxy (`src/app/api/observe/[...path]/route.ts`) builds the upstream request from an allowlist
   of headers. Never forward `cookie`, and never replace it with `rewrites()`.
 - `posthog-js` is imported in one file, `src/lib/observe/posthog-client.ts`, which only the dynamic
-  import in `src/instrumentation-client.ts` reaches. Importing it anywhere else puts the SDK in the
-  first view.
+  import in `src/instrumentation-client.ts` reaches. Everywhere else, import the facade:
+  `import posthog from '@/lib/observe/posthog'` (`capture`, `captureException`, `identify`,
+  `reset`). Importing the SDK itself puts it in the first view and creates a second, unconfigured
+  copy.
+- A new event must not carry anything a guest typed or anyone's name. Counts and kinds only.
 - Anything the recorder captures passes through `src/lib/diagnostics/scrub.ts` in the browser and
   again on the server.

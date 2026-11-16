@@ -1,5 +1,6 @@
 import { formatDeadline } from '@/domain/events/format';
 import { GuestCard } from '@/themes/guest';
+import posthog from '@/lib/observe/posthog';
 import type { ThemeId } from '@/themes/types';
 import { Button } from './fields';
 import type { RsvpFormState } from './types';
@@ -11,7 +12,14 @@ export function RsvpReview({ state, formAction, pending, theme }: { state: Revie
   const byEvent = new Map<string, ReviewState['proposal']['lines']>();
   for (const line of state.proposal.lines) byEvent.set(line.eventName, [...(byEvent.get(line.eventName) ?? []), line]);
   return (
-    <form action={formAction}>
+    <form
+      action={formAction}
+      onSubmit={(event) => {
+        if ((event.nativeEvent.submitter as HTMLButtonElement | null)?.value === 'confirm') {
+          posthog.capture('rsvp_submitted', { event_count: byEvent.size });
+        }
+      }}
+    >
       <input type="hidden" name="submission" value={JSON.stringify(state.submission)} />
       <input type="hidden" name="token" value={state.token} />
       <input type="hidden" name="idempotencyKey" value={state.idempotencyKey} />

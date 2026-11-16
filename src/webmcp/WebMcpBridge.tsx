@@ -2,7 +2,31 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import posthog from '@/lib/observe/posthog';
+import { sessionProbe } from '@/themes/shared/session-hint';
 import { startWebMcpBridge } from './register.client';
+
+const IDENTIFIED_ACCOUNT_KEY = 'posthog_identified_account_id';
+
+function readIdentifiedAccount(): string | null {
+  try {
+    return window.localStorage.getItem(IDENTIFIED_ACCOUNT_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function writeIdentifiedAccount(distinctId: string | null): void {
+  try {
+    if (distinctId) {
+      window.localStorage.setItem(IDENTIFIED_ACCOUNT_KEY, distinctId);
+    } else {
+      window.localStorage.removeItem(IDENTIFIED_ACCOUNT_KEY);
+    }
+  } catch {
+    // Analytics remains functional when browser storage is unavailable.
+  }
+}
 
 /**
  * The WebMCP island. Renders nothing — no DOM, no styles, no layout shift — and in a browser
@@ -29,6 +53,36 @@ export function WebMcpBridge() {
     void bridge.refresh();
     return () => controller.abort();
   }, [pathname, router]);
+
+  return null;
+}
+
+/** Identifies the authenticated account once per page load and clears it after a confirmed sign-out. */
+export function PostHogIdentity() {
+  useEffect(() => {
+    let active = true;
+
+    void sessionProbe().then(({ resolved, signedIn, distinctId }) => {
+      if (!active || !resolved) return;
+
+      const previousDistinctId = readIdentifiedAccount();
+      if (!signedIn || !distinctId) {
+        if (previousDistinctId) {
+          posthog.reset();
+          writeIdentifiedAccount(null);
+        }
+        return;
+      }
+
+      if (previousDistinctId && previousDistinctId !== distinctId) posthog.reset();
+      posthog.identify(distinctId);
+      writeIdentifiedAccount(distinctId);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return null;
 }

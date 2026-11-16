@@ -154,9 +154,11 @@ Read `docs/ops/observability.md` and ADR-0014 before touching any of it.
 - **Tracing is for every visitor**: a first-party flight recorder (`src/lib/diagnostics`, always on,
   no account) and PostHog (`src/lib/observe`, on when `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN` is set).
   PostHog is reached only through `/api/observe`, a route handler that forwards no cookie and no
-  client address; never swap it for `rewrites()`. `posthog-js` is imported in one file,
-  `src/lib/observe/posthog-client.ts`, loaded lazily. Nobody is identified, and replays mask all
-  text and inputs and block photos and video.
+  client address; never swap it for `rewrites()` or widen the CSP for it. `posthog-js` is imported
+  in one file, `src/lib/observe/posthog-client.ts`, loaded lazily; everywhere else use the facade,
+  `import posthog from '@/lib/observe/posthog'`. A signed-in visitor is identified by their opaque
+  account id only, replays mask all text and inputs and block photos and video, and no event
+  carries anything a guest typed.
 - **The problem reporter is for Tyler and Sara only** (`Alt+Shift+B`, the account menu, error
   pages): `src/components/feedback`, `/api/feedback`, `src/lib/feedback`, `src/providers/issue-tracker`
   (Linear or GitHub). It must keep working when sign-in, the database or the page's own script do

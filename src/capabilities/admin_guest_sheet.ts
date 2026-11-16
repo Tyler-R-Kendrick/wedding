@@ -5,6 +5,7 @@ import { CapabilityError } from '@/contracts/errors';
 import { newId } from '@/contracts/ids';
 import { err, ok } from '@/contracts/result';
 import { guestSheetCopies } from '@/db/schema';
+import { sheetSyncLines, syncGuestsFromSheet } from '@/domain/guests/sheet-sync';
 import { parseGuestSheetText } from '@/domain/guests/sheet';
 import { totalsOf } from '@/domain/guests/sheet-totals';
 import { appServices } from './context';
@@ -91,12 +92,25 @@ const uploadInput = z.object({
   source: z.string().trim().max(120).optional(),
   dryRun: z.boolean().optional(),
 });
-const uploadOutput = z.object({ dryRun: z.boolean(), lines: z.number().int(), people: z.number().int(), withheldColumns: z.array(z.string()), missingColumns: z.array(z.string()) });
+const uploadOutput = z.object({
+  dryRun: z.boolean(),
+  lines: z.number().int(),
+  people: z.number().int(),
+  withheldColumns: z.array(z.string()),
+  missingColumns: z.array(z.string()),
+  /** What saving did to the guest records (absent on a dry run): counts only. */
+  guests: z.object({ added: z.number().int(), alreadyThere: z.number().int(), completed: z.number().int(), counted: z.number().int(), cannotBeFoundByName: z.number().int(), skippedLines: z.number().int() }).optional(),
+});
 
 /**
  * Replaces the planning sheet's copy with a fresh one. The pasted text is parsed on the server and
  * only the planning columns are kept; the text itself is never stored or logged. A dry run says
  * what would be saved.
+ *
+ * Saving also makes the guest records agree with the sheet (src/domain/guests/sheet-sync.ts): each
+ * person a line names becomes a guest unless they already are one, so that either person on a line
+ * can sign in under their own name. It only adds and completes; nobody is removed or changed. The
+ * one contact column it reads is Email, which becomes that guest's sign-in address.
  */
 export const adminUploadGuestSheet = defineCapability<z.infer<typeof uploadInput>, z.infer<typeof uploadOutput>>({
   ...ADMIN_ONLY,
@@ -119,8 +133,21 @@ export const adminUploadGuestSheet = defineCapability<z.infer<typeof uploadInput
     if (i.dryRun) return ok({ data: summary, sources: [] });
     const { db } = appServices(ctx);
     const id = newId();
-    await db.insert(guestSheetCopies).values({ id, rows: parsed.rows, withheldColumns: parsed.withheldColumns, missingColumns: parsed.missingColumns, source: i.source || null, uploadedBy: guard.value.adminId, uploadedAt: ctx.now });
-    await ctx.audit.record({ actor: actorOf(ctx), action: 'guest.imported', target: { type: 'guest_sheet_copy', id }, outcome: 'success', requestId: ctx.requestId, metadata: { lines: summary.lines, people: summary.people } });
-    return ok({ data: summary, sources: [] });
+    // The copy and the guest records change together, or not at all.
+    const synced = await db.transaction(async (tx) => {
+      const t = tx as unknown as typeof db;
+      await t.insert(guestSheetCopies).values({ id, rows: parsed.rows, withheldColumns: parsed.withheldColumns, missingColumns: parsed.missingColumns, source: i.source || null, uploadedBy: guard.value.adminId, uploadedAt: ctx.now });
+      return syncGuestsFromSheet(t, sheetSyncLines(i.text).lines);
+    });
+    const guestsSummary = {
+      added: synced.guests.created,
+      alreadyThere: synced.guests.found,
+      completed: synced.guests.completed,
+      counted: synced.guests.unnamedCreated,
+      cannotBeFoundByName: Object.values(synced.notes).reduce((a, b) => a + (b ?? 0), 0),
+      skippedLines: synced.skipped.length,
+    };
+    await ctx.audit.record({ actor: actorOf(ctx), action: 'guest.imported', target: { type: 'guest_sheet_copy', id }, outcome: 'success', requestId: ctx.requestId, metadata: { lines: summary.lines, people: summary.people, ...guestsSummary, householdsAdded: synced.households.created, emailsAdded: synced.emailsAdded, foundElsewhere: synced.foundElsewhere } });
+    return ok({ data: { ...summary, guests: guestsSummary }, sources: [] });
   },
 });

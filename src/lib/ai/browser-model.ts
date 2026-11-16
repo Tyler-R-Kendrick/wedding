@@ -1,3 +1,5 @@
+import posthog from '@/lib/observe/posthog';
+
 /**
  * The concierge, run on the guest's own device, through the Vercel AI SDK.
  *
@@ -75,11 +77,51 @@ export async function prepare(state: BrowserModelState, onProgress?: (progress: 
   }
 }
 
+export type AiObservabilityContext = {
+  /** The persisted concierge conversation, returned by the evidence request. */
+  sessionId: string;
+  /** One browser-model invocation within that conversation. */
+  traceId: string;
+};
+
 export type AskOptions = {
   /** Grounding for the concierge: the site's own facts, nothing invented. */
   systemPrompt?: string;
   signal?: AbortSignal;
+  /** Present only for a concierge turn with a server-issued conversation session. */
+  observability?: AiObservabilityContext;
 };
+
+function captureOnDeviceGeneration(
+  prompt: string,
+  output: string,
+  usage: { inputTokens: number | undefined; outputTokens: number | undefined },
+  options: AskOptions,
+  startedAt: number,
+): void {
+  const context = options.observability;
+  if (!context) return;
+  try {
+    // This is intentionally fire-and-forget: an analytics outage must not delay or discard a local answer.
+    posthog.capture('$ai_generation', {
+      $ai_trace_id: context.traceId,
+      $ai_session_id: context.sessionId,
+      $ai_span_name: 'concierge_on_device_draft',
+      $ai_model: 'browser:prompt-api',
+      $ai_provider: 'browser',
+      $ai_input: [
+        ...(options.systemPrompt ? [{ role: 'system', content: options.systemPrompt }] : []),
+        { role: 'user', content: prompt },
+      ],
+      $ai_output_choices: [{ role: 'assistant', content: output }],
+      $ai_input_tokens: usage.inputTokens,
+      $ai_output_tokens: usage.outputTokens,
+      $ai_latency: (performance.now() - startedAt) / 1_000,
+    });
+  } catch {
+    // PostHog capture is observational only.
+  }
+}
 
 /**
  * One question, one draft, written on-device with the AI SDK. Resolves `null` when the device
@@ -87,6 +129,7 @@ export type AskOptions = {
  */
 export async function askOnDevice(prompt: string, options: AskOptions = {}): Promise<string | null> {
   if (!isSupported()) return null;
+  const startedAt = performance.now();
   try {
     const [{ generateText }, { browserAI }] = await Promise.all([import('ai'), import('@browser-ai/core')]);
     // A fresh model for every question: the provider keeps one Prompt API session per model, and
@@ -94,7 +137,7 @@ export async function askOnDevice(prompt: string, options: AskOptions = {}): Pro
     // last one's. It asks the browser for availability itself and refuses an unavailable model.
     const model = browserAI('text');
     try {
-      const { text } = await generateText({
+      const { text, usage } = await generateText({
         model,
         ...(options.systemPrompt ? { system: options.systemPrompt } : {}),
         prompt,
@@ -102,7 +145,10 @@ export async function askOnDevice(prompt: string, options: AskOptions = {}): Pro
         // A retry would spend the caller's whole deadline on a device that has already failed once.
         maxRetries: 0,
       });
-      return text.trim() ? text : null;
+      const output = text.trim();
+      if (!output) return null;
+      captureOnDeviceGeneration(prompt, output, usage, options, startedAt);
+      return output;
     } finally {
       release(model);
     }

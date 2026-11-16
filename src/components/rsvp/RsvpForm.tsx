@@ -2,6 +2,7 @@
 
 import { Placeholder } from '@/components/provenance/Placeholder';
 import { useRouter } from 'next/navigation';
+import posthog from '@/lib/observe/posthog';
 import { useActionState, useEffect, useState, type ReactNode } from 'react';
 import type { MyRsvp } from '@/capabilities/rsvp';
 import type { RsvpPart } from '@/domain/rsvp/parts';
@@ -119,7 +120,11 @@ function RsvpFormRound({ data, action, idempotencyKey, theme, parts = data.next,
     .filter((s) => s.rows.length > 0);
 
   return (
-    <form action={formAction} noValidate>
+    <form
+      action={formAction}
+      noValidate
+      onSubmit={() => posthog.capture('rsvp_review_started', { response_parts: parts })}
+    >
       <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
       {parts.map((p) => (
         <input key={p} type="hidden" name="parts" value={p} />

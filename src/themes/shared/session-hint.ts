@@ -3,7 +3,11 @@
  * account menu (`AccountMenu`) and the preview band (`GuestViewBand`), so a page asks once.
  */
 export interface SessionHint {
+  /** Whether the session endpoint answered successfully (rather than falling back after a failed request). */
+  resolved: boolean;
   signedIn: boolean;
+  /** Opaque, immutable authenticated account id for analytics; never a guest name or email. */
+  distinctId: string | null;
   admin: boolean;
   /** An administrator browsing as a specific guest profile (legacy inspect flow). */
   viewAs: { name: string; household: string; readOnly: boolean } | null;
@@ -15,13 +19,13 @@ export interface SessionHint {
   portals: { label: string; href: string }[];
   /**
    * Whether this reader is one of the couple and may use the problem reporter
-   * (src/components/feedback). Present only when `/api/session` answered: a failed request leaves
-   * it out, and the reporter treats "no answer" as "no change".
+   * (src/components/feedback). Only meaningful when `resolved`: a failed request reads false here,
+   * and the reporter treats "no answer" as "no change".
    */
-  reporter?: boolean;
+  reporter: boolean;
 }
 
-export const SIGNED_OUT: SessionHint = { signedIn: false, admin: false, viewAs: null, viewRole: null, viewing: false, portals: [] };
+export const SIGNED_OUT: SessionHint = { resolved: false, signedIn: false, distinctId: null, admin: false, viewAs: null, viewRole: null, viewing: false, portals: [], reporter: false };
 
 let probe: Promise<SessionHint> | null = null;
 
@@ -62,13 +66,16 @@ function viewRoleOf(v: unknown): SessionHint['viewRole'] {
 async function ask(): Promise<SessionHint> {
   const r = await fetch('/api/session', { credentials: 'same-origin', cache: 'no-store', headers: { accept: 'application/json' } });
   if (!r.ok) throw new Error(`session probe: ${r.status}`);
-  const body = (await r.json()) as { signedIn?: unknown; admin?: unknown; viewAs?: unknown; viewRole?: unknown; portals?: unknown; reporter?: unknown };
+  const body = (await r.json()) as { signedIn?: unknown; distinctId?: unknown; admin?: unknown; viewAs?: unknown; viewRole?: unknown; portals?: unknown; reporter?: unknown };
   const signedIn = body.signedIn === true;
+  const distinctId = signedIn && typeof body.distinctId === 'string' && body.distinctId.length > 0 ? body.distinctId : null;
   const viewAs = signedIn ? viewAsOf(body.viewAs) : null;
   const viewRole = signedIn ? viewRoleOf(body.viewRole) : null;
   const portals = signedIn ? portalsOf(body.portals) : [];
   const hint: SessionHint = {
+    resolved: true,
     signedIn,
+    distinctId,
     admin: signedIn && body.admin === true,
     viewAs,
     viewRole,

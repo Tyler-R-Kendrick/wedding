@@ -116,3 +116,29 @@ describe('the proxy route', () => {
     expect(down.status).toBe(502);
   });
 });
+
+describe('what leaves the browser in an event', () => {
+  const ORIGIN = 'https://kendrick.wedding';
+
+  it('loses query values from every address it carries', async () => {
+    const { scrubEvent } = await import('@/lib/observe/scrub-event');
+    const event = scrubEvent({ event: '$pageview', properties: { $current_url: `${ORIGIN}/rsvp?t=SECRET&preview=RSVP_OPEN`, $referrer: 'https://mail.example/inbox?id=9', other: 'kept' }, $set_once: { $initial_current_url: `${ORIGIN}/i/01HZX4K9M2N8P7Q6R5S4T3V2W1?x=1` } }, ORIGIN);
+    expect(event.properties).toEqual({ $current_url: `${ORIGIN}/rsvp?t&preview`, $referrer: 'https://mail.example', other: 'kept' });
+    expect(event.$set_once).toEqual({ $initial_current_url: `${ORIGIN}/i/:id?x` });
+  });
+
+  it('keeps the concierge event’s numbers and drops what the guest asked and was told', async () => {
+    const { scrubEvent } = await import('@/lib/observe/scrub-event');
+    const event = scrubEvent(
+      { event: '$ai_generation', properties: { $ai_model: 'browser:prompt-api', $ai_latency: 1.2, $ai_input_tokens: 40, $ai_input: [{ role: 'user', content: 'Is my aunt at table 4?' }], $ai_output_choices: [{ role: 'assistant', content: 'Yes.' }] } },
+      ORIGIN,
+    );
+    expect(event.properties).toEqual({ $ai_model: 'browser:prompt-api', $ai_latency: 1.2, $ai_input_tokens: 40 });
+  });
+
+  it('leaves other events’ properties alone, and passes null through', async () => {
+    const { scrubEvent } = await import('@/lib/observe/scrub-event');
+    expect(scrubEvent({ event: 'rsvp_submitted', properties: { event_count: 2, $ai_input: 'not an ai event' } }, ORIGIN).properties).toEqual({ event_count: 2, $ai_input: 'not an ai event' });
+    expect(scrubEvent(null, ORIGIN)).toBeNull();
+  });
+});

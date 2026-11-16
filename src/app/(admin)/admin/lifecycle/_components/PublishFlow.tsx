@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import posthog from '@/lib/observe/posthog';
 import { AdminFlow, type FieldErrors, type FlowStep } from '@/components/admin/flow/AdminFlow';
 import { Consequences, ReviewList, SelectField, TextField } from '@/components/admin/flow/fields';
 import { callCapability } from '@/components/handoff/client';
@@ -115,6 +116,7 @@ export function PublishFlow({ moves }: { moves: LifecycleMove[] }) {
         input: payload,
         confirmationToken: (v) => v.token || undefined,
         success: `Published ${stateLabel(chosen)}. Guests see it on their next page load.`,
+        onSuccess: (_data, values) => posthog.capture('lifecycle_state_published', { target_state: values.to }),
       }}
     />
   );

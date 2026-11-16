@@ -3,7 +3,7 @@ import { newId } from '@/contracts/ids';
 import type { Db } from '@/db/client';
 import { authAccounts, authUsers, guests, invitations, socialAuthReviews, type SocialProvider, type SocialReviewReason } from '@/db/schema';
 import { findGuestsByEmail } from '@/domain/guests/repo';
-import { matchGuestsByName, type ProviderProfileName } from '@/domain/identity/name-match';
+import { householdSurnamesOf, matchGuestsByName, SIGN_IN_MAX_RANK, type ProviderProfileName } from '@/domain/identity/name-match';
 import { activeBindingForGuest, activeBindingsForIdentity, bindIdentity, ensureAuthUser, findAuthUserByEmail } from '@/domain/identity/bindings';
 import { verifiedProviderEmail } from '@/domain/identity/social/admin-email';
 import type { CookieSink } from '@/lib/auth';
@@ -224,10 +224,14 @@ export async function completeSocialSignIn(
     }
   }
 
-  const candidates = (await listMatchableGuests(db)).filter(
+  const adults = (await listMatchableGuests(db)).filter(
     (g) => g.kind !== 'child' && !g.isMinor && g.isNamed !== false,
   );
-  const { confidence, matches: nameMatches } = matchGuestsByName(profileName, candidates);
+  // Each guest with the surnames of the other adults they are on the list with: a couple under two
+  // surnames may each go by the other's, and a guest listed by first name is known by the household's.
+  const surnames = householdSurnamesOf(adults);
+  const candidates = adults.map((g) => ({ ...g, householdSurnames: surnames.get(g.id) ?? [] }));
+  const { confidence, matches: nameMatches, rank } = matchGuestsByName(profileName, candidates);
 
   let emailMatches: typeof candidates = [];
   const guestVerifiedEmail = verifiedEmail;
@@ -241,17 +245,21 @@ export async function completeSocialSignIn(
   }
 
   const emailGuest = emailMatches.length === 1 ? emailMatches[0]! : emailMatches.length > 1 ? null : null;
-  const nameGuest = confidence === 'one' ? nameMatches[0]! : null;
+  // A fit that rests on a slip in the given name is one letter from being someone else: it is kept
+  // for the couple to look at (with who it nearly was), and signs in nobody.
+  const nearMiss = confidence !== 'none' && rank !== null && rank > SIGN_IN_MAX_RANK;
+  const nameGuest = confidence === 'one' && !nearMiss ? nameMatches[0]! : null;
 
   if (emailMatches.length > 1) return finishGuestFailure('ambiguous', emailMatches.map((m) => m.id));
-  if (confidence === 'ambiguous') return finishGuestFailure('ambiguous', nameMatches.map((m) => m.id));
+  // Two guests the name nearly fits are no reason to turn away a verified email that is one guest's.
+  if (confidence === 'ambiguous' && !nearMiss) return finishGuestFailure('ambiguous', nameMatches.map((m) => m.id));
 
   if (emailGuest && nameGuest && emailGuest.id !== nameGuest.id) {
     return finishGuestFailure('email_name_conflict', [emailGuest.id, nameGuest.id]);
   }
 
   const guest = emailGuest ?? nameGuest;
-  if (!guest) return finishGuestFailure('no_match', []);
+  if (!guest) return finishGuestFailure('no_match', nearMiss ? nameMatches.map((m) => m.id) : []);
 
   if (!(await invitationSentForGuest(db, guest.id))) return finishGuestFailure('not_sent', [guest.id]);
 

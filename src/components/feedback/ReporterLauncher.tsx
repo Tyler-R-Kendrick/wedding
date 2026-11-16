@@ -39,10 +39,11 @@ class Boundary extends Component<{ children: ReactNode; request: ReportRequest }
 }
 
 function applyHint(hint: SessionHint): void {
-  // `reporter` is absent when the request failed: no news is not a sign-out.
-  if (hint.reporter === true) {
+  // An answer that did not arrive is not a sign-out: no news changes nothing.
+  if (!hint.resolved) return;
+  if (hint.reporter) {
     if (!isArmed()) setArmed(true);
-  } else if (hint.reporter === false && isArmed()) {
+  } else if (isArmed()) {
     setArmed(false);
     // The pass cookie goes with the marker. Best effort: it expires on its own.
     void fetch(FEEDBACK_PATH, { method: 'DELETE', credentials: 'same-origin' }).catch(() => undefined);

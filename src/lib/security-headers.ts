@@ -97,6 +97,8 @@ export function contentSecurityPolicy({ production }: SecurityHeaderOptions, { f
     'media-src': "'self' blob: https:",
     'font-src': "'self'",
     // Same-origin, plus the Hub the on-device models download from. `next dev` adds an HMR websocket.
+    // PostHog is not here on purpose: the browser reaches it through `/api/observe` on this origin
+    // (src/app/api/observe), and its SDK is bundled, so neither directive names a PostHog host.
     'connect-src': production ? `'self' ${MODEL_HOSTS}` : `'self' ${MODEL_HOSTS} ws: wss:`,
     'worker-src': "'self' blob:",
     'manifest-src': "'self'",

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import posthog from '@/lib/observe/posthog';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { MyUploadItem } from '@/capabilities/media';
 import { callCapability } from './capabilityClient';
@@ -72,6 +73,11 @@ export function UploadForm({ collection, myUploadsHref }: { collection?: string;
     (list: FileList | File[]) => {
       const files = Array.from(list);
       if (files.length === 0) return;
+      posthog.capture('media_files_selected', {
+        file_count: files.length,
+        image_count: files.filter((file) => file.type.startsWith('image/')).length,
+        video_count: files.filter((file) => file.type.startsWith('video/')).length,
+      });
       const adopted: File[] = [];
       const added: UploadJob[] = [];
       for (const file of files) {

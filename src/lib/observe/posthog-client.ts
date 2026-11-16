@@ -7,8 +7,9 @@ import 'posthog-js/dist/exception-autocapture';
 import 'posthog-js/dist/tracing-headers';
 import 'posthog-js/dist/web-vitals';
 import { linkDiagnostics, snapshot, type Observer } from '@/lib/diagnostics/recorder';
-import { scrubPath } from '@/lib/diagnostics/scrub';
 import { isReplayUrl, OBSERVE_PATH, type ObserveConfig } from './config';
+import { connectPostHog } from './posthog';
+import { scrubEvent, scrubUrl } from './scrub-event';
 
 /**
  * Session tracing for every visitor, through PostHog: what they did (page views, clicks), what
@@ -18,13 +19,15 @@ import { isReplayUrl, OBSERVE_PATH, type ObserveConfig } from './config';
  * It applies to everyone, so it is set to learn as little about anyone as still lets a failure be
  * debugged:
  *
- *  - Nobody is identified. No name, email, guest id or household reaches PostHog; a visitor is a
- *    random id that lasts for one browser tab (`persistence: 'sessionStorage'`, so no cookie either).
+ *  - No name, email or household reaches PostHog. A signed-out visitor is a random id; a
+ *    signed-in one is identified by their opaque account id (`PostHogIdentity`, src/webmcp), which
+ *    means nothing outside this site's database. The id is kept in `localStorage`, so no cookie.
  *  - A replay shows the page's structure and the visitor's movement through it, not its content:
  *    every piece of text is masked, every input is masked, and pictures and video are replaced by
  *    blank boxes of the same size. The couple's photographs and the guests' names are never sent.
  *  - Autocapture records which control was used, never the words on it.
- *  - Addresses lose their query values before they are sent (an invitation token travels there).
+ *  - Addresses lose their query values before they are sent (an invitation token travels there),
+ *    and the concierge's analytics event loses the question and the answer (./scrub-event.ts).
  *  - No location: the proxy withholds the visitor's address and every event carries
  *    `$geoip_disable` (src/app/api/observe/[...path]/route.ts).
  *  - A browser that asks not to be tracked is not.
@@ -32,18 +35,6 @@ import { isReplayUrl, OBSERVE_PATH, type ObserveConfig } from './config';
  * Loaded on its own, after the page is interactive (src/instrumentation-client.ts), so the SDK's
  * weight is never between a guest and the first view.
  */
-const URL_PROPERTIES = ['$current_url', '$referrer', '$prev_pageview_pathname', '$pathname', '$initial_current_url', '$initial_referrer', '$session_entry_url', '$session_entry_referrer'];
-
-function scrubUrl(value: unknown): unknown {
-  if (typeof value !== 'string' || !value) return value;
-  try {
-    const url = new URL(value, location.origin);
-    return url.origin === location.origin ? `${url.origin}${scrubPath(url.pathname + url.search)}` : url.origin;
-  } catch {
-    return scrubPath(value);
-  }
-}
-
 let started = false;
 
 export function startPostHog(config: ObserveConfig): void {
@@ -60,7 +51,10 @@ export function startPostHog(config: ObserveConfig): void {
     },
     disable_external_dependency_loading: true,
     person_profiles: 'identified_only',
-    persistence: 'sessionStorage',
+    // No cookie (it would ride on every request to this site). localStorage rather than
+    // sessionStorage because signed-in visitors are identified: one browser is then one anonymous
+    // id merged into the account once, not a new one for every tab.
+    persistence: 'localStorage',
     respect_dnt: true,
     disable_surveys: true,
     capture_dead_clicks: false,
@@ -76,19 +70,20 @@ export function startPostHog(config: ObserveConfig): void {
       maskTextSelector: '*',
       blockSelector: 'img, picture, video, canvas, [data-private]',
       maskCapturedNetworkRequestFn: (request) => {
-        request.name = String(scrubUrl(request.name));
+        request.name = String(scrubUrl(request.name, location.origin));
         return request;
       },
     },
-    before_send: (event) => {
-      if (!event) return event;
-      const properties = event.properties ?? {};
-      for (const key of URL_PROPERTIES) if (key in properties) properties[key] = scrubUrl(properties[key]);
-      if (event.$set_once) for (const key of URL_PROPERTIES) if (key in event.$set_once) event.$set_once[key] = scrubUrl(event.$set_once[key]);
-      return event;
-    },
+    before_send: (event) => scrubEvent(event, location.origin),
     loaded: (instance) => {
       (globalThis as typeof globalThis & { __weddingObserve?: Observer }).__weddingObserve = { link: linkPostHog, report: reportToPostHog };
+      // Everything components captured through the facade while this was loading (./posthog.ts).
+      connectPostHog({
+        capture: (event, properties) => void instance.capture(event, properties),
+        captureException: (error, properties) => void instance.captureException(error, properties),
+        identify: (distinctId, properties) => instance.identify(distinctId, properties),
+        reset: () => instance.reset(),
+      });
       const recorded = snapshot();
       // `visit` is the flight recorder's id: the one a problem report and the server log carry.
       instance.register({ $geoip_disable: true, build: recorded.build, visit: recorded.session });

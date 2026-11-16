@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect } from 'react';
+import { captureError } from '@/lib/diagnostics/recorder';
 
 /**
  * A console screen that failed to render. Its own `<main>`, like every console page (the layout
@@ -11,6 +12,8 @@ import { useEffect } from 'react';
  */
 export default function AdminError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
+    // To the site's own log, and to PostHog when it is connected (src/lib/diagnostics/recorder.ts).
+    captureError(error, 'boundary', error.digest ? { digest: error.digest } : {});
     console.error(error);
   }, [error]);
   return (

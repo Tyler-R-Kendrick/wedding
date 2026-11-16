@@ -51,10 +51,10 @@ It is configured to learn as little about anyone as still lets a failure be debu
 
 | Setting | Effect |
 |---|---|
-| nobody is identified; `persistence: 'sessionStorage'` | a visitor is a random id that lasts one tab; no cookie |
+| a signed-in visitor is identified by their opaque account id only; `persistence: 'localStorage'` | no name, email or household; no cookie |
 | `maskTextSelector: '*'`, `maskAllInputs`, `blockSelector: 'img, picture, video, canvas, [data-private]'` | a replay shows layout and movement, never words, typing, photographs or video |
 | `mask_all_text`, `mask_all_element_attributes` | autocapture records which control, not what it says |
-| `before_send` and `maskCapturedNetworkRequestFn` scrub addresses | query values (an invitation token, a preview pass) never leave |
+| `before_send` (`scrub-event.ts`) and `maskCapturedNetworkRequestFn` | query values (an invitation token, a preview pass) never leave; the concierge's `$ai_generation` event keeps its numbers and loses the question and the answer |
 | proxy withholds the client address; `$geoip_disable` on every event | no location |
 | `respect_dnt` | a browser that asks not to be tracked is not |
 | `disable_external_dependency_loading`, the `no-external` build, recorder imported from npm | no script is fetched from PostHog's CDN at run time; what runs is what the lockfile pins |
@@ -69,6 +69,24 @@ The SDK is a separate chunk of about 200 kB on the wire, requested a moment afte
 loaded, when the browser is idle, and only when a token is configured. Without one it is never
 requested. Measured on a production build of the home page: the first view goes from 162 kB over 9
 scripts to 167 kB over 10 (the recorder and the reporter's launcher).
+
+### 1a. Merged with PostHog's own setup
+
+While this was in review, PostHog's setup PR (#135) landed on `main` with the vendor's standard
+recipe: the SDK imported by components and initialised at load, talking to PostHog directly with
+`script-src` and `connect-src` widened to its hosts, signed-in visitors identified, a dozen custom
+events, and server logs exported over OTLP. The two were merged as follows.
+
+| From #135 | Kept? |
+|---|---|
+| Identifying signed-in visitors by `authIdentityId` (`PostHogIdentity`, `/api/session` `distinctId`) | Kept. It answers "which guest hit this", which this ADR had left open. |
+| Custom events (`rsvp_submitted`, `trip_plan_item_saved`, …) and `captureException` in boundaries | Kept, through a facade (`src/lib/observe/posthog.ts`) with the SDK's own method names. Calls made before the lazy SDK loads are queued and replayed. |
+| Server log export (`src/lib/posthog-logs.ts`) | Kept as it is. |
+| `import posthog from 'posthog-js'` in components | Replaced by the facade: a direct import puts about 200 kB in every page's first view, and is a second, unconfigured copy of the SDK. |
+| Direct connection, CSP widened to PostHog's hosts | Replaced by the proxy; the CSP is back to this origin. |
+| Default replay masking (inputs only) and the visitor's address forwarded | Replaced by this ADR's settings: all text masked, media blocked, no location (PRODUCT.md rules out IP geolocation). |
+| `$ai_generation` carrying the concierge question, grounding prompt and answer | The event is kept; its text is removed in `before_send`. Nothing a guest types goes to PostHog. |
+| `throw` in the browser when the variables are unset outside production | Removed: a local checkout needs no account (CLAUDE.md). |
 
 ### 2. The problem reporter
 
@@ -121,7 +139,8 @@ audit rows and idempotency keys, and "the database is down" is a report this mus
   Each batch is a function invocation.
 - **Replay attributes are not masked.** Text and inputs are; a link's address or an `aria-label` is
   recorded as written. Mark anything sensitive `data-private`.
-- **Sessions are anonymous**, so "which guest hit this" is answered by time and page, not by name.
+- **Signed-in sessions carry an account id.** It is opaque, but it does tie a guest's visits
+  together in a third party's store; a signed-out visit stays anonymous.
 - **The pass outlives a removed owner by up to thirty days**, for filing rate-limited reports only.
   Rotating `BETTER_AUTH_SECRET` voids every pass.
 
@@ -134,8 +153,9 @@ audit rows and idempotency keys, and "the database is down" is a report this mus
 - Source maps. Stack traces in PostHog are minified until `@posthog/nextjs-config` uploads them. It
   supports Turbopack on Next ≥ 15.4.1 (read from the package), but it fails the build when an upload
   fails, and it could not be exercised without a personal API key, so it is not wired in.
-- Identifying signed-in guests by their opaque guest id would make a guest's sessions findable. It
-  widens what `/api/session` says and what PostHog holds, so it is left as a decision.
+- `TODO(Tyler & Sara)`: confirm the three places this merge is stricter than #135 (text masking in
+  replays, no location, no concierge text). Each is one setting in
+  `src/lib/observe/posthog-client.ts` or `scrub-event.ts`.
 - Server logs still live in Vercel's runtime log. A log drain to PostHog needs Vercel Pro.
 
 ## Alternatives considered
@@ -170,5 +190,8 @@ Facts are from vendor documentation and pricing pages read on 2026-11-16.
 - `tests/ui/reporter.test.tsx`: the shortcut does nothing unarmed and falls back to the plain form;
   the launcher renders nothing for a guest; a failed session check leaves the device armed.
 - `src/lib/security-headers.ts` and its tests are untouched: the CSP did not move.
-- `grep -rn "posthog-js" src` matches `src/lib/observe/posthog-client.ts` only, and that file is
-  reached only by the dynamic import in `src/instrumentation-client.ts`.
+- `grep -rn "from 'posthog-js" src` matches `src/lib/observe/posthog-client.ts` only, and that file
+  is reached only by the dynamic import in `src/instrumentation-client.ts`. Everything else imports
+  `@/lib/observe/posthog` (`tests/ui/posthog-facade.test.tsx`).
+- `tests/unit/observe/proxy.test.ts` › *what leaves the browser in an event*: query values and
+  concierge text are removed.

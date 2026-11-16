@@ -44,7 +44,8 @@ export function PrivacyDocument({ reader }: { reader: Reader }) {
               <p className="credits__name">How a visit went</p>
               <p>
                 So we can find and fix problems, each visit is recorded as a replay of where you tapped and scrolled, with errors and loading times. The replay hides everything written on the page and everything you type, and leaves out every photo and video, so it shows the page’s layout and not its
-                content. It is not tied to your name, email or invitation, it uses no cookie, and it ends when you close the tab. If your browser is set to “Do Not Track”, nothing is recorded.
+                content. We also note a few actions, such as sending an RSVP or exporting a calendar, without what was in them. None of this carries your name or email: a signed-in visit is filed under an internal account number that means nothing outside this site. It uses no cookie. If your
+                browser is set to “Do Not Track”, nothing is recorded.
               </p>
             </li>
           ) : null}
@@ -80,7 +81,7 @@ export function PrivacyDocument({ reader }: { reader: Reader }) {
           {tracing ? (
             <li className="credits__item">
               <p>
-                <strong>PostHog</strong> stores the visit replays and error reports described above. It does not receive your name, email, cookies or location.
+                <strong>PostHog</strong> stores the visit replays, action notes and error reports described above. It does not receive your name, email, cookies or location.
               </p>
             </li>
           ) : null}
