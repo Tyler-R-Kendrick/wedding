@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { durationKey, grepFor, grepTitle, plan as planE2e } from '../../../scripts/ci/e2e-plan.mjs';
+import { durationKey, grepFor, grepTitle, plan as planE2e, serverState } from '../../../scripts/ci/e2e-plan.mjs';
 import { filesOf, plan as planFiles, readDurations } from '../../../scripts/ci/vitest-plan.mjs';
 
 type E2eTest = { file: string; titles: string[]; project: string };
@@ -30,6 +30,24 @@ describe('the Playwright shard plan (scripts/ci/e2e-plan.mjs)', () => {
     for (const shards of [planE2e(tests, seconds, 3, (file) => file.endsWith('c.spec.ts')), planE2e(tests, seconds, 8, (file) => file.endsWith('c.spec.ts'))]) {
       expect(shards.filter((s) => s.tests.some((x) => x.file.endsWith('c.spec.ts')))).toHaveLength(1);
     }
+  });
+
+  it('never gives one shard two units that change the same server-wide state: both projects share its server', () => {
+    const seating = (file: string) => (file.endsWith('b.spec.ts') || file.endsWith('c.spec.ts') ? 'seating' : null);
+    const both = [...tests, t('tests/e2e/b.spec.ts', 'three', 'desktop'), t('tests/e2e/c.spec.ts', 'five', 'desktop')];
+    for (const n of [4, 6, 9]) {
+      const shards = planE2e(both, seconds, n, (file) => seating(file) !== null, seating);
+      expect(keys(shards.flatMap((s) => s.tests))).toEqual(keys(both));
+      for (const shard of shards) expect(new Set(shard.tests.filter((x) => seating(x.file)).map((x) => `${x.project} ${x.file}`)).size).toBeLessThanOrEqual(1);
+    }
+    // Four such units need four shards. Fewer is an error, not a quiet race.
+    expect(() => planE2e(both, seconds, 3, (file) => seating(file) !== null, seating)).toThrow(/cannot keep apart the seating units/);
+  });
+
+  it('reads the state a spec changes from its own `@server-state` line', () => {
+    expect(serverState('tests/e2e/seating.spec.ts')).toBe('seating');
+    expect(serverState('tests/security/seating.spec.ts')).toBe('seating');
+    expect(serverState('tests/e2e/rsvp.spec.ts')).toBeNull();
   });
 
   it('counts a test with no recorded time as the median, so a new test cannot make a shard look empty', () => {

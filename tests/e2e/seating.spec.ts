@@ -24,6 +24,10 @@ import { callCapability, contextAs, IDS, key } from './helpers/principal';
  *      "Preview what a guest sees" renders that same component for a named guest in any state; when
  *      the published state is one whose dashboard lists the table, the card itself is asserted too.
  */
+// @server-state seating
+// Publishing and unpublishing seating changes it for every guest on the server. The shard plan
+// (scripts/ci/e2e-plan.mjs) reads the line above and gives each project's run of this file, and
+// every other file with the same line, a shard of its own. Locally, run it with one `--project`.
 test.describe.configure({ mode: 'serial' });
 test.beforeEach(({}, testInfo) => {
   test.skip(testInfo.project.name === 'tablet', 'phone + desktop are the review viewports');

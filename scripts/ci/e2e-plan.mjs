@@ -10,7 +10,8 @@
  * The unit is one test in one project. A shard names its tests by full title (`--grep`), not by
  * `file:line`: tests declared in a loop share a line, and the crawler's eight longest tests are
  * two such loops. A file that declares a serial block stays whole within a project, because its
- * tests depend on the ones before them. A test with no recorded time (a new one) counts as the
+ * tests depend on the ones before them. Files that change the same server-wide state
+ * (`@server-state`) are kept in different shards, so they never share a server. A test with no recorded time (a new one) counts as the
  * median, and `npm run e2e:durations` records it.
  *
  * Every test is in exactly one shard for a given `n` (tests/unit/agent/ci-plan.test.ts), the
@@ -60,33 +61,48 @@ export function grepFor(tests) {
  * @param {Record<string, number>} durations seconds by `durationKey`
  * @param {number} n
  * @param {(file: string) => boolean} isSerial whether a file's tests must stay together
+ * @param {(file: string) => string | null} [stateOf] the server-wide state a file changes, if any:
+ *   two units that change the same state are never given the same shard (see `serverState`)
  * @returns {{ seconds: number, tests: { file: string, titles: string[], project: string }[] }[]}
  */
-export function plan(tests, durations, n, isSerial) {
+export function plan(tests, durations, n, isSerial, stateOf = () => null) {
   const known = tests.map((t) => durations[durationKey(t)]).filter((s) => typeof s === 'number').sort((a, b) => a - b);
   const fallback = known.length ? known[Math.floor(known.length / 2)] : 5;
   const units = new Map();
   for (const t of tests) {
     const name = isSerial(t.file) ? `${t.project} | ${t.file}` : durationKey(t);
-    const unit = units.get(name) ?? { name, seconds: 0, tests: [] };
+    const unit = units.get(name) ?? { name, seconds: 0, tests: [], state: stateOf(t.file) };
     unit.seconds += durations[durationKey(t)] ?? fallback;
     unit.tests.push(t);
     units.set(name, unit);
   }
-  /** @type {{ seconds: number, tests: { file: string, titles: string[], project: string }[] }[]} */
-  const shards = Array.from({ length: n }, () => ({ seconds: 0, tests: [] }));
+  /** @type {{ seconds: number, tests: { file: string, titles: string[], project: string }[], states: Set<string> }[]} */
+  const shards = Array.from({ length: n }, () => ({ seconds: 0, tests: [], states: new Set() }));
   // Longest first, each into the lightest shard so far. Ties break on the name, so the same inputs
-  // always give the same shards.
+  // always give the same shards. A unit that changes server-wide state takes the lightest shard
+  // that does not already hold a unit changing the same state; with fewer shards than such units
+  // there is no such shard, and that is an error rather than a quiet race.
   for (const unit of [...units.values()].sort((a, b) => b.seconds - a.seconds || a.name.localeCompare(b.name))) {
-    const lightest = shards.reduce((best, s) => (s.seconds < best.seconds ? s : best));
+    const open = unit.state ? shards.filter((s) => !s.states.has(unit.state)) : shards;
+    if (!open.length) throw new Error(`${n} shards cannot keep apart the ${unit.state} units (${unit.name} has nowhere to go): use more shards`);
+    const lightest = open.reduce((best, s) => (s.seconds < best.seconds ? s : best));
     lightest.tests.push(...unit.tests);
     lightest.seconds += unit.seconds;
+    if (unit.state) lightest.states.add(unit.state);
   }
-  for (const s of shards) s.tests.sort((a, b) => durationKey(a).localeCompare(durationKey(b)));
-  return shards;
+  return shards.map((s) => ({ seconds: s.seconds, tests: s.tests.sort((a, b) => durationKey(a).localeCompare(durationKey(b))) }));
 }
 
 const serialFile = (file) => /mode:\s*'serial'/.test(readFileSync(path.join(ROOT, file), 'utf8'));
+
+/**
+ * The server-wide state a spec file changes, named in the file by a `@server-state <name>` comment.
+ * Both projects of a shard share one server and run at the same moment, so a file that publishes
+ * seating for everyone cannot run beside its own other-viewport copy, or beside another file doing
+ * the same: each of those units gets a shard, and a server, of its own. Such a file is also kept
+ * whole, like a serial one.
+ */
+export const serverState = (file) => /@server-state\s+([a-z][a-z-]*)/.exec(readFileSync(path.join(ROOT, file), 'utf8'))?.[1] ?? null;
 
 export function readDurations() {
   try {
@@ -100,7 +116,7 @@ export const serial = serialFile;
 
 /** The plan for a kind of spec (`production` or `test-server`) cut into `n` shards. */
 export function planFor(kind, n) {
-  return plan(listTests(KINDS[kind]), readDurations(), n, serialFile);
+  return plan(listTests(KINDS[kind]), readDurations(), n, (file) => serialFile(file) || serverState(file) !== null, serverState);
 }
 
 function main([kind, n]) {

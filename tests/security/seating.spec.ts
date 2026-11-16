@@ -2,6 +2,10 @@ import { expect, test } from '@playwright/test';
 import { BASE_URL, callCapability, contextAs, IDS, key, stabilize } from '../e2e/helpers/principal';
 
 /** Seating publication boundary over HTTP. Runs once (desktop project). */
+// @server-state seating
+// Publishing and unpublishing seating changes it for every guest on the server. The shard plan
+// (scripts/ci/e2e-plan.mjs) reads the line above and gives each project's run of this file, and
+// every other file with the same line, a shard of its own. Locally, run it with one `--project`.
 test.describe.configure({ mode: 'serial' });
 test.beforeEach(({}, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop', 'API-level security suite runs once');
