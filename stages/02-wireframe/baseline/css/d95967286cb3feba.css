@@ -725,8 +725,8 @@
 
 .adm-brand__role {
   color: var(--adm-muted);
-  font-size: var(--text-label-caps);
-  letter-spacing: var(--tracking-label-caps);
+  font-size: var(--text-control-caps);
+  letter-spacing: var(--tracking-control-caps);
   text-transform: uppercase;
 }
 
@@ -742,9 +742,9 @@
 .adm-nav__label {
   margin: 0 0 var(--spacing-xs);
   color: var(--adm-muted);
-  font-size: var(--text-label-caps);
-  font-weight: var(--font-weight-label-caps);
-  letter-spacing: var(--tracking-label-caps);
+  font-size: var(--text-control-caps);
+  font-weight: var(--font-weight-control-caps);
+  letter-spacing: var(--tracking-control-caps);
   text-transform: uppercase;
   padding-inline: .625rem;
 }
@@ -801,9 +801,12 @@
 
 .adm-rail__foot {
   padding: var(--spacing-sm);
+  background: var(--color-neutral-variant);
   border-top: 1px solid var(--adm-line);
   gap: 1px;
   display: grid;
+  position: sticky;
+  bottom: 0;
 }
 
 .adm-rail__close, .adm-bar__menu {
@@ -1011,6 +1014,10 @@
   padding: 0;
 }
 
+.adm-palette__field input:focus-visible {
+  outline: none;
+}
+
 .adm-palette__field input::placeholder {
   color: var(--color-on-surface-muted);
 }
@@ -1029,9 +1036,9 @@
 .adm-palette__group {
   margin: var(--spacing-sm) 0 var(--spacing-xs);
   color: var(--color-on-surface-muted);
-  font-size: var(--text-label-caps);
-  font-weight: var(--font-weight-label-caps);
-  letter-spacing: var(--tracking-label-caps);
+  font-size: var(--text-control-caps);
+  font-weight: var(--font-weight-control-caps);
+  letter-spacing: var(--tracking-control-caps);
   text-transform: uppercase;
   padding-inline: .625rem;
 }
@@ -1048,6 +1055,7 @@
 
 .adm-palette__item[aria-selected="true"] {
   background: var(--color-neutral-variant);
+  box-shadow: inset 0 0 0 1px var(--color-primary);
 }
 
 .adm-palette__icon {
@@ -1070,8 +1078,7 @@
 .adm-palette__foot {
   gap: var(--spacing-md);
   color: var(--color-on-surface-muted);
-  font-size: var(--text-label-caps);
-  letter-spacing: .04em;
+  font-size: var(--text-body-sm);
   border-top: 1px solid var(--color-outline);
   margin: 0;
   padding: .5rem 1rem;
@@ -1162,7 +1169,7 @@
     min-height: 2.75rem;
   }
 
-  .adm-palette__hint, .adm-palette__foot {
+  .adm-palette__hint, .adm-palette__foot, .adm-palette__field .adm-kbd {
     display: none;
   }
 }
@@ -1543,6 +1550,18 @@
   display: flex;
 }
 
+.con-stackbox summary {
+  min-height: 1.5rem;
+  color: var(--ops-muted);
+  cursor: pointer;
+  text-decoration: underline;
+  -webkit-text-decoration-color: var(--ops-outline);
+  text-decoration-color: var(--ops-outline);
+  text-underline-offset: .2em;
+  font-weight: 400;
+  display: inline-block;
+}
+
 .con-about {
   position: relative;
 }
@@ -1676,17 +1695,20 @@
 }
 
 .con-stats {
-  gap: var(--spacing-lg) var(--spacing-2xl);
-  padding-block: var(--spacing-md);
   border-block: 1px solid var(--ops-outline);
-  flex-wrap: wrap;
-  display: flex;
+  grid-template-columns: repeat(auto-fit, minmax(min(9.5rem, 100%), 1fr));
+  display: grid;
+  overflow: hidden;
 }
 
 .con-stat {
+  min-width: 0;
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--ops-outline);
+  box-shadow: -1px 0 0 var(--ops-outline);
   align-content: start;
-  gap: .125rem;
-  min-width: 7rem;
+  gap: .25rem;
+  margin-bottom: -1px;
   display: grid;
 }
 
@@ -1701,6 +1723,7 @@
   letter-spacing: var(--tracking-control-caps);
   text-transform: uppercase;
   color: var(--ops-muted);
+  order: -1;
 }
 
 .con-stat__hint {
@@ -1944,6 +1967,11 @@
   font-weight: 500;
 }
 
+.con-table th a {
+  min-height: 1.5rem;
+  display: inline-block;
+}
+
 .con-head .con-window ul {
   background: var(--color-neutral-variant);
   border-radius: var(--radius-pill);
@@ -2000,32 +2028,30 @@
   font-weight: 400;
 }
 
-.con-stackbox summary {
-  min-height: 1.5rem;
-  color: var(--ops-muted);
-  cursor: pointer;
-  text-decoration: underline;
-  -webkit-text-decoration-color: var(--ops-outline);
-  text-decoration-color: var(--ops-outline);
-  text-underline-offset: .2em;
-  font-weight: 400;
-  display: inline-block;
-}
-
 .con-cell-link {
+  text-underline-offset: .18em;
+  min-height: 1.5rem;
   font-weight: 400;
+  text-decoration: underline;
   display: block;
 }
 
-@media not (min-width: 40rem) {
-  .con-stats {
-    gap: var(--spacing-md);
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    display: grid;
+@media not (min-width: 60rem) {
+  .con-head, .con-section-head {
+    position: relative;
   }
 
-  .con-stat {
-    min-width: 0;
+  .con-about {
+    position: static;
+  }
+
+  .con-about__body {
+    width: auto;
+    right: 0;
+  }
+
+  .con-head .con-window a {
+    min-height: 2.75rem;
   }
 }
 
