@@ -101,3 +101,34 @@ No test is retried. A test that fails once has a bug, in the test or in the page
 - `npm run lint` is oxlint (`.oxlintrc.json`, the former ESLint configuration rule for rule);
   `npx oxlint --format=agent` prints one finding per line. `npm run typecheck` is
   `bun check --no-script`.
+
+## Considered, and where it stands
+
+- **oxfmt.** Formats the repository in 0.3 s. Not adopted: there has never been a formatter here,
+  and with settings chosen to match the code (single quotes, 240 columns) it would still rewrite
+  881 of 1,445 source files. That is one commit that conflicts with every open branch, so it waits
+  for a decision.
+- **Vitest without per-file isolation.** The unit project runs in 13 s instead of 50, with 5 tests
+  in 3 files failing because they rely on a fresh module graph (`auth-email-connect`,
+  `dev-inbox-gate`/`dev-routes`, `phone-sign-in-availability`). Not adopted: the unit job is not
+  the slowest, and those leaks need fixing first.
+- **oxlint's `correctness` category.** Would add 118 jsx-a11y findings (mostly
+  `prefer-tag-over-role`) and 31 others. The configuration is the former ESLint rule set; the
+  category is off until someone works through them. `nextjs/no-html-link-for-pages` is off for the
+  same reason: oxlint's version flags 25 plain `<a>` links that ESLint's never did, most of them
+  deliberate full navigations or downloads.
+- **hk.** A hook manager would replace two short scripts that together take about 2 s, and add a
+  binary to install. Nothing to gain.
+- **Turborepo or Nx caching, `--affected`.** Their graphs follow imports. These suites reach
+  migrations, seed JSON, the built app and source read as text without importing any of it, so a
+  graph would skip tests that a change can break. `scripts/ci/affected.mjs` is the conservative
+  version of the same idea.
+- **Bazel, Nix.** There is no container build in CI to make hermetic, and one app with four small
+  workspaces does not repay either.
+- **React Doctor.** Scans `src/` in 22 s: 11 errors and 400 warnings (score 57). The errors are worth
+  a look (five server actions it believes set cookies without an auth check, two effects without
+  cleanup, two browser globals read during render, one missing key). It is not in CI: a 22 s scan
+  of everything on every push is the wrong place for it, and its findings need triage first.
+- **Faster runners.** The slowest job of a run is usually one that landed on a slower GitHub runner,
+  where every step before the tests takes about twice as long. Runners with more cores and steadier
+  disks are the remaining lever; they need an account.
