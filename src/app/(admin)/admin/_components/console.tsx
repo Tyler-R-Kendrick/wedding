@@ -4,15 +4,35 @@ import type { ReactNode } from 'react';
 import { isSafeReturnPath } from '@/domain/identity/routes';
 import { getPrincipal } from '@/lib/principal';
 import { PATHNAME_HEADER } from '@/themes/routes';
-import { ADMIN_SECTIONS } from './sections';
+import { AdminIcon } from '@/components/admin/shell/icons';
 import './ops.css';
 import './console.css';
 
 /**
- * The console shell for the cross-cutting operations screens. Same foundation tokens and same
- * primitives as the guest-operations pages (`ops.css`); what it adds is dense-data furniture —
- * real tables with tabular figures, key/value strips, status pills — because lifecycle history,
- * the audit trail and the job queue are rows of numbers and timestamps, not cards.
+ * A line of explanation that is there when asked for and out of the way otherwise.
+ *
+ * Every screen used to open with a paragraph under its title and another under each section
+ * heading: true, and read once. Someone who opens Guests forty times a week reads the list, not the
+ * sentence above it. The sentence now sits behind an "About" disclosure beside the heading it
+ * explains: a `<details>`, so it works without JavaScript, is keyboard-complete, and a find-in-page
+ * for its words still opens it.
+ */
+export function About({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <details className="con-about">
+      <summary aria-label={`About ${label}`} title={`About ${label}`}>
+        <AdminIcon name="info" />
+      </summary>
+      <div className="con-about__body">{children}</div>
+    </details>
+  );
+}
+
+/**
+ * One screen of the console: a title row (title, its About, the screen's one primary action), any
+ * outcome notice, then the work. Dense-data furniture lives below in this file — real tables with
+ * tabular figures, key/value strips, status pills — because lifecycle history, the audit trail and
+ * the job queue are rows of numbers and timestamps, not cards.
  */
 export function ConsolePage({
   title,
@@ -21,8 +41,10 @@ export function ConsolePage({
   notice,
   actions,
   subNav,
+  wide,
 }: {
   title: string;
+  /** What the screen is for, in a sentence. Shown on demand (see `About`), never as a standing paragraph. */
   lede?: string;
   children: ReactNode;
   notice?: { ok?: string; error?: string };
@@ -31,15 +53,15 @@ export function ConsolePage({
   /** A family's `SubNav` (media, intelligence), above the title — never in `actions`, where its
    *  width moved the title about from screen to screen. */
   subNav?: ReactNode;
+  /** Dashboards use the full width of the work area; record screens keep a measure. */
+  wide?: boolean;
 }) {
   return (
-    <main id="main" className="ops">
+    <main id="main" className={wide ? 'ops ops--wide' : 'ops'}>
       {subNav}
       <div className="con-head">
-        <div>
-          <h1 className="ops-title">{title}</h1>
-          {lede ? <p className="ops-lede">{lede}</p> : null}
-        </div>
+        <h1 className="ops-title">{title}</h1>
+        {lede ? <About label={title}>{lede}</About> : null}
         {actions ? <div className="con-head__actions">{actions}</div> : null}
       </div>
       {notice?.ok ? (
@@ -117,11 +139,15 @@ export function Section({ title, id, children, note }: { title?: string; id?: st
     // (or a test) means by it, and the heading gets its own id for `aria-labelledby`.
     <section id={sectionId} className="ops-section" aria-labelledby={title && sectionId ? `${sectionId}-heading` : undefined}>
       {title ? (
-        <h2 id={sectionId ? `${sectionId}-heading` : undefined} className="ops-h2">
-          {title}
-        </h2>
+        <div className="con-section-head">
+          <h2 id={sectionId ? `${sectionId}-heading` : undefined} className="ops-h2">
+            {title}
+          </h2>
+          {note ? <About label={title}>{note}</About> : null}
+        </div>
+      ) : note ? (
+        <p className="con-note">{note}</p>
       ) : null}
-      {note ? <p className="con-note">{note}</p> : null}
       {children}
     </section>
   );
@@ -143,6 +169,35 @@ export function SubNav({ label, items }: { label: string; items: { href: string;
           <li key={i.href}>
             <Link href={i.href} aria-current={i.current ? 'page' : undefined}>
               {i.label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
+/**
+ * The time window a screen's figures are read for, as three links. A link, not a form: one click
+ * changes the window, the address says which one is showing, and Back returns to the last.
+ */
+export function WindowTabs({ path, hours, params = {} }: { path: string; hours: number; params?: Record<string, string | undefined> }) {
+  const href = (h: number) => {
+    const q = new URLSearchParams({ window: String(h) });
+    for (const [k, v] of Object.entries(params)) if (v) q.set(k, v);
+    return `${path}?${q.toString()}`;
+  };
+  return (
+    <nav aria-label="Time window" className="con-window">
+      <ul className="list list--plain">
+        {[
+          { h: 24, label: '24 hours' },
+          { h: 168, label: '7 days' },
+          { h: 720, label: '30 days' },
+        ].map(({ h, label }) => (
+          <li key={h}>
+            <Link href={href(h)} aria-current={h === hours ? 'page' : undefined}>
+              {label}
             </Link>
           </li>
         ))}
@@ -281,44 +336,5 @@ export function KeyValues({ items }: { items: { label: string; value: ReactNode 
         </div>
       ))}
     </dl>
-  );
-}
-
-/**
- * The grouped index of every admin screen. Rendered twice: as the console home page's content
- * (`headings` — real `<h2>`s under the page's `<h1>`) and inside the layout's navigation
- * disclosure (`labels` — the same text as plain labels, because a heading above the page's own
- * `<h1>` puts the document outline out of order on every admin screen).
- */
-export function AdminIndex({ current, variant = 'labels', idPrefix = 'index' }: { current?: string; variant?: 'headings' | 'labels'; idPrefix?: string }) {
-  return (
-    <div className="con-index">
-      {ADMIN_SECTIONS.map((section) => {
-        const labelId = `${idPrefix}-${section.id}`;
-        return (
-          <section key={section.id} aria-labelledby={labelId}>
-            {variant === 'headings' ? (
-              <h2 id={labelId} className="con-index__label">
-                {section.label}
-              </h2>
-            ) : (
-              <p id={labelId} className="con-index__label">
-                {section.label}
-              </p>
-            )}
-            <ul className="list list--plain con-index__list">
-              {section.screens.map((screen) => (
-                <li key={screen.href}>
-                  <Link href={screen.href} aria-current={screen.href === current ? 'page' : undefined}>
-                    {screen.label}
-                  </Link>
-                  <span className="con-index__blurb">{screen.blurb}</span>
-                </li>
-              ))}
-            </ul>
-          </section>
-        );
-      })}
-    </div>
   );
 }

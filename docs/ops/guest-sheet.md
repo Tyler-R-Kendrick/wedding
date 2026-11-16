@@ -1,18 +1,37 @@
 # The planning sheet in the admin console
 
-`/admin/guests` shows the couple's planning-sheet guest list (the **Guests** tab of their wedding
-spreadsheet) beside the site's own guest records. The sheet stays the place the list is edited.
-The console shows the latest **copy** of it that an administrator saved; nothing reads Google live,
-so there is no service account, key or environment variable to set up.
+`/admin/guests/sheet` (**Guest sheet** in the rail) holds the couple's planning-sheet guest list
+(the **Guests** tab of their wedding spreadsheet) beside the site's own guest records. The sheet
+stays the place the list is edited. The console keeps the latest **copy** of it that an
+administrator saved and compares that copy with the site; nothing reads Google live, so there is no
+service account, key or environment variable to set up.
 
-## Updating the copy
+## Syncing
 
-1. In the sheet, open the Guests tab, select everything (Ctrl/Cmd + A) and copy (Ctrl/Cmd + C).
-   A CSV export of the tab (File, Download, Comma-separated values) works too.
-2. In `/admin/guests`, under **Planning sheet**, choose **Update from the sheet**, paste, and check
-   the line and head counts it shows before saving.
+1. In the sheet, open the Guests tab and either copy everything (Ctrl/Cmd + A, then Ctrl/Cmd + C) or
+   download it (File, Download, Comma-separated values).
+2. On **Guest sheet**, choose **Update from the sheet**, then paste, or pick the downloaded file.
+3. **Check it** shows, before anything is saved: what this copy changes against the last one (new
+   lines, removed lines, changed head counts) and how it stands against the site.
+4. Save. Each save is kept (`guest_sheet_copies`); the newest is the one compared. Saving also adds
+   everyone a line names to the guest list and links each line to its household (see "The sheet as
+   the guest list" below); nobody is removed or changed.
 
-Each save is kept (`guest_sheet_copies`), and the newest one is shown with the time it was saved.
+## Reconciling
+
+After a sync the screen lists what the sync left for a person:
+
+| List | What it means | What you can do |
+|---|---|---|
+| On the sheet, not on the site | A line the sync left alone: nobody on it could be read as a name, or two guests already answer to one | If a household's name is close, **It is …** links the line to it. **Add household** creates an empty household named after the line; add its people on Guests. |
+| Head counts differ | The line and its household disagree on grown-ups (adults and plus-ones together) or on children | Open the household and add or remove people. A head the sheet counts and does not name is kept on the site as a plus-one, which is why grown-ups are compared together. |
+| On the site, not on the sheet | A household no line answers to | Open the household: it was added by hand, renamed on one side, or taken off the sheet. |
+
+A line is matched to a household by a saved link first, then by name read loosely ("The Fitzgerald
+Family" is "Fitzgerald"). The sync saves the link for each household it finds or makes, and it is
+what keeps a line and its household together when either is renamed; **Matched lines** lists them
+and can unlink. The comparison reads the same lines the sync does: the sheet's own tallies under
+the list are left out.
 
 ## What is kept
 
@@ -25,7 +44,8 @@ sign-in address on their guest record: see "The sheet as the guest list" below.)
 keeps its own tallies below one; a blank spacer row in the middle of the list hides the lines below
 it, so keep the list contiguous.
 
-Reading and saving are admin only (`admin_guest_sheet`, `admin_upload_guest_sheet`, both behind the
+Reading, saving, comparing and linking are admin only (`admin_guest_sheet`, `admin_upload_guest_sheet`,
+`admin_guest_sheet_sync`, `admin_link_sheet_line`, `admin_add_household_from_sheet`, all behind the
 `admin_guest_ops` entitlement) and are never offered to the concierge or WebMCP.
 
 ## The sheet as the guest list

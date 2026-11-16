@@ -9,11 +9,10 @@ import { PageLinks, paged } from '@/components/admin/flow/paging';
 import { FilterBar, RecordList, RecordRow } from '@/components/admin/flow/records';
 import { adminInvoke, adminPrincipal } from '../_lib/invoke';
 import { Checkbox, Input } from '../_components/ops';
-import { ConsoleGate, ConsolePage, Day, Note, Pill, Section } from '../_components/console';
+import { ConsoleGate, ConsolePage, Day, Note, Pill, Section, Stamp } from '../_components/console';
 import { AdminRoleFlow, DeleteGuestFlow, GuestFlow, ImportGuestsFlow, MergeFlow, RebindFlow, ResetAccessFlow, SignInPassFlow, type GuestSummary } from './_components/GuestFlows';
 import { HouseholdFlow } from '../households/_components/HouseholdFlows';
-import type { GuestSheetView } from '@/capabilities/admin_guest_sheet';
-import { PlanningSheet } from './_components/PlanningSheet';
+import type { GuestSheetSyncView } from '@/capabilities/admin_guest_sheet';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Guests', robots: { index: false, follow: false } };
@@ -53,8 +52,8 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
   const [list, hh, sheet] = await Promise.all([
     adminInvoke<{ guests: Guest[]; truncated: boolean }>('admin_list_guests', { q: sp.q || undefined, householdId: sp.householdId || undefined, includeMerged: showMerged }, { method: 'GET' }),
     adminInvoke<{ households: { id: string; name: string }[]; truncated: boolean }>('admin_list_households', {}, { method: 'GET' }),
-    // The planning sheet, as last copied into the site.
-    adminInvoke<GuestSheetView>('admin_guest_sheet', {}, { method: 'GET' }),
+    // The planning sheet against this list: a one-line summary here, the whole of it on its own screen.
+    adminInvoke<GuestSheetSyncView>('admin_guest_sheet_sync', {}, { method: 'GET' }),
   ]);
   const rows = list.ok ? list.value.data.guests : [];
   const shown = paged(rows, sp.page);
@@ -86,7 +85,7 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
         </Note>
       ) : null}
       {truncated ? <Note>There are more guests or households than this screen lists at once. Only the first {rows.length} guests and {households.length} households are shown; narrow the list with a search.</Note> : null}
-      <PlanningSheet sheet={sheet.ok ? sheet.value.data : null} error={sheet.ok ? null : sheet.error.message} />
+      <SheetSummary sync={sheet.ok ? sheet.value.data : null} />
 
       <BrowseAs browsingName={browsingName} isOwner={isOwner} ownRecords={ownRecords} />
 
@@ -168,16 +167,42 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
 }
 
 /**
+ * The planning sheet in one line: when it was last synced and how much of it differs from this
+ * list. The comparison itself, and syncing, are on the Guest sheet screen.
+ */
+function SheetSummary({ sync }: { sync: GuestSheetSyncView | null }) {
+  if (!sync) return null;
+  const todo = sync.onlyOnSheet.length + sync.onlyOnSite.length + sync.matched.filter((m) => m.differs).length;
+  return (
+    <p className="ops-notice" role="status">
+      {sync.copy ? (
+        <>
+          Planning sheet synced <Stamp at={sync.copy.uploadedAt} />: {sync.copy.lines} lines, {sync.copy.people} people. {todo ? `${todo} ${todo === 1 ? 'difference' : 'differences'} from this list.` : 'This list matches it.'}{' '}
+        </>
+      ) : (
+        <>The planning sheet has not been copied in yet. </>
+      )}
+      <Link href="/admin/guests/sheet">{sync.copy ? 'Open the guest sheet' : 'Add the planning sheet'}</Link>
+    </p>
+  );
+}
+
+/**
  * "Browse the site as a guest": the current view and the way to stop it, the administrator's own
  * guest records (anyone may browse as theirs), and, for owners, the pointer to the per-row buttons.
  * The buttons are plain form actions: they set or clear a cookie and open the site or the console.
  */
 function BrowseAs({ browsingName, isOwner, ownRecords }: { browsingName: string | null; isOwner: boolean; ownRecords: { guestId: string; displayName: string }[] }) {
   return (
-    <Section title="Inspect a guest profile" id="inspect-guest">
-      <p className="con-note">
-        See the site exactly as one guest on the list does — their RSVP answers, table, and uploads. Anyone else’s view is read-only. Prefer <Link href="/admin#view-as">View as role</Link> when you only need to preview entitlements and pages without touching a real person’s record.
-      </p>
+    <Section
+      title="Browse as a guest"
+      id="inspect-guest"
+      note={
+        <>
+          See the site exactly as one guest on the list does: their RSVP answers, table and uploads. Anyone else’s view is read-only. Use <Link href="/admin#view-as">View as role</Link> to preview pages without touching a real person’s record.
+        </>
+      }
+    >
       {browsingName ? (
         // A <div>, not a paragraph: a form cannot sit inside one. "Open the site" is a plain link on
         // purpose: `/` renders for its reader, and a full navigation asks for it as the guest.
@@ -205,10 +230,10 @@ function BrowseAs({ browsingName, isOwner, ownRecords }: { browsingName: string 
       ) : null}
       <p className="con-note">
         {isOwner
-          ? 'Choose “Browse as” beside a guest in the list below.'
+          ? 'Choose Browse as on a guest’s row below.'
           : ownRecords.length
-            ? 'Browsing as anyone else is for the site’s owners: a view reads everything that guest can, which reaches past what this role’s screens show.'
-            : 'You have no guest record of your own on the list, and browsing as anyone else is for the site’s owners: a view reads everything that guest can, which reaches past what this role’s screens show.'}
+            ? 'Browsing as anyone else is for the site’s owners.'
+            : 'Browsing as a guest is for the site’s owners.'}
       </p>
     </Section>
   );

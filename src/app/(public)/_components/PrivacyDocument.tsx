@@ -1,9 +1,13 @@
 import Link from 'next/link';
 import { ROUTES } from '@/domain/routes';
 import type { Reader } from '@/domain/content/page-context';
+import { observeConfig } from '@/lib/observe/config';
 import { LegalDocument, LegalSection } from './LegalDocument';
 
 export function PrivacyDocument({ reader }: { reader: Reader }) {
+  // Session tracing is on only when a PostHog project is configured (src/lib/observe/config.ts), so
+  // the page describes it only then: it never claims less than the site does, or more.
+  const tracing = observeConfig() !== null;
   return (
     <LegalDocument
       title="Privacy"
@@ -30,8 +34,27 @@ export function PrivacyDocument({ reader }: { reader: Reader }) {
           </li>
           <li className="credits__item">
             <p className="credits__name">Technical logs</p>
-            <p>Standard hosting logs (for example request timing and errors) to keep the site running. We do not use them for advertising.</p>
+            <p>
+              Standard hosting logs (for example request timing and errors) to keep the site running, including a note of any error your browser runs into on a page and the steps on that page that led to it. These say which page and which browser, never who you are. We do not use them for
+              advertising.
+            </p>
           </li>
+          <li className="credits__item">
+            <p className="credits__name">Visits</p>
+            <p>
+              Which pages are opened, on what kind of device and browser, how quickly they load, and any errors the site runs into, so we can see what is working and fix what is not. When you are signed in, this is linked to your invitation. We do not record your IP address or your location, and these records stay in this site’s own database. If your browser sends a Do Not Track or Global Privacy Control signal, your visits are not recorded. These records are deleted after about three months.
+            </p>
+          </li>
+          {tracing ? (
+            <li className="credits__item">
+              <p className="credits__name">How a visit went</p>
+              <p>
+                So we can find and fix problems, each visit is recorded as a replay of where you tapped and scrolled, with errors and loading times. The replay hides everything written on the page and everything you type, and leaves out every photo and video, so it shows the page’s layout and not its
+                content. We also note a few actions, such as sending an RSVP or exporting a calendar, without what was in them. None of this carries your name or email: a signed-in visit is filed under an internal account number that means nothing outside this site. It uses no cookie. If your
+                browser is set to “Do Not Track”, nothing is recorded.
+              </p>
+            </li>
+          ) : null}
         </ul>
       </LegalSection>
       <LegalSection id="use" title="How we use it">
@@ -61,6 +84,13 @@ export function PrivacyDocument({ reader }: { reader: Reader }) {
               <strong>Twilio Verify</strong> sends text sign-in codes when you choose that option.
             </p>
           </li>
+          {tracing ? (
+            <li className="credits__item">
+              <p>
+                <strong>PostHog</strong> stores the visit replays, action notes and error reports described above. It does not receive your name, email, cookies or location.
+              </p>
+            </li>
+          ) : null}
           <li className="credits__item">
             <p>
               <strong>Google</strong> and <strong>Facebook</strong> only when you choose “Continue with Google” or Facebook sign-in; they provide basic profile fields for matching, not posts or friends lists.

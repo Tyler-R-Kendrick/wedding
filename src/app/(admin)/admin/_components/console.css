@@ -8,16 +8,89 @@
 .con-head {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-md);
-  align-items: flex-end;
-  justify-content: space-between;
+  gap: var(--spacing-sm) var(--spacing-md);
+  align-items: center;
+  min-height: 2.75rem;
+  margin-bottom: var(--spacing-md);
 }
 
 .con-head__actions {
   display: flex;
   flex-wrap: wrap;
   gap: var(--spacing-sm);
-  padding-bottom: var(--spacing-md);
+  margin-left: auto;
+}
+
+.con-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-xs) var(--spacing-sm);
+}
+
+/* A stack trace behind a disclosure in a table cell: quiet until asked for. */
+.con-stackbox summary {
+  display: inline-block;
+  min-height: 1.5rem;
+  color: var(--ops-muted);
+  font-weight: 400;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: var(--ops-outline);
+  text-underline-offset: 0.2em;
+}
+
+/*
+ * "About": the sentence that explains a screen or a section, shown when asked for. The summary is
+ * the small circled i beside the heading; open, the sentence hangs under it as a note over the
+ * page, so nothing the reader was looking at moves.
+ */
+.con-about {
+  position: relative;
+}
+
+.con-about > summary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  color: var(--ops-muted);
+  font-size: var(--text-h3);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  list-style: none;
+}
+
+.con-about > summary::-webkit-details-marker {
+  display: none;
+}
+
+.con-about > summary:hover,
+.con-about[open] > summary {
+  color: var(--color-primary);
+  background: var(--color-neutral-variant);
+}
+
+.con-about > summary:focus-visible {
+  outline: 2px solid var(--color-secondary);
+  outline-offset: 2px;
+}
+
+.con-about__body {
+  position: absolute;
+  top: calc(100% + var(--spacing-xs));
+  left: 0;
+  z-index: 4;
+  width: min(26rem, calc(100vw - 7rem));
+  padding: 0.75rem 1rem;
+  color: var(--color-primary);
+  font-size: var(--text-body-sm);
+  font-weight: 400;
+  background: var(--color-surface);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 0.75rem 1.5rem -0.75rem color-mix(in oklab, var(--color-primary) 30%, transparent);
 }
 
 .con-note {
@@ -58,7 +131,7 @@
   white-space: nowrap;
 }
 
-.con-table td.con-wrap {
+.con-table :is(td, th).con-wrap {
   white-space: normal;
   min-width: 18rem;
 }
@@ -129,30 +202,27 @@
   text-underline-offset: 0.25em;
 }
 
-/* A strip of headline numbers. Deliberately not boxes: a rule under each, nothing around them. */
+/*
+ * A strip of headline numbers: one ruled band, a hairline between figures, the label over the
+ * value. The same idiom as the overview's figures and an assistant answer's, so a number looks like
+ * a number on every screen. `Stat` writes value, label, hint; `order` puts the label first.
+ */
 .con-stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-lg) var(--spacing-2xl);
-  padding-block: var(--spacing-md);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(9.5rem, 100%), 1fr));
   border-block: 1px solid var(--ops-outline);
+  overflow: hidden;
 }
 
-/*
- * `align-content: start` is the whole fix for a wrapped stat row.
- *
- * `.con-stats` is a flex container, so its items stretch to the tallest in the row; `.con-stat` is
- * a grid, and a grid with more height than content distributes the surplus between its rows. A
- * stat with a hint is one row taller than one without, so on /admin/jobs "Queued" (hint: "0 due
- * now") stretched its neighbour "Running" and pushed that label 15px below it — measured, both
- * before and after, with scripts/probes/stat-strip.mjs. Packing the rows at the top makes every label in
- * a row sit at the same y whatever its neighbours carry.
- */
 .con-stat {
   display: grid;
   align-content: start;
-  gap: 0.125rem;
-  min-width: 7rem;
+  gap: 0.25rem;
+  min-width: 0;
+  margin-bottom: -1px;
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--ops-outline);
+  box-shadow: -1px 0 0 var(--ops-outline);
 }
 
 .con-stat__value {
@@ -162,6 +232,7 @@
 }
 
 .con-stat__label {
+  order: -1;
   font-size: var(--text-control-caps);
   letter-spacing: var(--tracking-control-caps);
   text-transform: uppercase;
@@ -224,149 +295,6 @@
 .con-kv dd {
   margin: 0.125rem 0 0;
   font-variant-numeric: tabular-nums;
-}
-
-.con-index {
-  display: grid;
-  gap: var(--spacing-xl);
-  margin-block: var(--spacing-xl);
-}
-
-@media (width >= 52rem) {
-  .con-index {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    column-gap: var(--spacing-3xl);
-  }
-}
-
-.con-index__label {
-  margin: 0 0 var(--spacing-sm);
-  padding-bottom: var(--spacing-xs);
-  border-bottom: 1px solid var(--ops-outline);
-  font-size: var(--text-control-caps);
-  letter-spacing: var(--tracking-control-caps);
-  font-weight: var(--font-weight-control-caps);
-  text-transform: uppercase;
-  color: var(--ops-muted);
-}
-
-.con-index__list {
-  display: grid;
-  gap: var(--spacing-sm);
-  margin: 0;
-  padding: 0;
-}
-
-.con-index__list li {
-  display: grid;
-  gap: 0.0625rem;
-}
-
-.con-index__blurb {
-  font-size: var(--text-body-sm);
-  color: var(--ops-muted);
-}
-
-/*
- * The layout's "all screens" disclosure: closed by default so 20 links never push a page down.
- * It sits outside `.ops`, so it declares the same local custom properties rather than inheriting them.
- */
-.con-nav {
-  --ops-outline: var(--color-outline, color-mix(in oklab, var(--color-primary) 22%, var(--color-neutral)));
-  --ops-muted: var(--color-on-surface-muted, color-mix(in oklab, var(--color-primary) 70%, var(--color-neutral)));
-  --ops-accent: var(--color-tertiary, var(--color-primary));
-
-  max-width: 72rem;
-  margin-inline: auto;
-  padding: var(--spacing-md) 1rem;
-  font-size: var(--text-body-md);
-  color: var(--color-primary);
-  border-bottom: 1px solid var(--ops-outline);
-}
-
-.con-nav__bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  margin: 0;
-  padding: 0;
-  font-size: var(--text-control-caps);
-  letter-spacing: var(--tracking-control-caps);
-  text-transform: uppercase;
-}
-
-/*
- * WCAG 2.2 AA 2.5.8 for the THREE targets this rule names — the top-bar links, the "all admin
- * screens" summary, and the index links inside it. It does not cover the console at large, and the
- * comment that used to sit here said it did: buttons, form controls and in-table links get their
- * 24x24 from `.ops-button`, `.ops-input` and `.con-window a` instead, which are separate rules with
- * separate minima (44px and 2.75rem). `tests/e2e/admin-console.spec.ts` measures every target on
- * every console screen rather than trusting any of these comments.
- *
- * These three need the size to come from padding rather than from the text: the nav links are caps
- * at the ornament step, which also gives adjacent targets the clear space the same rule asks for.
- * One rule for all three so specificity ascends down the file (stylelint no-descending-specificity).
- */
-.con-nav__bar a,
-.con-nav summary,
-.con-index__list a {
-  display: inline-block;
-  min-height: 24px;
-  padding: 0.3125rem 0.5rem;
-}
-
-.con-nav summary {
-  margin-top: var(--spacing-xs);
-  padding-left: 0;
-  cursor: pointer;
-}
-
-/* --- Level 14 design review: B7, the metrics time-window switcher --------- */
-
-/*
-  Every figure on /admin/metrics is scoped to the selected window, and the switcher rendered as four
-  plain words — same colour and weight as prose, no underline, no border, nothing but `aria-current`
-  on the active one. Targets measured 20x20 and cleared SC 2.5.8 only on the spacing exception, by
-  0.1px. Now: a real control, a visible selected state, and 24px targets outright.
-*/
-.con-window ul {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.con-window a {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 2.75rem;
-  min-height: 2.75rem;
-  padding-inline: 0.5rem;
-  border: 1px solid var(--ops-outline);
-  font-variant-numeric: tabular-nums;
-  text-decoration: none;
-}
-
-.con-window a[aria-current='page'] {
-  border-color: var(--color-primary);
-  background: color-mix(in oklab, var(--color-primary) 10%, var(--color-neutral));
-  font-weight: 600;
-}
-
-.con-nav__bar li:first-child a {
-  padding-left: 0;
-}
-
-.con-nav summary:focus-visible {
-  outline: 2px solid var(--color-secondary);
-  outline-offset: 2px;
-}
-
-.con-nav .con-index {
-  margin-block: var(--spacing-md) var(--spacing-sm);
 }
 
 .con-form {
@@ -570,13 +498,241 @@
   font-family: var(--font-mono-ops);
 }
 
+
+
+.con-filter-links {
+  display: flex;
+  gap: var(--spacing-md);
+  margin: 0;
+}
+
+.con-filter-links a {
+  display: inline-block;
+  min-height: 1.5rem;
+  color: var(--ops-muted);
+}
+
+.con-filter-links a[aria-current='true'] {
+  color: var(--color-primary);
+  font-weight: 500;
+  text-decoration-color: var(--color-tertiary);
+}
+
+/* A name in a table's first column is a link to its detail; give it a target taller than its text. */
+.con-table th a {
+  display: inline-block;
+  min-height: 1.5rem;
+}
+
+/* The time window, top right of a screen: three links in one ruled pill, the current one filled. */
+.con-head .con-window ul {
+  display: inline-flex;
+  gap: 0;
+  margin: 0;
+  padding: 2px;
+  background: var(--color-neutral-variant);
+  border-radius: var(--radius-pill);
+}
+
+.con-head .con-window li + li {
+  margin: 0;
+}
+
+.con-head .con-window a {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  min-height: 2rem;
+  border: 0;
+  padding: 0.125rem 0.875rem;
+  color: var(--ops-muted);
+  font-variant-numeric: tabular-nums;
+  text-decoration: none;
+  border-radius: var(--radius-pill);
+}
+
+.con-head .con-window a[aria-current='page'] {
+  color: var(--color-primary);
+  font-weight: 500;
+  border: 0;
+  background: var(--color-surface);
+  box-shadow: 0 0 0 1px var(--ops-outline);
+}
+
+.con-table tr[aria-current='true'] :is(td, th) {
+  background: var(--color-neutral-variant);
+}
+
+.con-trail {
+  max-width: 48rem;
+}
+
+.con-stack {
+  max-width: 44rem;
+  margin: var(--spacing-xs) 0 0;
+  padding: 0.5rem 0.75rem;
+  font-family: var(--font-mono-ops);
+  font-size: var(--text-body-sm);
+  font-weight: 400;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: var(--color-surface);
+  border: 1px solid var(--ops-outline);
+  border-radius: var(--radius-sm);
+}
+
+.con-cell-link {
+  display: block;
+  min-height: 1.5rem;
+  font-weight: 400;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+
 /*
- * The closed "All admin screens" index. A closed <details> keeps its content's layout boxes in
- * Chromium, so the rendered detector read every screen's twenty links as text hidden under the page
- * (139 text-occlusion findings in the 2026-09-27 console review). Taking the closed content out of
- * layout ends that at the source rather than waiving it; the index is a list of links, not text
- * anyone searches for with the panel shut.
+ * On a phone an About note spans the row its heading is in, instead of hanging from the icon and
+ * running off the right edge; and the controls a thumb uses most get a full-height target.
  */
-.con-nav details:not([open]) > :not(summary) {
-  display: none;
+@media (width < 60rem) {
+  .con-head,
+  .con-section-head {
+    position: relative;
+  }
+
+  .con-about {
+    position: static;
+  }
+
+  .con-about__body {
+    right: 0;
+    width: auto;
+  }
+
+  .con-head .con-window a {
+    min-height: 2.75rem;
+  }
+}
+
+/* What a new copy of the sheet changed: one line each, the kind of change first. */
+.con-changes {
+  display: grid;
+  gap: var(--spacing-sm);
+  max-width: 80ch;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Details: under each fact, the pages that print it, and any copy that does not follow it. */
+.det-shown,
+.det-copy {
+  max-width: 80ch;
+  margin: 0;
+  color: var(--ops-muted);
+}
+
+/* What the site says is the thing being read; where it shows is the footnote. */
+.det-value {
+  color: var(--color-primary);
+}
+
+.det-copy {
+  color: var(--ops-error);
+}
+
+/*
+ * The schedule as an agenda: a day heading, then each event on one ruled row with its time in a
+ * fixed left column, so the eye runs down the times the way it does down a printed run-of-day.
+ */
+.ag-day {
+  display: grid;
+  gap: var(--spacing-sm);
+}
+
+.ag-day + .ag-day {
+  margin-top: var(--spacing-lg);
+}
+
+.ag-day__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--spacing-sm) var(--spacing-md);
+  margin: 0;
+  padding-bottom: var(--spacing-sm);
+  font-size: var(--text-body-md);
+  font-weight: 500;
+  border-bottom: 1px solid var(--color-primary);
+}
+
+.ag-day__count {
+  color: var(--ops-muted);
+  font-weight: 400;
+}
+
+.ag-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ag-row {
+  display: grid;
+  grid-template-columns: 11rem minmax(0, 1fr) auto;
+  gap: var(--spacing-xs) var(--spacing-md);
+  align-items: start;
+  padding-block: 0.75rem;
+  border-bottom: 1px solid var(--ops-outline);
+}
+
+.ag-row__time {
+  margin: 0;
+  font-variant-numeric: tabular-nums lining-nums;
+  font-weight: 500;
+}
+
+.ag-row__time--unset {
+  color: var(--ops-muted);
+  font-weight: 400;
+}
+
+.ag-row__body {
+  display: grid;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.ag-row__name {
+  margin: 0;
+  font-weight: 500;
+}
+
+.ag-row__meta,
+.ag-row__open {
+  margin: 0;
+  color: var(--ops-muted);
+}
+
+.ag-row__open {
+  color: var(--color-primary);
+}
+
+.ag-row__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0 var(--spacing-xs);
+}
+
+/* Three columns need the width of a desk screen beside the rail; under it the name column was squeezed to a few words a line. */
+@media (width < 80rem) {
+  .ag-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ag-row__actions {
+    justify-content: flex-start;
+    margin-left: calc(var(--spacing-sm) * -1);
+  }
 }

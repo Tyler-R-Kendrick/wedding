@@ -33,6 +33,12 @@ export const households = pgTable('households', {
   /** Admin-only notes (never shown to guests, never in default exports). */
   notes: text('notes'),
   /**
+   * The planning-sheet line this household is, as written there ("Mom/Dad Fitz"), when an
+   * administrator has said so. The sheet names groups its own way; this is what lets a re-synced
+   * sheet find the household again after either name changes (src/domain/guests/sheet-reconcile).
+   */
+  sheetLabel: text('sheet_label'),
+  /**
    * In the couple's bulk group on /admin/invitations: the households the next bulk action (make
    * links, mark as sent) applies to. Saved, so the group is still there on the next visit and is
    * the same for both of them. It says nothing about the household itself.

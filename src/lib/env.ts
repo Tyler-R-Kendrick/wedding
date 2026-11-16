@@ -159,6 +159,33 @@ const serverSchema = z.object({
   JOBS_BATCH_SIZE: intish(10, 1),
   /** housekeeping.purge keeps `metrics` rows this many days. */
   METRICS_RETENTION_DAYS: intish(30, 1),
+  /**
+   * First-party visit telemetry (sessions, page views, web vitals, errors; docs/ops/admin-guide.md).
+   * `off` records nothing and the ingestion route answers 204 without reading the body. Read at
+   * call time by `telemetryEnabled()` (src/lib/telemetry.ts); declared here so a malformed value
+   * fails at boot.
+   */
+  TELEMETRY: requiredBool(true),
+  /** housekeeping.purge keeps `visit_sessions` and `visit_events` rows this many days. */
+  TELEMETRY_RETENTION_DAYS: intish(90, 1),
+
+  /**
+   * Where a problem report from the couple is filed (src/providers/issue-tracker). Linear when
+   * LINEAR_API_KEY is set, else GitHub when GITHUB_ISSUES_TOKEN and GITHUB_ISSUES_REPO are;
+   * ISSUE_TRACKER names one when both are, or `off`.
+   */
+  ISSUE_TRACKER: z.enum(['linear', 'github', 'mock', 'off']).optional().or(z.literal('').transform(() => undefined)),
+  LINEAR_API_KEY: optionalSecret(16),
+  /** A Linear team's key or id. Default `WED`, the team made for this site. */
+  LINEAR_TEAM: optionalString,
+  LINEAR_PROJECT_ID: optionalString,
+  /** Fine-grained token with Issues: read and write on GITHUB_ISSUES_REPO, and nothing else. */
+  GITHUB_ISSUES_TOKEN: optionalSecret(16),
+  /** `owner/name`. A public repository is refused unless GITHUB_ISSUES_ALLOW_PUBLIC is on. */
+  GITHUB_ISSUES_REPO: optionalString,
+  /** Comma-separated labels for a GitHub report. Default `site-feedback`. */
+  GITHUB_ISSUES_LABELS: optionalString,
+  GITHUB_ISSUES_ALLOW_PUBLIC: requiredBool(false),
 
   /** Twilio Verify (SMS sign-in). All three required for live mode; mock when absent. */
   TWILIO_ACCOUNT_SID: optionalString,

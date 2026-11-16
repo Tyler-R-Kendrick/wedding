@@ -71,6 +71,8 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 | `RATE_LIMIT_BACKEND` (`memory`\|`db`) | db in production, memory elsewhere | rate-limit | no |
 | `JOBS_BATCH_SIZE` | `10` | how many due jobs one run takes. There is no in-process poller: a run is a cron route (`/api/jobs/run`, `/api/uploads/jobs/run`, `/api/media-ai/jobs/run`) or `npm run jobs:run`. Each registers every job handler (`src/lib/jobs/register-all.ts`) and claims only the types it has a handler for | no |
 | `METRICS_RETENTION_DAYS` | `30` | `housekeeping.purge` job: delete `metrics` rows older than this | no |
+| `TELEMETRY` (`on`\|`off`) | `on` | first-party visit telemetry (`visit_sessions`, `visit_events`; [admin guide](./admin-guide.md#telemetry)). `off`: `POST /api/telemetry` answers 204 and stores nothing, server errors are not recorded, and the admin traffic view reports `recording: false` | no |
+| `TELEMETRY_RETENTION_DAYS` | `90` | `housekeeping.purge` job: delete visit sessions and events older than this | no |
 | `FLAG_<NAME>` (`on`\|`off`) | `src/contracts/flags.ts` defaults | feature flags | no (mirror with `NEXT_PUBLIC_FLAG_<NAME>`) |
 | `FFMPEG_PATH` | `ffmpeg` on PATH, else mock | video provider (ffmpeg adapter for posters/probing; capabilities detected from the binary) | no |
 | `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_STREAM_API_TOKEN`, `CLOUDFLARE_STREAM_CUSTOMER_CODE` | unset -> ffmpeg/mock | video delivery via Cloudflare Stream (skeleton); all three required | no |
@@ -79,6 +81,15 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 | `MEDIA_PART_SIZE_MB` | `8` | media: multipart part size (S3/R2 require >= 5) | no |
 | `MEDIA_MULTIPART_THRESHOLD_MB` | `8` | media: files above this use multipart | no |
 | `NEXT_TURBOPACK_ROOT` | unset | `next.config.ts`: Turbopack filesystem root for sandboxes whose `node_modules` is a symlink outside the project (set to the parent directory). Never needed in CI or normal checkouts | no |
+| `ISSUE_TRACKER` | unset: Linear if configured, else GitHub | where the couple's problem reports are filed (`src/providers/issue-tracker`): `linear`, `github`, `off` | no |
+| `LINEAR_API_KEY` | unset: reports reach Linear by the daily sync | problem reporter: a Linear personal API key. Set, reports are filed in Linear at once, with the screenshot | no |
+| `LINEAR_TEAM` | `WED` | problem reporter: the Linear team's key or id. Reports arrive in the team's Triage state when it has one, else its default state | no |
+| `LINEAR_PROJECT_ID` | unset | problem reporter: optional Linear project for every report | no |
+| `GITHUB_ISSUES_TOKEN`, `GITHUB_ISSUES_REPO` | unset | problem reporter: a fine-grained token (Issues: read and write) and `owner/name`. Used when Linear is not configured | no |
+| `GITHUB_ISSUES_LABELS` | `site-feedback` | problem reporter: comma-separated labels for a GitHub report | no |
+| `GITHUB_ISSUES_ALLOW_PUBLIC` | `false` | problem reporter: allow filing into a public repository. Off, the adapter refuses one | no |
+| `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN` | this site's own project on its production deployment; unset (tracing off) everywhere else | PostHog project token (`phc_…`) for `src/lib/observe`. Public by design. `off` switches tracing off | **yes** |
+| `NEXT_PUBLIC_POSTHOG_HOST` | US | PostHog ingestion host; only its region is read (`us` or `eu`) | **yes** |
 
 ## Public variables (inlined into the browser bundle)
 

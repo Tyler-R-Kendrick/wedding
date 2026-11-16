@@ -54,7 +54,7 @@ export function TextField<V extends Values>({
   label: string;
   hint?: ReactNode;
   /** Values stay strings in the flow; convert in `submit.input` (`Number(v.seats)`, an ISO date). */
-  type?: 'text' | 'url' | 'email' | 'tel' | 'number' | 'date' | 'datetime-local';
+  type?: 'text' | 'url' | 'email' | 'tel' | 'number' | 'date' | 'time' | 'datetime-local';
   multiline?: boolean;
   /** For `multiline`: how tall the box starts. A CSV import wants more than a note. */
   rows?: number;
@@ -170,8 +170,9 @@ export function ReviewList({ items }: { items: { label: string; value: ReactNode
  * The consequence of a destructive flow, said plainly, above the box that confirms it. Used as the
  * only step of a `tone="danger"` flow: what happens, what does not, and whether it can be undone.
  */
-export function Consequences({ children }: { children: ReactNode }) {
-  return <div className="flow-consequences">{children}</div>;
+/** `tone="note"` for a routine change's reach; the default outline is the error colour, for a danger flow. */
+export function Consequences({ children, tone }: { children: ReactNode; tone?: 'note' }) {
+  return <div className={tone === 'note' ? 'flow-consequences flow-consequences--note' : 'flow-consequences'}>{children}</div>;
 }
 
 export interface Choice {

@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import posthog from 'posthog-js';
+import posthog from '@/lib/observe/posthog';
 import { sessionProbe } from '@/themes/shared/session-hint';
 import { startWebMcpBridge } from './register.client';
 

@@ -1,4 +1,4 @@
-import posthog from 'posthog-js';
+import posthog from '@/lib/observe/posthog';
 
 /**
  * The concierge, run on the guest's own device, through the Vercel AI SDK.

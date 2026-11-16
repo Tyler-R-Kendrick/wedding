@@ -115,7 +115,12 @@ function samePerson(g: Pick<GuestRow, 'firstName' | 'lastName'>, p: Pick<SheetPe
 /** More heads than this on one line is a tally or a typo, not a household: the line is left alone and reported. */
 const MAX_HEADS_ON_A_LINE = 20;
 
-export async function syncGuestsFromSheet(db: Db, lines: readonly SheetSyncLine[]): Promise<SheetSyncResult> {
+export interface SheetSyncOptions {
+  /** Told once per line that was not left alone: the household that is the line's own, found or made. */
+  onHousehold?: (line: SheetSyncLine, householdId: string) => void;
+}
+
+export async function syncGuestsFromSheet(db: Db, lines: readonly SheetSyncLine[], options: SheetSyncOptions = {}): Promise<SheetSyncResult> {
   const result: SheetSyncResult = { lines: lines.length, households: { created: 0, found: 0 }, guests: { created: 0, found: 0, completed: 0, unnamedCreated: 0 }, emailsAdded: 0, foundElsewhere: 0, notes: {}, skipped: [] };
   const allHouseholds = await db.select().from(households);
   const everyGuest = await db.select().from(guests);
@@ -237,6 +242,7 @@ export async function syncGuestsFromSheet(db: Db, lines: readonly SheetSyncLine[
       result.households.created += 1;
     }
     const householdId = e.householdId;
+    options.onHousehold?.(line, householdId);
     const save = async (input: Parameters<typeof upsertGuest>[1]): Promise<GuestRow> => {
       const saved = await upsertGuest(db, input);
       // Never the error's own words: they can carry what was typed.
@@ -387,13 +393,13 @@ export function emailOwner<T extends { firstName: string; lastName: string }>(em
  * household. What tells them apart is that a guest line says whose guest it is: where the sheet has
  * a side, group or tier column at all, the list ends at the last line that fills one in.
  */
-function guestRows(parse: GuestSheetParse): GuestSheetParse['rows'] {
-  const said = (r: GuestSheetParse['rows'][number]) => r.guestOf !== null || r.group !== null || r.priority !== null;
+export function guestRows<R extends Pick<GuestSheetParse['rows'][number], 'guestOf' | 'group' | 'priority'>>(rows: readonly R[]): R[] {
+  const said = (r: R) => r.guestOf !== null || r.group !== null || r.priority !== null;
   let last = -1;
-  parse.rows.forEach((r, i) => {
+  rows.forEach((r, i) => {
     if (said(r)) last = i;
   });
-  return last < 0 ? parse.rows : parse.rows.slice(0, last + 1);
+  return last < 0 ? [...rows] : rows.slice(0, last + 1);
 }
 
 export function sheetSyncLines(text: string): { parse: GuestSheetParse; lines: SheetSyncLine[] } {
@@ -401,7 +407,7 @@ export function sheetSyncLines(text: string): { parse: GuestSheetParse; lines: S
   const firstLine = text.replace(/^﻿/, '').split(/\r?\n/, 1)[0] ?? '';
   const values = parseCsv(text, { delimiter: firstLine.includes('\t') ? '\t' : ',', keepBlankRows: true });
   const emailAt = (values[0] ?? []).findIndex((h) => /^(e[- ]?mails?|email address)$/i.test(String(h ?? '').trim()));
-  const lines = guestRows(parse).map((r) => {
+  const lines = guestRows(parse.rows).map((r) => {
     const cell = emailAt >= 0 ? String(values[r.sheetRow - 1]?.[emailAt] ?? '') : '';
     const emails = cell.split(/[;,\s]+/).map((e) => e.trim()).filter(Boolean);
     return { sheetRow: r.sheetRow, name: r.name, adults: r.adults, kids: r.kids, plusOnes: r.plusOnes, ...(emails.length ? { emails } : {}) };

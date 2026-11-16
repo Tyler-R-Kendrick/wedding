@@ -9,7 +9,7 @@ const dash = (v: string | number | null) => (v === null || v === '' || v === 0 ?
  * records because it is where the list is actually kept: the records below are who can sign in,
  * the sheet is who is invited. Edits happen in the sheet; "Update from the sheet" saves a new copy.
  */
-export function PlanningSheet({ sheet, error }: { sheet: GuestSheetView | null; error: string | null }) {
+export function PlanningSheet({ sheet, error, hideUpdate = false }: { sheet: GuestSheetView | null; error: string | null; hideUpdate?: boolean }) {
   const copy = sheet?.copy ?? null;
   return (
     <Section title="Planning sheet" id="planning-sheet" note="The guest list as it stands in the planning spreadsheet. Edit it there, then update the copy here.">
@@ -17,9 +17,11 @@ export function PlanningSheet({ sheet, error }: { sheet: GuestSheetView | null; 
         <Note>{error ?? 'The planning sheet could not be read.'}</Note>
       ) : (
         <>
-          <div>
-            <UpdatePlanningSheetFlow hasCopy={!!copy} />
-          </div>
+          {hideUpdate ? null : (
+            <div>
+              <UpdatePlanningSheetFlow hasCopy={!!copy} />
+            </div>
+          )}
           {copy ? <SheetBody sheet={copy} /> : <Note>No copy of the planning sheet yet. Choose Add the planning sheet and paste its Guests tab.</Note>}
         </>
       )}

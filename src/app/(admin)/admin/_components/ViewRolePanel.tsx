@@ -32,16 +32,14 @@ export async function ViewRolePanel() {
             </button>
           </form>
         </div>
-      ) : (
-        <p className="con-note">Choose a role, then open the site from your account menu or the link below.</p>
-      )}
-      <ul className="list list--plain">
+      ) : null}
+      <ul className="con-roles">
         {options.map(({ role, label }) => (
           <li key={role}>
             <form action={startViewRole} className="flow-inline-form">
               <input type="hidden" name="role" value={role} />
               <button type="submit" className="ops-button ops-button-ghost" aria-current={active?.role === role ? 'true' : undefined}>
-                View as: {label}
+                {label}
               </button>
             </form>
           </li>

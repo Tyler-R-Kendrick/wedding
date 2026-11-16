@@ -13,8 +13,14 @@ import {
   type WeekendNoticeRow,
 } from '@/db/schema';
 
+/**
+ * Every event in the order it happens: by day, then by start time, with events whose time is not
+ * set after the timed ones of their day (ascending order puts nulls last), in the hand-set order.
+ * Guests and the admin Schedule read this one order, so `sortOrder` only decides between events of
+ * a day that have no time yet.
+ */
 export async function listEvents(db: Db): Promise<EventRow[]> {
-  return db.select().from(events).orderBy(asc(events.sortOrder), asc(events.name));
+  return db.select().from(events).orderBy(asc(events.dateIso), asc(events.startsAt), asc(events.sortOrder), asc(events.name));
 }
 
 export async function getEvent(db: Db, id: string): Promise<EventRow | null> {

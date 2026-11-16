@@ -90,8 +90,10 @@ const upsertEventInput = z.object({
   placeholder: z.boolean(),
   rsvpRequired: z.boolean(),
   /**
-   * Where the event sits in lists. Optional: an edit keeps the event's place and a new event goes
-   * last. The console moves events with Up and Down (`admin_reorder_events`), never a number field.
+   * Where the event sits among the events of its day that have no start time yet (events are
+   * listed by day, then start time; see `listEvents`). Optional: an edit keeps the event's place
+   * and a new event goes last. The console moves events with Up and Down (`admin_reorder_events`),
+   * never a number field.
    */
   sortOrder: z.number().int().min(0).max(SORT_MAX).optional(),
 });

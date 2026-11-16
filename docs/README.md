@@ -24,6 +24,8 @@ or if the activation matrix drifts from the code that switches things on.
 | [Local development](ops/local-dev.md) | Clone to running site. No accounts, no keys. |
 | [Deploying](ops/deploy-vercel-supabase.md) | Vercel + Supabase + R2, in the order that works. |
 | [Environment variables](ops/environment.md) | Every variable, its default and who reads it. |
+| [Observability](ops/observability.md) | Session tracing for every visitor, the couple's problem reporter, and how to switch each on. |
+| [The problem-report sync](ops/problem-report-sync.md) | How a report reaches Linear with no API key: the daily scheduled task, and how to make it again. |
 | [Activation matrix](ops/activation-matrix.md) | What is switched off, and exactly what turns it on. Generated from the code. |
 | [Asset licensing](ops/asset-licensing.md) | Where every image came from and what we owe for it. |
 | [Professional media rights](ops/professional-media-rights.md) | The photographer/videographer gate on AI processing. |
@@ -51,6 +53,7 @@ Domain notes, one per area:
 [media intelligence](architecture/media-intelligence.md) ·
 [biometrics readiness](architecture/biometrics-bipa-readiness.md) ·
 [AI grounding](architecture/ai-grounding.md) ·
+[the admin console and its assistant](architecture/admin-console.md) ·
 [WebMCP](architecture/webmcp.md)
 
 ## The record

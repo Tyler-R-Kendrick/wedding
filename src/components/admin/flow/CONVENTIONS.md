@@ -14,8 +14,10 @@ Every `/admin` screen uses this kit the same way. `/admin/gifts`, `/admin/guests
 
 ## Page layout
 
-1. `ConsolePage` with a short `lede`. The screen's main create action goes in `actions`
-   (top right): one primary button per screen. A family's `SubNav` (media, intelligence) goes in
+1. `ConsolePage` with a one-sentence `lede`. It is shown on demand (the ⓘ beside the title), never
+   as a standing paragraph; a `Section`'s `note` is the same. Write the screen so it reads without
+   them. The screen's main create action goes in `actions` (top right): one primary button per
+   screen; a dashboard's time window (`WindowTabs`) goes there too. A family's `SubNav` (media, intelligence) goes in
    `subNav`, never in `actions`.
 2. A `FilterBar` above the list when the list can be searched.
 3. The things the screen manages as a `RecordList` of `RecordRow`s: name and state (`Pill`) first,
@@ -67,6 +69,17 @@ Every `/admin` screen uses this kit the same way. `/admin/gifts`, `/admin/guests
   it makes the page grow with the rows times the options.
 - Up and Down on a hand-ordered list are `QuickAction`s whose calls come from `moveCalls` (`order.ts`),
   given the whole list as shown, so rows that share a place are renumbered rather than left to chance.
+
+## Dashboards and the assistant
+
+- Figures: `StatStrip`/`Stat` (a ruled band, never boxes). Charts: `components/admin/viz/Chart`
+  (bar, line, area, pie, donut; it carries its own data table).
+- A new screen gets an entry in `_components/sections.ts` (label, icon, the words people search
+  by): the rail, the bar and the command palette all read it.
+- Anything an administrator should be able to *ask* is a view in `src/domain/admin-assistant`
+  (a cue in `intent.ts`, a reader in `capabilities/ops/admin_assistant.ts`, a composer in
+  `compose.ts`) over a read capability on `READ_TOOLS`. A change it may propose is on `PROPOSABLE`;
+  the assistant never runs one.
 
 ## Visual rules
 

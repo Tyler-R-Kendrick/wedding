@@ -204,6 +204,13 @@
       "when": 1794796402699,
       "tag": "0029_good_millenium_guard",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1794805411679,
+      "tag": "0030_visit_telemetry_and_sheet_label",
+      "breakpoints": true
     }
   ]
 }
