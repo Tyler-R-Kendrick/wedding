@@ -162,12 +162,12 @@ const serverSchema = z.object({
 
   /**
    * Where a problem report from the couple is filed (src/providers/issue-tracker). Linear when
-   * LINEAR_API_KEY and LINEAR_TEAM are set, else GitHub when GITHUB_ISSUES_TOKEN and
-   * GITHUB_ISSUES_REPO are; ISSUE_TRACKER names one when both are, or `off`.
+   * LINEAR_API_KEY is set, else GitHub when GITHUB_ISSUES_TOKEN and GITHUB_ISSUES_REPO are;
+   * ISSUE_TRACKER names one when both are, or `off`.
    */
   ISSUE_TRACKER: z.enum(['linear', 'github', 'mock', 'off']).optional().or(z.literal('').transform(() => undefined)),
   LINEAR_API_KEY: optionalSecret(16),
-  /** A Linear team's key (`WED`) or id. */
+  /** A Linear team's key or id. Default `WED`, the team made for this site. */
   LINEAR_TEAM: optionalString,
   LINEAR_PROJECT_ID: optionalString,
   /** Fine-grained token with Issues: read and write on GITHUB_ISSUES_REPO, and nothing else. */

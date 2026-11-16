@@ -82,7 +82,8 @@ For owners only (`ADMIN_EMAILS`: Tyler and Sara; not the planner, not a moderato
   page with their digests, the steps before it, and a link to the PostHog replay of that session.
 - **Where it goes.** `src/providers/issue-tracker`: **Linear** (the team's Triage state; the
   screenshot is stored in Linear) or **GitHub Issues** (no API for attachments; a public repository
-  is refused unless `GITHUB_ISSUES_ALLOW_PUBLIC`). Linear wins when both are configured.
+  is refused unless `GITHUB_ISSUES_ALLOW_PUBLIC`). Linear wins when both are configured, and is what
+  the couple chose: `LINEAR_API_KEY` alone switches it on, filing into the `wedding` team (`WED`).
 
 **It does not depend on the parts it reports on.**
 
@@ -125,9 +126,11 @@ audit rows and idempotency keys, and "the database is down" is a report this mus
   Rotating `BETTER_AUTH_SECRET` voids every pass.
 
 **Follow-ups.**
-- `TODO(Tyler & Sara)`: which PostHog project. The connected organisation has one project, used by
-  another product; this site needs its own (see the ops guide). Nothing is sent until then.
-- `TODO(Tyler & Sara)`: Linear or GitHub, and the team or private repository.
+- PostHog: decided 2026-11-16, a separate organisation for the wedding. The existing one belongs
+  to another product and its plan allows one project. `TODO(Tyler & Sara)`: create it and set the
+  two variables (see the ops guide). Nothing is sent until then.
+- Tracker: decided 2026-11-16, Linear, in the `wedding` team (`WED`, the provider's default).
+  `TODO(Tyler & Sara)`: `LINEAR_API_KEY` in Vercel, and Triage switched on for the team.
 - Source maps. Stack traces in PostHog are minified until `@posthog/nextjs-config` uploads them. It
   supports Turbopack on Next ≥ 15.4.1 (read from the package), but it fails the build when an upload
   fails, and it could not be exercised without a personal API key, so it is not wired in.

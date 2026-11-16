@@ -29,11 +29,14 @@ export interface IssueTrackerEnv {
   GITHUB_ISSUES_ALLOW_PUBLIC?: boolean | string | undefined;
 }
 
+/** The Linear team made for this site (`wedding`, key `WED`). `LINEAR_TEAM` names another. */
+export const DEFAULT_LINEAR_TEAM = 'WED';
+
 const on = (v: boolean | string | undefined): boolean => v === true || (typeof v === 'string' && /^(1|true|yes|on)$/i.test(v.trim()));
 const text = (v: string | undefined): string | undefined => (v && v.trim() ? v.trim() : undefined);
 
 /**
- * Linear when its two settings are present, else GitHub when its two are, else the in-memory mock
+ * Linear when its API key is present, else GitHub when its two settings are, else the in-memory mock
  * (development, tests) or an honest "unconfigured" (production). `ISSUE_TRACKER` picks one by name
  * when both are configured. Linear wins a tie: it is private, takes a screenshot, and has a Triage
  * inbox built for exactly this.
@@ -47,7 +50,8 @@ export function createIssueTrackerProvider(env: IssueTrackerEnv, deps: { fetchIm
   if (choice === 'mock' || choice === 'off') return none();
 
   const linearKey = text(env.LINEAR_API_KEY);
-  const linearTeam = text(env.LINEAR_TEAM);
+  // The couple chose Linear and made a team for the site, so the key alone switches it on.
+  const linearTeam = text(env.LINEAR_TEAM) ?? DEFAULT_LINEAR_TEAM;
   const githubToken = text(env.GITHUB_ISSUES_TOKEN);
   const githubRepo = text(env.GITHUB_ISSUES_REPO);
   const linear = () => new LinearIssueTracker({ apiKey: linearKey!, team: linearTeam!, ...(text(env.LINEAR_PROJECT_ID) ? { projectId: text(env.LINEAR_PROJECT_ID)! } : {}) }, deps.fetchImpl);
@@ -64,7 +68,7 @@ export function createIssueTrackerProvider(env: IssueTrackerEnv, deps: { fetchIm
   const linearReady = !!(linearKey && linearTeam);
   const githubReady = !!(githubToken && githubRepo && GITHUB_REPO_SHAPE.test(githubRepo));
 
-  if (choice === 'linear') return linearReady ? linear() : none([!linearKey ? 'LINEAR_API_KEY' : '', !linearTeam ? 'LINEAR_TEAM' : ''].filter(Boolean));
+  if (choice === 'linear') return linearReady ? linear() : none(['LINEAR_API_KEY']);
   if (choice === 'github') return githubReady ? github() : none([!githubToken ? 'GITHUB_ISSUES_TOKEN' : '', !githubRepo || !GITHUB_REPO_SHAPE.test(githubRepo) ? 'GITHUB_ISSUES_REPO' : ''].filter(Boolean));
   if (linearReady) return linear();
   if (githubReady) return github();

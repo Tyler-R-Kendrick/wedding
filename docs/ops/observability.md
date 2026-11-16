@@ -23,10 +23,12 @@ replay, exceptions from the browser and the server, web vitals, network timing a
 
 ### Switching it on
 
-1. **Give the site its own PostHog project.** `TODO(Tyler & Sara)`: the PostHog organisation
-   connected to this workspace has a single project and it belongs to another product. Guest
-   sessions should not be mixed into it. Either add a project to that organisation or create a
-   separate organisation for the wedding, whichever the plan allows.
+1. **Create a PostHog organisation for the wedding, with one project in it.** Decided
+   2026-11-16: a separate organisation, not a second project in the existing one. That organisation
+   belongs to another product and its plan allows a single project, which is taken; a separate one
+   keeps guest data and billing apart and has its own free allowance. `TODO(Tyler & Sara)`: create
+   it in PostHog (the organisation menu, "New organization"). It cannot be created through the API
+   access this repository's agents have.
 2. In the project's settings, switch **Session replay** on, and under IP data choose **Discard
    client IP data**. (The proxy already withholds the address; this is the second lock.)
 3. Set the two variables in Vercel (Production and Preview), or install PostHog's Vercel
@@ -88,10 +90,14 @@ Set one of these in Vercel:
 
 | Tracker | Variables | Notes |
 |---|---|---|
-| **Linear** (recommended) | `LINEAR_API_KEY`, `LINEAR_TEAM` (the team's key, e.g. `WED`), optional `LINEAR_PROJECT_ID` | Private. Arrives in the team's Triage inbox when triage is on for the team. Takes the screenshot. `TODO(Tyler & Sara)`: the workspace has no team for the wedding yet. |
+| **Linear** (chosen 2026-11-16) | `LINEAR_API_KEY`; optional `LINEAR_TEAM` (default `WED`) and `LINEAR_PROJECT_ID` | Private. Filed into the `wedding` team (`WED`). Takes the screenshot. `TODO(Tyler & Sara)`: add a Linear personal API key to Vercel as `LINEAR_API_KEY`; that is the only setting missing. |
 | **GitHub Issues** | `GITHUB_ISSUES_TOKEN` (fine-grained, Issues: read and write, one repository), `GITHUB_ISSUES_REPO` (`owner/name`) | Cannot store a screenshot. **This repository is public**, so point it at a private one; a public repository is refused unless `GITHUB_ISSUES_ALLOW_PUBLIC=1`. |
 
-With neither set, a report is emailed to `ADMIN_EMAILS` and written to the log. `/admin/providers`
+Reports arrive in the team's **Triage** inbox when triage is switched on for it (Linear: team
+settings, Triage), which is where unscoped work is accepted, prioritised or declined. The `wedding`
+team had triage off when it was created, so until it is switched on reports land in **Backlog**.
+
+With neither tracker set, a report is emailed to `ADMIN_EMAILS` and written to the log. `/admin/providers`
 shows which tracker is live, and `/api/health` (as an admin) reports its mode.
 
 ### When things are broken

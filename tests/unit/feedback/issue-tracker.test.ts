@@ -18,7 +18,7 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 1, 2, 3, 4, 5, 6, 7, 8]);
 
 describe('choosing a tracker', () => {
-  const linear = { LINEAR_API_KEY: 'lin_api_0123456789abcdef', LINEAR_TEAM: 'WED' };
+  const linear = { LINEAR_API_KEY: 'lin_api_0123456789abcdef' };
   const github = { GITHUB_ISSUES_TOKEN: 'github_pat_0123456789abcdef', GITHUB_ISSUES_REPO: 'couple/wedding-feedback' };
 
   it('is the in-memory mock in development and in tests, whatever is configured', () => {
@@ -42,8 +42,24 @@ describe('choosing a tracker', () => {
     expect(createIssueTrackerProvider({ NODE_ENV: 'production', ...linear, ISSUE_TRACKER: 'off' }).name).toBe('unconfigured');
   });
 
+  it('needs only the API key for Linear: the team defaults to the one made for this site', async () => {
+    const asked: string[] = [];
+    const fetchImpl = async (_url: string | URL, init: RequestInit = {}) => {
+      asked.push(String(init.body));
+      return new Response(JSON.stringify({ data: { teams: { nodes: [] } } }), { status: 200 });
+    };
+    const tracker = createIssueTrackerProvider({ NODE_ENV: 'production', LINEAR_API_KEY: 'lin_api_0123456789abcdef' }, { fetchImpl });
+    expect(tracker.name).toBe('linear');
+    await tracker.createIssue({ title: 't', body: 'b' });
+    expect(JSON.parse(asked[0]!).variables).toEqual({ key: 'WED' });
+    // LINEAR_TEAM names another.
+    asked.length = 0;
+    await createIssueTrackerProvider({ NODE_ENV: 'production', LINEAR_API_KEY: 'lin_api_0123456789abcdef', LINEAR_TEAM: 'ops' }, { fetchImpl }).createIssue({ title: 't', body: 'b' });
+    expect(JSON.parse(asked[0]!).variables).toEqual({ key: 'OPS' });
+  });
+
   it('names what is missing, and refuses a repository that is not owner/name', () => {
-    expect(createIssueTrackerProvider({ NODE_ENV: 'production', ISSUE_TRACKER: 'linear', LINEAR_API_KEY: 'lin_api_0123456789abcdef' }).validateConfig().missing).toEqual(['LINEAR_TEAM']);
+    expect(createIssueTrackerProvider({ NODE_ENV: 'production', ISSUE_TRACKER: 'linear' }).validateConfig().missing).toEqual(['LINEAR_API_KEY']);
     expect(createIssueTrackerProvider({ NODE_ENV: 'production', GITHUB_ISSUES_TOKEN: 'github_pat_0123456789abcdef', GITHUB_ISSUES_REPO: 'https://github.com/a/b' }).name).toBe('unconfigured');
   });
 });

@@ -38,7 +38,7 @@ export class UnconfiguredIssueTracker implements IssueTrackerProvider {
   readonly name = 'unconfigured';
   readonly mode = 'unavailable' as const;
   readonly capabilities = { createIssue: false, attachments: false };
-  constructor(private readonly missing: string[] = ['LINEAR_API_KEY + LINEAR_TEAM, or GITHUB_ISSUES_TOKEN + GITHUB_ISSUES_REPO']) {}
+  constructor(private readonly missing: string[] = ['LINEAR_API_KEY, or GITHUB_ISSUES_TOKEN + GITHUB_ISSUES_REPO']) {}
 
   validateConfig() {
     return { ok: false, missing: this.missing, warnings: [] };
