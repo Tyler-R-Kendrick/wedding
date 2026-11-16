@@ -125,17 +125,19 @@ describe('the planning sheet against the guest list', () => {
   });
 
   it('a line whose namesake household is already another line gets its own household', async () => {
-    expectOk(await run(adminUploadGuestSheet, admin(), { text: TAB, source: 'Guests tab' }));
+    // Its own two lines, so nothing an earlier test linked answers to them.
+    const tab = TAB.replace('Test household A', 'Namesake line').replace('Test household B', 'Other line');
+    expectOk(await run(adminUploadGuestSheet, admin(), { text: tab, source: 'Guests tab' }));
     const db = await getDb();
-    // A household named like line A, but linked to line B.
-    await db.insert(households).values({ id: 'HH-SHEET-3', name: 'Test household A', sheetLabel: 'Test household B' });
-    expect((await sync()).onlyOnSheet.map((l) => l.label)).toContain('Test household A');
+    // A household named like the first line, but linked to the second.
+    await db.insert(households).values({ id: 'HH-SHEET-3', name: 'Namesake line', sheetLabel: 'Other line' });
+    expect((await sync()).onlyOnSheet.map((l) => l.label)).toContain('Namesake line');
 
-    const made = expectOk(await run(adminAddHouseholdFromSheet, admin(), { label: 'Test household A' })).data;
+    const made = expectOk(await run(adminAddHouseholdFromSheet, admin(), { label: 'Namesake line' })).data;
     expect(made.created).toBe(true);
     expect(made.householdId).not.toBe('HH-SHEET-3');
     const after = await sync();
-    expect(after.onlyOnSheet.map((l) => l.label)).not.toContain('Test household A');
-    expect(after.matched.find((m) => m.label === 'Test household A')).toMatchObject({ household: { id: made.householdId }, how: 'linked' });
+    expect(after.onlyOnSheet.map((l) => l.label)).not.toContain('Namesake line');
+    expect(after.matched.find((m) => m.label === 'Namesake line')).toMatchObject({ household: { id: made.householdId }, how: 'linked' });
   });
 });
