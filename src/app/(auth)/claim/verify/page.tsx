@@ -8,6 +8,7 @@ import { errorCopy } from '../../_lib/errors';
 import { currentPrincipal } from '../../_lib/invoke';
 import { AuthShell, Notice } from '../../_components/kit';
 import { VerifyCodeForm } from '../../_components/VerifyCodeForm';
+import { SignInHelp } from '../../_components/SignInHelp';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Enter your code', robots: { index: false, follow: false } };
@@ -38,6 +39,11 @@ export default async function VerifyPage({ searchParams }: { searchParams: Promi
   // capability decided there was a live lock when it sent this code; the cookie carrying it lives
   // ten minutes and the lock fifteen, so it cannot outlast what it describes by much.
   const isSms = usable?.kind === 'phone_sign_in';
+  // The couple's own sign-in: the guest help line (write to the couple) would point them at themselves.
+  const isAdmin = usable?.kind === 'admin_sign_in';
+  // Only a guest who typed the address or number can be told to check it: an invitation link's code
+  // goes to the email on file, which they never chose.
+  const typedContact = usable?.kind === 'sign_in' || usable?.kind === 'phone_sign_in';
   const lockedTime = usable?.lockedUntil ? new Date(usable.lockedUntil).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Chicago', timeZoneName: 'short' }) : null;
   return (
     <AuthShell
@@ -63,16 +69,21 @@ export default async function VerifyPage({ searchParams }: { searchParams: Promi
             request a new code
           </a>
           .{' '}
-          {isSms ? (
+          {isAdmin ? null : (
             <>
-              Try{' '}
-              <Link className="auth-link" href="/sign-in">
-                email sign-in
-              </Link>{' '}
-              instead, or use a different mobile number — the same options are always available.
+              {!typedContact ? null : isSms ? (
+                <>
+                  Make sure it’s the mobile number we collected for your save-the-date, or try{' '}
+                  <Link className="auth-link" href="/sign-in?method=email">
+                    email sign-in
+                  </Link>{' '}
+                  instead.{' '}
+                </>
+              ) : (
+                'Make sure it’s the email address we collected for your save-the-date. '
+              )}
+              <SignInHelp lead="Still having trouble?" />
             </>
-          ) : (
-            <>No code yet? Check spam, try another email on the sign-in page, or keep an eye out for your save-the-date.</>
           )}
         </p>
       }
