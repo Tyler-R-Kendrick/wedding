@@ -147,7 +147,7 @@
 
 .ask-answer__title {
   margin: 0;
-  font-size: var(--text-h2);
+  font-size: var(--text-h3);
   font-weight: 500;
   line-height: 1.2;
   letter-spacing: -0.01em;
@@ -889,6 +889,21 @@
     max-width: 100%;
   }
 
+  /* A table wraps to fit a phone before it scrolls: only figures stay on one line. */
+  .aui-table th,
+  .aui-table td {
+    padding-inline: 0.5rem;
+    white-space: normal;
+  }
+
+  .aui-table td:first-child {
+    min-width: 6rem;
+  }
+
+  .aui-table .aui-num {
+    white-space: nowrap;
+  }
+
   /* On a phone the box keeps to its field; each answer says how it was worded. */
   .ask-box__how {
     display: none;
@@ -896,6 +911,14 @@
 
   .aui-list--timeline .aui-item {
     grid-template-columns: 4.5rem minmax(0, 1fr);
+  }
+}
+
+/* Full-height targets for the controls a thumb uses in an answer. */
+@media (width < 60rem) {
+  .aui-segmented button,
+  .aui-button--sm {
+    min-height: 2.75rem;
   }
 }
 

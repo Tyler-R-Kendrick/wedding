@@ -340,7 +340,7 @@ export const Table = defineComponent({
     const cell = (value: unknown): ReactNode => (isElement(value) ? renderNode(value) : typeof value === 'number' ? value.toLocaleString('en-US', { maximumFractionDigits: 2 }) : String(value ?? ''));
     return (
       // Focusable so a keyboard can scroll a table wider than a phone (axe scrollable-region-focusable).
-      <div className="aui-table-scroll" tabIndex={0}>
+      <div className="aui-table-scroll" tabIndex={0} role="region" aria-label={`Table: ${columns.join(', ')}`}>
         <table className="aui-table">
           <thead>
             <tr>

@@ -41,7 +41,8 @@ export function AdminShell({ role, children }: { role: string; children: ReactNo
 
   useEffect(() => {
     if (!railOpen) return;
-    rail.current?.querySelector<HTMLElement>('a[aria-current="page"], a')?.focus();
+    // The page you are on, if it is in the rail; otherwise the first link.
+    (rail.current?.querySelector<HTMLElement>('nav a[aria-current="page"]') ?? rail.current?.querySelector<HTMLElement>('a'))?.focus();
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') closeRail();
     };
@@ -66,10 +67,13 @@ export function AdminShell({ role, children }: { role: string; children: ReactNo
   }, []);
 
   const railHidden = narrow && !railOpen;
+  const drawerOpen = narrow && railOpen;
 
   return (
     <div className="adm" data-rail={railOpen ? 'open' : 'closed'}>
-      <a className="skip" href="#main">
+      {/* While the drawer is open it is the only thing a keyboard can reach: the page under the
+          scrim and the skip link above it are inert, so Shift+Tab cannot land on a hidden control. */}
+      <a className="skip" href="#main" inert={drawerOpen || undefined}>
         Skip to content
       </a>
 
@@ -126,7 +130,7 @@ export function AdminShell({ role, children }: { role: string; children: ReactNo
       </aside>
       {railOpen ? <button type="button" className="adm-scrim" aria-label="Close the menu" tabIndex={-1} onClick={closeRail} /> : null}
 
-      <div className="adm-main">
+      <div className="adm-main" inert={drawerOpen || undefined}>
         <header className="adm-bar">
           <button ref={menuButton} type="button" className="adm-icon-button adm-bar__menu" onClick={() => setRailOpen(true)} aria-label="Open the menu" aria-expanded={railOpen} aria-controls="admin-rail">
             <AdminIcon name="menu" />

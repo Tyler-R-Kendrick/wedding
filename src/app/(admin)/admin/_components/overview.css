@@ -54,11 +54,15 @@
 }
 
 .ov-ask__send {
-  min-height: 2.75rem;
-  padding: 0.5rem 1.5rem;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
   color: var(--color-on-primary);
-  font: inherit;
-  font-weight: 500;
+  font-size: var(--text-h3);
   background: var(--color-primary);
   border: 0;
   border-radius: var(--radius-pill);
@@ -152,7 +156,7 @@
 
 .ov-panel {
   display: grid;
-  align-content: start;
+  grid-template-rows: auto 1fr;
   gap: var(--spacing-sm);
   min-width: 0;
   padding: var(--spacing-md);
@@ -233,6 +237,18 @@
   flex-wrap: wrap;
   gap: var(--spacing-xs) var(--spacing-md);
   margin: var(--spacing-sm) 0 0;
+}
+
+.ov-need__acts a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+}
+
+@media (width < 60rem) {
+  .ov-need__acts a {
+    min-height: 2.75rem;
+  }
 }
 
 

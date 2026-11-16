@@ -74,7 +74,7 @@ function traffic(g: Gathered, intent: Intent): Answer {
   add(p, 'trend', `t.empty ? Text("Nothing to chart for this window.", "md", "muted") : Card([Title("Sessions and pages opened", "sm"), Chart("area", t.points, "label", ["Sessions", "Pages opened"])])`);
   add(p, 'pages', `Card([Title("Busiest pages", "sm"), Table(["Page", "Views", "Sessions", "Errors"], @Each(t.pages, "p", [p.path, p.views, p.sessions, p.errors]))])`, false);
   add(p, 'devices', `Card([Title("Devices", "sm"), Chart("bar", t.devices, "device", ["Sessions"], null, null, null, 160)])`, false);
-  add(p, 'speed', `Card([Title("Page speed, 75th percentile", "sm"), Table(["Measure", "Value", "Rating", "Samples"], @Each(t.vitals, "v", [v.label, v.value, Badge(v.rating, v.tone), v.samples]))])`, false);
+  add(p, 'speed', `Card([Title("Page speed, 75th percentile", "sm"), Table(["Measure", "Value", "Rating"], @Each(t.vitals, "v", [v.label, v.value, Badge(v.rating, v.tone)]))])`, false);
   add(p, 'lower', `Grid([pages, Col([devices, speed], 4)], 2, 320, 4)`);
   const next = ['Who visited?', t.errors ? 'What errors did guests hit?' : 'How many guests have replied?'];
   return {

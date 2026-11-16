@@ -80,8 +80,8 @@ export default async function AdminPage() {
         <div className="ov-ask__row">
           <AdminIcon name="ask" />
           <input id="ov-q" name="q" type="text" className="ov-ask__field" maxLength={500} autoComplete="off" required />
-          <button type="submit" className="ov-ask__send">
-            Ask
+          <button type="submit" className="ov-ask__send" aria-label="Ask">
+            <AdminIcon name="send" />
           </button>
         </div>
         <ul className="ov-ask__starters">

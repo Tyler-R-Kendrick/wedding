@@ -1,16 +1,17 @@
 /*
- * Charts for the console. The palette is the foundation's own: ink leads, terracotta is the second
- * voice, sage the third, then paper-tinted steps of the same three. No gradients (DESIGN.md); the
+ * Charts for the console. The palette is the foundation's own: ink leads, terracotta is the
+ * third voice (kept for the series that most needs an eye, so the accent stays scarce), sage the
+ * second, then paper-tinted steps of the same three. No gradients (DESIGN.md); the
  * marks are flat and the grid is a hairline.
  */
 
 .viz-chart {
   --viz-1: var(--color-primary);
-  --viz-2: var(--color-tertiary);
-  --viz-3: var(--color-secondary);
+  --viz-2: var(--color-secondary);
+  --viz-3: var(--color-tertiary);
   --viz-4: color-mix(in oklab, var(--color-primary) 45%, var(--color-neutral));
-  --viz-5: color-mix(in oklab, var(--color-tertiary) 50%, var(--color-neutral));
-  --viz-6: color-mix(in oklab, var(--color-secondary) 50%, var(--color-neutral));
+  --viz-5: color-mix(in oklab, var(--color-secondary) 50%, var(--color-neutral));
+  --viz-6: color-mix(in oklab, var(--color-tertiary) 50%, var(--color-neutral));
 
   display: grid;
   gap: var(--spacing-sm);
@@ -32,6 +33,8 @@
   stroke-width: 1;
 }
 
+/* Axis ticks are the ornament step (DESIGN.md `label-caps`): the plot is hidden from assistive
+   technology and every value it draws is in the Data table under it, at the reading size. */
 .viz-chart-tick,
 .viz-chart-category {
   fill: var(--color-on-surface-muted);

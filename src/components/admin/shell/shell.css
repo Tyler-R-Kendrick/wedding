@@ -142,10 +142,14 @@
   border-radius: var(--radius-pill);
 }
 
+/* Pinned: the rail is taller than a laptop screen, and these two are wanted from anywhere in it. */
 .adm-rail__foot {
+  position: sticky;
+  bottom: 0;
   display: grid;
   gap: 1px;
   padding: var(--spacing-sm);
+  background: var(--color-neutral-variant);
   border-top: 1px solid var(--adm-line);
 }
 
@@ -400,8 +404,10 @@
   cursor: pointer;
 }
 
+/* Sand on surface is too faint to be the only sign of where the keyboard is: the row is ruled in ink too. */
 .adm-palette__item[aria-selected='true'] {
   background: var(--color-neutral-variant);
+  box-shadow: inset 0 0 0 1px var(--color-primary);
 }
 
 .adm-palette__icon {
@@ -427,8 +433,7 @@
   margin: 0;
   padding: 0.5rem 1rem;
   color: var(--color-on-surface-muted);
-  font-size: var(--text-label-caps);
-  letter-spacing: 0.04em;
+  font-size: var(--text-body-sm);
   border-top: 1px solid var(--color-outline);
 }
 
@@ -522,8 +527,10 @@
     align-items: center;
   }
 
+  /* The Esc chip is a hint for a keyboard; on a phone it reads as a button that does nothing. */
   .adm-palette__hint,
-  .adm-palette__foot {
+  .adm-palette__foot,
+  .adm-palette__field .adm-kbd {
     display: none;
   }
 }

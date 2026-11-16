@@ -202,30 +202,27 @@
   text-underline-offset: 0.25em;
 }
 
-/* A strip of headline numbers. Deliberately not boxes: a rule under each, nothing around them. */
+/*
+ * A strip of headline numbers: one ruled band, a hairline between figures, the label over the
+ * value. The same idiom as the overview's figures and an assistant answer's, so a number looks like
+ * a number on every screen. `Stat` writes value, label, hint; `order` puts the label first.
+ */
 .con-stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-lg) var(--spacing-2xl);
-  padding-block: var(--spacing-md);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(9.5rem, 100%), 1fr));
   border-block: 1px solid var(--ops-outline);
+  overflow: hidden;
 }
 
-/*
- * `align-content: start` is the whole fix for a wrapped stat row.
- *
- * `.con-stats` is a flex container, so its items stretch to the tallest in the row; `.con-stat` is
- * a grid, and a grid with more height than content distributes the surplus between its rows. A
- * stat with a hint is one row taller than one without, so on /admin/jobs "Queued" (hint: "0 due
- * now") stretched its neighbour "Running" and pushed that label 15px below it — measured, both
- * before and after, with scripts/probes/stat-strip.mjs. Packing the rows at the top makes every label in
- * a row sit at the same y whatever its neighbours carry.
- */
 .con-stat {
   display: grid;
   align-content: start;
-  gap: 0.125rem;
-  min-width: 7rem;
+  gap: 0.25rem;
+  min-width: 0;
+  margin-bottom: -1px;
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--ops-outline);
+  box-shadow: -1px 0 0 var(--ops-outline);
 }
 
 .con-stat__value {
@@ -235,6 +232,7 @@
 }
 
 .con-stat__label {
+  order: -1;
   font-size: var(--text-control-caps);
   letter-spacing: var(--tracking-control-caps);
   text-transform: uppercase;
@@ -501,6 +499,7 @@
 }
 
 
+
 .con-filter-links {
   display: flex;
   gap: var(--spacing-md);
@@ -517,6 +516,12 @@
   color: var(--color-primary);
   font-weight: 500;
   text-decoration-color: var(--color-tertiary);
+}
+
+/* A name in a table's first column is a link to its detail; give it a target taller than its text. */
+.con-table th a {
+  display: inline-block;
+  min-height: 1.5rem;
 }
 
 /* The time window, top right of a screen: three links in one ruled pill, the current one filled. */
@@ -578,18 +583,33 @@
 
 .con-cell-link {
   display: block;
+  min-height: 1.5rem;
   font-weight: 400;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
 }
 
-/* On a phone the headline figures sit two across instead of one per row. */
-@media (width < 40rem) {
-  .con-stats {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--spacing-md);
+
+/*
+ * On a phone an About note spans the row its heading is in, instead of hanging from the icon and
+ * running off the right edge; and the controls a thumb uses most get a full-height target.
+ */
+@media (width < 60rem) {
+  .con-head,
+  .con-section-head {
+    position: relative;
   }
 
-  .con-stat {
-    min-width: 0;
+  .con-about {
+    position: static;
+  }
+
+  .con-about__body {
+    right: 0;
+    width: auto;
+  }
+
+  .con-head .con-window a {
+    min-height: 2.75rem;
   }
 }
