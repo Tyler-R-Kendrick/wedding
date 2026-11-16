@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
-import Link from 'next/link';
 import '@/components/tokens/foundation.css';
 import '@/components/rsvp/recipes.css';
-import { AdminIndex } from './admin/_components/console';
+import { AdminShell } from '@/components/admin/shell/AdminShell';
+import { adminPrincipal } from './_shared/admin';
 import './admin/_components/ops.css';
 import './admin/_components/console.css';
 
@@ -14,54 +14,35 @@ export const dynamic = 'force-dynamic';
  */
 export const metadata: Metadata = { title: 'Admin', robots: { index: false, follow: false } };
 
+const ROLE_LABEL = { owner: 'Owner', planner: 'Planner', moderator: 'Moderator' } as const;
+
 /**
- * The admin console shell. Every admin screen hangs off one index (`_components/sections.ts`), so a
- * screen that ships without an entry there is a screen nobody can find — which is exactly how
- * lifecycle, audit, jobs, metrics, flags and providers spent eleven levels having machinery and no
- * door. The full list lives in a closed `<details>`: twenty links open by default would push every
- * page down half a phone screen, and a disclosure needs no JavaScript to be keyboard-complete.
+ * The admin console's frame (`components/admin/shell`). Every screen hangs off one index
+ * (`_components/sections.ts`): the rail lists all of it, the bar names where you are, and the
+ * command palette searches it, so a screen that ships without an entry there is a screen nobody
+ * can find.
+ *
+ * Someone who is not an administrator gets no frame at all: each page shows its own sign-in gate,
+ * and a rail of twenty-six links around "sign in first" would be a map of a building they cannot
+ * enter. `.admin-root` carries the type family for that bare case (`--font-text` is defined only
+ * under `[data-theme]`, which the admin tree never carries).
  */
-export default function AdminLayout({ children }: { children: ReactNode }) {
+export default async function AdminLayout({ children }: { children: ReactNode }) {
+  const { principal } = await adminPrincipal();
+  if (principal.kind !== 'admin') {
+    return (
+      <div className="admin-root admin-root--bare">
+        <a className="skip" href="#main">
+          Skip to content
+        </a>
+        {children}
+      </div>
+    );
+  }
+  const role = (['owner', 'planner', 'moderator'] as const).find((r) => principal.roles.has(r));
   return (
-    // `.admin-root` exists to carry the family. `globals.css` sets `html { font-family:
-    // var(--font-text) }`, and `--font-text` is defined only under `[data-theme]` — which the admin
-    // tree deliberately never carries — so on every admin route that declaration was invalid at
-    // computed-value time and `html` fell back to the browser default. `.ops` re-declares the family
-    // for the page body, which is why level 14's fix looked complete; the chrome AROUND it did not,
-    // and the skip link, the four top-bar links, the "all admin screens" summary and all 21 index
-    // links inside it rendered in Times New Roman. Measured, not inferred:
-    // `getComputedStyle(document.querySelector('.con-nav__bar a')).fontFamily`.
     <div className="admin-root">
-      <a className="skip" href="#main">
-        Skip to content
-      </a>
-      <nav aria-label="Admin" className="con-nav">
-        <ul className="list list--plain con-nav__bar">
-          <li>
-            <Link href="/admin">Admin</Link>
-          </li>
-          <li>
-            <Link href="/admin/lifecycle">Lifecycle</Link>
-          </li>
-          <li>
-            <Link href="/admin/audit">Audit</Link>
-          </li>
-          <li>
-            <Link href="/admin/jobs">Jobs</Link>
-          </li>
-          <li>
-            <Link href="/admin#view-as">View as role</Link>
-          </li>
-          <li>
-            <Link href="/admin/guests#inspect-guest">Inspect a guest</Link>
-          </li>
-        </ul>
-        <details>
-          <summary>All admin screens</summary>
-          <AdminIndex idPrefix="nav" />
-        </details>
-      </nav>
-      {children}
+      <AdminShell role={role ? ROLE_LABEL[role] : 'Admin'}>{children}</AdminShell>
     </div>
   );
 }

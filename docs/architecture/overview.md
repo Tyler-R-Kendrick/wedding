@@ -93,12 +93,13 @@ flowchart TB
 
 ## Jobs
 
-Durable queue in the `jobs` table (`src/lib/jobs`): `enqueue` (optional dedupe key), optimistic per-row `claim`, `complete`, `fail` with exponential backoff and a dead state, `reapStale`. Handlers register by type. Runners: the dev poller (`JOBS_INLINE_RUNNER`), `npm run jobs:run`, and `POST /api/jobs/run` behind `CRON_SECRET` for production cron. Handlers receive `ctx.db` (the runner's handle). The foundation registers one handler, `housekeeping.purge` (`src/lib/jobs/housekeeping.ts`): expired `idempotency_keys`, `rate_limits` idle for more than a day, `metrics` older than `METRICS_RETENTION_DAYS`. The cron route enqueues it with a dedupe key on every tick; at most one run per hour.
+Durable queue in the `jobs` table (`src/lib/jobs`): `enqueue` (optional dedupe key), optimistic per-row `claim`, `complete`, `fail` with exponential backoff and a dead state, `reapStale`. Handlers register by type. Runners: the dev poller (`JOBS_INLINE_RUNNER`), `npm run jobs:run`, and `POST /api/jobs/run` behind `CRON_SECRET` for production cron. Handlers receive `ctx.db` (the runner's handle). The foundation registers one handler, `housekeeping.purge` (`src/lib/jobs/housekeeping.ts`): expired `idempotency_keys`, `rate_limits` idle for more than a day, `metrics` older than `METRICS_RETENTION_DAYS`, visit telemetry older than `TELEMETRY_RETENTION_DAYS`. The cron route enqueues it with a dedupe key on every tick; at most one run per hour.
 
 ## Observability
 
 - Logs: pino, JSON in production, pretty in development, redaction for otp/code/token/secret/email/phone/authorization/cookie.
 - Metrics: counters and histograms buffered to a sink (console in dev, `metrics` table in prod, none in test). No third-party telemetry.
+- Visit telemetry: first-party sessions, page views, web vitals and errors (browser beacon to `POST /api/telemetry`, server errors through `onRequestError` in `src/instrumentation.ts`), stored in `visit_sessions` and `visit_events`. No IP address, location or raw User-Agent; `TELEMETRY=off` records nothing. See `docs/ops/admin-guide.md`, "Telemetry".
 - Audit: append-only `audit_events` for every capability invocation (success, denied, failed) plus domain events (`AUDIT_ACTIONS`). Metadata is redacted with `redactForAudit`.
 - Health: `GET /api/health` reports db driver, vector availability, lifecycle, and provider modes. Never values.
 

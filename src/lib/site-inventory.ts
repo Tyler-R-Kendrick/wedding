@@ -386,6 +386,22 @@ function apiRows(): InventoryRow[] {
       expected: '307 to /sign-in/save-the-date when the state or code is missing. A match continues into the session. The crawler does not call it.',
     }),
     row({
+      url: '/api/telemetry',
+      examples: ['/api/telemetry'],
+      audience: 'api',
+      method: 'GET',
+      purpose: 'The telemetry beacon is POST only.',
+      expected: '405 Allow: POST.',
+    }),
+    row({
+      url: '/api/telemetry',
+      examples: ['/api/telemetry'],
+      audience: 'api',
+      method: 'POST',
+      purpose: 'First-party telemetry from the page itself: page views, web vitals and errors. No IP address, location or raw User-Agent is stored.',
+      expected: '204 with no body, whatever was kept. Stores nothing under TELEMETRY=off, from another origin, or over 16 KB; with Sec-GPC or DNT only errors are kept. The crawler does not call it.',
+    }),
+    row({
       url: '/api/webmcp/manifest',
       examples: ['/api/webmcp/manifest'],
       audience: 'api',

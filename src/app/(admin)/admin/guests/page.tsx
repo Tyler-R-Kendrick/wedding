@@ -174,10 +174,15 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
  */
 function BrowseAs({ browsingName, isOwner, ownRecords }: { browsingName: string | null; isOwner: boolean; ownRecords: { guestId: string; displayName: string }[] }) {
   return (
-    <Section title="Inspect a guest profile" id="inspect-guest">
-      <p className="con-note">
-        See the site exactly as one guest on the list does — their RSVP answers, table, and uploads. Anyone else’s view is read-only. Prefer <Link href="/admin#view-as">View as role</Link> when you only need to preview entitlements and pages without touching a real person’s record.
-      </p>
+    <Section
+      title="Browse as a guest"
+      id="inspect-guest"
+      note={
+        <>
+          See the site exactly as one guest on the list does: their RSVP answers, table and uploads. Anyone else’s view is read-only. Use <Link href="/admin#view-as">View as role</Link> to preview pages without touching a real person’s record.
+        </>
+      }
+    >
       {browsingName ? (
         // A <div>, not a paragraph: a form cannot sit inside one. "Open the site" is a plain link on
         // purpose: `/` renders for its reader, and a full navigation asks for it as the guest.
@@ -205,10 +210,10 @@ function BrowseAs({ browsingName, isOwner, ownRecords }: { browsingName: string 
       ) : null}
       <p className="con-note">
         {isOwner
-          ? 'Choose “Browse as” beside a guest in the list below.'
+          ? 'Choose Browse as on a guest’s row below.'
           : ownRecords.length
-            ? 'Browsing as anyone else is for the site’s owners: a view reads everything that guest can, which reaches past what this role’s screens show.'
-            : 'You have no guest record of your own on the list, and browsing as anyone else is for the site’s owners: a view reads everything that guest can, which reaches past what this role’s screens show.'}
+            ? 'Browsing as anyone else is for the site’s owners.'
+            : 'Browsing as a guest is for the site’s owners.'}
       </p>
     </Section>
   );

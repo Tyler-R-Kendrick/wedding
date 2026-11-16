@@ -51,6 +51,7 @@ Domain notes, one per area:
 [media intelligence](architecture/media-intelligence.md) ·
 [biometrics readiness](architecture/biometrics-bipa-readiness.md) ·
 [AI grounding](architecture/ai-grounding.md) ·
+[the admin console and its assistant](architecture/admin-console.md) ·
 [WebMCP](architecture/webmcp.md)
 
 ## The record

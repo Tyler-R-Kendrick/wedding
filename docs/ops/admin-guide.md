@@ -39,7 +39,24 @@ Give a vendor or a helper the narrowest role that lets them do their job. A
 photographer's assistant clearing the upload queue is a **moderator**; they will
 not see a guest list, a dietary need or an address.
 
+## Finding your way
+
+Every screen is one click away in the rail on the left (a drawer behind the menu
+button on a phone). The bar at the top says where you are.
+
+- **Jump to or ask** (`Ctrl K` / `⌘ K`, or `/`): type part of a screen's name
+  and press Enter to open it, or type a question and press Enter to ask it.
+- **The small ⓘ beside a heading** opens the sentence that explains that screen
+  or section. It is closed by default; the screens show the work, not the manual.
+
 ## The screens
+
+### Start here
+
+| Screen | What it is for |
+|---|---|
+| `/admin` (Overview) | What needs you today, first. Then five figures (what guests see, replies, visits, errors, stuck jobs), each a link to the screen that owns it; the week's visits; replies by event; recent changes. A figure you may not read is simply not drawn. |
+| `/admin/assistant` | Ask in your own words: "How many guests have replied?", "Who visited this week?", "What errors did guests hit?", "Open RSVPs". Each answer is a small live dashboard read from this site's own records, as your role allows, with follow-up questions under it. See [The assistant](#the-assistant). |
 
 ### Running the wedding
 
@@ -67,7 +84,9 @@ not see a guest list, a dietary need or an address.
 | `/admin/providers` | Which external systems are live and which are running on their mock, and exactly what each is missing. The same information as `docs/ops/activation-matrix.md`, read from the running process. |
 | `/admin/flags` | Feature flags, and the readiness switches for the two legal gates. |
 | `/admin/audit` | Who did what, when. Every administrative action and every external handoff is recorded. Codes, one-time passwords and the text of a guest's dietary needs are never in here. |
-| `/admin/jobs`, `/admin/metrics` | Background work and counters. |
+| `/admin/sessions` | One row per visit: who (when signed in), the pages they opened, how long, on what kind of device, and any error they met. Open a row to see the visit page by page. |
+| `/admin/errors` | What broke for visitors, grouped so one fault seen forty times is one row, with the pages it broke on and a session that hit it. |
+| `/admin/jobs`, `/admin/metrics` | Background work, and the timings and counters the site records about itself. |
 | `/admin/ai`, `/admin/concierge` | The concierge's search index and answer traces. |
 
 ## Step-up
@@ -114,6 +133,69 @@ you send them is "here is your new link" rather than "sorry".
 **Publishing seating** is visible immediately to every guest with a table. It
 can be unpublished, but people will have seen it. The preview shows exactly what
 a guest sees.
+
+## The assistant
+
+The assistant answers from records, not from a model's memory. For each question
+it works out which records the question is about, reads them through the same
+checked doors the screens use (so your role limits an answer exactly as it limits
+a screen, and every read is in the audit trail), and lays the answer out as a
+small dashboard. Under each answer, **How this was answered** lists what was read.
+
+- **It changes nothing by itself.** When you ask for a change ("Open RSVPs",
+  "retry the stuck job") the answer contains a *Proposed change*. **Review** shows
+  what it does; nothing happens until you press the button that names the act.
+  Publishing a lifecycle state and retrying a job can be confirmed there; every
+  other change is made on its own screen, which the answer links to.
+- **No AI service is called.** In Chrome or Edge with the browser's built-in
+  model, that model (on your own device) may choose a view for a question the
+  site could not read and may reword the one-line summary; a reworded line is kept
+  only if every figure in it is a figure from the records. In any other browser
+  the site words the answer itself.
+- The time-window control on an answer (24h, 7d, 30d) re-reads the figures in
+  place. Answers stay on the page until you press **Clear** or close the tab.
+
+## Telemetry
+
+The site keeps its own record of visits and of the errors visitors hit. Nothing
+goes to a third party; it lives in two tables (`visit_sessions`, `visit_events`)
+and is read back through four admin capabilities behind `admin_integrations`:
+`admin_site_traffic`, `admin_list_sessions`, `admin_session_detail` and
+`admin_site_errors`.
+
+**Recorded.** A session is one browser tab's visit: a random id the tab makes up
+and keeps in `sessionStorage` (no cookie, nothing that outlives the tab). For
+each session: when it started and was last seen, phone, tablet or desktop, the
+browser family (Chrome, Safari, Firefox, Edge, Other), the first and last page,
+and, once the visitor signs in, which guest it is. For each event: a page view
+(the pathname), a web vital (LCP, CLS, INP) or an error (name, message, top
+frames). Errors the server hits while answering a request are recorded too, tied
+to no session.
+
+**Never recorded.** IP addresses (the address is the rate limiter's key and is
+not stored), location, the User-Agent header, referrers, query strings and
+hashes, request headers and cookies. Paths that carry a secret are collapsed
+(`/i/<token>` is stored as `/i/[token]`, likewise `/invite/…` and `/s/…`), and
+emails, tokens and long numbers are redacted from error messages before they
+are stored (`src/domain/ops/telemetry-sanitize.ts`).
+
+**Do Not Track.** A browser that sends `Sec-GPC: 1` (Global Privacy Control) or
+`DNT: 1` gets no session, no page views and no vitals. An error it reports is
+still kept, attached to no session: that is a fact about the site, not about
+the visitor.
+
+**Retention.** The hourly `housekeeping.purge` job deletes sessions and events
+older than `TELEMETRY_RETENTION_DAYS` (default 90).
+
+**Switching it off.** `TELEMETRY=off` records nothing: the beacon is not
+rendered, `POST /api/telemetry` answers 204 without reading the body, server
+errors are not recorded, and `admin_site_traffic` reports `recording: false` so
+an empty chart is not read as an empty site. What was already recorded stays
+until it ages out.
+
+On the test server (`SEED_TEST_FIXTURES=1`) a week of clearly synthetic visits
+is seeded so the screens have something to draw
+(`src/db/seed/telemetry-fixtures.ts`).
 
 ## Where the truth lives
 

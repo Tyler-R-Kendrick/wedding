@@ -20,7 +20,10 @@ import { BASE_URL, contextAs, customPrincipalHeaders, IDS } from './helpers/prin
  */
 
 const CONSOLE_PAGES = [
-  { path: '/admin', heading: 'Admin' },
+  { path: '/admin', heading: 'Overview' },
+  { path: '/admin/assistant', heading: 'Assistant' },
+  { path: '/admin/sessions', heading: 'Sessions' },
+  { path: '/admin/errors', heading: 'Errors' },
   { path: '/admin/lifecycle', heading: 'Lifecycle' },
   { path: '/admin/audit', heading: 'Audit trail' },
   { path: '/admin/jobs', heading: 'Jobs' },
@@ -90,7 +93,7 @@ test('an admin reaches every console page, and each one is accessible at phone a
   await ctx.close();
 });
 
-test('the console index reaches every admin screen and none of them 404', async ({ browser }) => {
+test('the rail reaches every admin screen and none of them 404', async ({ browser }) => {
   // This one test does twenty-one full navigations; every other test in the suite does a handful.
   // Against a dev server that compiles each route on first request it blew the default 30s timeout
   // in CI (`net::ERR_ABORTED at /admin/rsvp`) while passing locally, where the machine is faster and
@@ -100,7 +103,9 @@ test('the console index reaches every admin screen and none of them 404', async 
   const ctx = await contextAs(browser, 'admin');
   const page = await ctx.newPage();
   await page.goto('/admin');
-  const hrefs = await page.locator('#main .con-index a').evaluateAll((els) => [...new Set(els.map((e) => (e as HTMLAnchorElement).getAttribute('href') ?? ''))]);
+  // The rail (the shell's navigation) is the index of every screen; on a phone it is a drawer, and
+  // its links are in the document whether or not it is open.
+  const hrefs = await page.locator('#admin-rail nav a').evaluateAll((els) => [...new Set(els.map((e) => (e as HTMLAnchorElement).getAttribute('href') ?? ''))]);
   expect(hrefs.length).toBeGreaterThanOrEqual(20);
   for (const href of hrefs) {
     const res = await page.goto(href);
@@ -109,6 +114,55 @@ test('the console index reaches every admin screen and none of them 404', async 
     // page does not, which is the failure the index is supposed to make impossible.
     await expect(page.getByRole('heading', { level: 1 }).first(), href).not.toHaveText('');
   }
+  await ctx.close();
+});
+
+test('the command palette opens from the keyboard, finds a screen by name and hands a question to the assistant', async ({ browser }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'a keyboard shortcut is a desktop journey');
+  const ctx = await contextAs(browser, 'admin');
+  const page = await ctx.newPage();
+  await page.goto('/admin');
+  const box = page.getByRole('combobox', { name: 'Jump to a screen or ask a question' });
+  // The shortcut is the shell's own listener, attached once the page hydrates; pressing again
+  // while it is already open does nothing, so this waits for hydration without guessing a delay.
+  await expect(async () => {
+    await page.keyboard.press('Control+k');
+    await expect(box).toBeFocused({ timeout: 1_000 });
+  }).toPass({ timeout: 15_000 });
+  // Scoped to the palette: the page behind it may have a <select> of its own.
+  const results = page.getByRole('listbox', { name: 'Results' }).getByRole('option');
+  await box.fill('seat');
+  await expect(results.first()).toContainText('Seating');
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/admin\/seating$/);
+
+  await expect(async () => {
+    await page.keyboard.press('Control+k');
+    await expect(box).toBeFocused({ timeout: 1_000 });
+  }).toPass({ timeout: 15_000 });
+  await box.fill('how many guests have replied?');
+  await expect(results.first()).toContainText('Ask: how many guests have replied?');
+  await page.keyboard.press('Enter');
+  // The assistant answers from the RSVP records: a heading, a sentence, and how it was answered.
+  await expect(page.getByRole('heading', { level: 2, name: 'Replies' })).toBeVisible();
+  await expect(page.locator('.ask-answer__summary')).toContainText('invited');
+  await page.getByText('How this was answered').click();
+  await expect(page.locator('.ask-trace')).toContainText('No model was used');
+  await ctx.close();
+});
+
+test('the assistant proposes a lifecycle change and does nothing until it is confirmed', async ({ browser }) => {
+  const ctx = await contextAs(browser, 'admin');
+  const page = await ctx.newPage();
+  await page.goto('/admin/assistant?q=' + encodeURIComponent('Publish Wedding week'));
+  const proposal = page.getByRole('region', { name: 'Proposed change: Publish Wedding week' });
+  await expect(proposal).toBeVisible();
+  // Review runs the draft step (no side effects) and offers the button that names the act; the
+  // test stops there, because publishing would change state every other spec shares.
+  await proposal.getByRole('button', { name: 'Review' }).click();
+  await expect(proposal.getByRole('button', { name: 'Publish Wedding week' })).toBeVisible();
+  await proposal.getByRole('button', { name: 'Not now' }).click();
+  await expect(proposal.getByRole('button', { name: 'Review' })).toBeVisible();
   await ctx.close();
 });
 

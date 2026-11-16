@@ -1,0 +1,549 @@
+/*
+ * The admin console's frame. Foundation tokens only (root DESIGN.md): paper for the work, sand for
+ * the rail, hairlines for structure, ink for the one filled control. Terracotta marks where you are
+ * and nothing else in the frame.
+ */
+
+.adm {
+  --adm-rail: 15rem;
+  --adm-bar: 3.5rem;
+  --adm-line: var(--color-outline);
+  --adm-muted: var(--color-on-surface-muted);
+
+  display: grid;
+  grid-template-columns: var(--adm-rail) minmax(0, 1fr);
+  min-height: 100dvh;
+  color: var(--color-primary);
+  background: var(--color-neutral);
+  font-family: var(--font-body-md), Georgia, "Times New Roman", serif;
+  font-size: var(--text-body-sm);
+  line-height: 1.4;
+  accent-color: var(--color-primary);
+  caret-color: var(--color-tertiary);
+}
+
+.adm ::selection {
+  color: var(--color-on-primary);
+  background: var(--color-secondary);
+}
+
+.adm :focus-visible {
+  outline: 2px solid var(--color-secondary);
+  outline-offset: 2px;
+}
+
+/* ---- Rail ---------------------------------------------------------------------------------- */
+
+.adm-rail {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  background: var(--color-neutral-variant);
+  border-right: 1px solid var(--adm-line);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--adm-line) transparent;
+}
+
+.adm-brand {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-sm);
+  min-height: var(--adm-bar);
+  padding: var(--spacing-md) var(--spacing-md) var(--spacing-sm);
+}
+
+.adm-brand__name {
+  color: inherit;
+  font-size: var(--text-h3);
+  font-weight: 500;
+  line-height: 1.2;
+  text-decoration: none;
+  letter-spacing: -0.01em;
+}
+
+.adm-brand__role {
+  color: var(--adm-muted);
+  font-size: var(--text-control-caps);
+  letter-spacing: var(--tracking-control-caps);
+  text-transform: uppercase;
+}
+
+.adm-nav {
+  flex: 1;
+  padding: var(--spacing-xs) var(--spacing-sm) var(--spacing-md);
+}
+
+.adm-nav__group + .adm-nav__group {
+  margin-top: var(--spacing-md);
+}
+
+.adm-nav__label {
+  margin: 0 0 var(--spacing-xs);
+  padding-inline: 0.625rem;
+  color: var(--adm-muted);
+  font-size: var(--text-control-caps);
+  font-weight: var(--font-weight-control-caps);
+  letter-spacing: var(--tracking-control-caps);
+  text-transform: uppercase;
+}
+
+.adm-nav__list {
+  display: grid;
+  gap: 1px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.adm-nav__link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-height: 2rem;
+  padding: 0.25rem 0.625rem;
+  color: inherit;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  transition: background-color 150ms ease-out;
+}
+
+.adm-nav__icon {
+  flex: none;
+  font-size: var(--text-h3);
+  color: var(--adm-muted);
+}
+
+.adm-nav__link:hover {
+  background: color-mix(in oklab, var(--color-surface) 70%, transparent);
+}
+
+.adm-nav__link[aria-current='page'] {
+  background: var(--color-surface);
+  box-shadow: inset 0 0 0 1px var(--adm-line);
+  font-weight: 500;
+}
+
+.adm-nav__link[aria-current='page'] .adm-nav__icon {
+  color: var(--color-primary);
+}
+
+/* The "you are here" mark DESIGN.md asks for: a terracotta dot, not a filled row. */
+.adm-nav__link[aria-current='page']::after {
+  content: '';
+  width: 0.375rem;
+  height: 0.375rem;
+  margin-left: auto;
+  background: var(--color-tertiary);
+  border-radius: var(--radius-pill);
+}
+
+.adm-rail__foot {
+  display: grid;
+  gap: 1px;
+  padding: var(--spacing-sm);
+  border-top: 1px solid var(--adm-line);
+}
+
+.adm-rail__close,
+.adm-bar__menu {
+  display: none;
+}
+
+.adm-icon-button {
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  color: inherit;
+  font-size: var(--text-h2);
+  background: none;
+  border: 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.adm-icon-button:hover {
+  background: var(--color-neutral-variant);
+}
+
+.adm-scrim {
+  display: none;
+}
+
+/* ---- Bar ----------------------------------------------------------------------------------- */
+
+.adm-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.adm-bar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  min-height: var(--adm-bar);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: var(--color-neutral);
+  border-bottom: 1px solid var(--adm-line);
+}
+
+.adm-bar__where {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-sm);
+  min-width: 0;
+  margin: 0 auto 0 0;
+  white-space: nowrap;
+}
+
+.adm-bar__section {
+  color: var(--adm-muted);
+}
+
+.adm-bar__section::after {
+  content: '/';
+  margin-left: var(--spacing-sm);
+  color: var(--adm-line);
+}
+
+.adm-bar__screen {
+  overflow: hidden;
+  font-weight: 500;
+  text-overflow: ellipsis;
+}
+
+.adm-search {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  width: min(22rem, 100%);
+  min-height: 2.5rem;
+  padding: 0.25rem 0.5rem 0.25rem 0.75rem;
+  color: var(--adm-muted);
+  font: inherit;
+  text-align: left;
+  background: var(--color-surface);
+  border: 1px solid var(--adm-line);
+  border-radius: var(--radius-sm);
+  cursor: text;
+  transition: border-color 150ms ease-out;
+}
+
+.adm-search:hover {
+  border-color: var(--color-secondary);
+}
+
+.adm-search svg {
+  flex: none;
+  font-size: var(--text-h3);
+}
+
+.adm-search__label {
+  flex: 1;
+}
+
+.adm-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  padding: 0.125rem 0.375rem;
+  color: var(--adm-muted);
+  font-family: inherit;
+  font-size: var(--text-label-caps);
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  background: var(--color-neutral);
+  border: 1px solid var(--adm-line);
+  border-radius: var(--radius-sm);
+}
+
+.adm-ask {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  min-height: 2.5rem;
+  padding: 0.25rem 1rem;
+  color: var(--color-on-primary);
+  font-weight: 500;
+  text-decoration: none;
+  background: var(--color-primary);
+  border-radius: var(--radius-pill);
+  transition: background-color 150ms ease-out;
+}
+
+.adm-ask:hover {
+  background: var(--color-secondary);
+}
+
+.adm-ask[aria-current='page'] {
+  color: var(--color-primary);
+  background: none;
+  box-shadow: inset 0 0 0 1px var(--color-primary);
+}
+
+/* ---- Palette ------------------------------------------------------------------------------- */
+
+.adm-palette {
+  width: min(40rem, calc(100vw - 2rem));
+  max-height: min(34rem, calc(100dvh - 6rem));
+  margin: 4.5rem auto auto;
+  padding: 0;
+  color: var(--color-primary);
+  font-family: var(--font-body-md), Georgia, "Times New Roman", serif;
+  font-size: var(--text-body-sm);
+  background: var(--color-surface);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  box-shadow: 0 1.5rem 3rem -1rem color-mix(in oklab, var(--color-primary) 35%, transparent);
+  overflow: hidden;
+}
+
+.adm-palette[open] {
+  display: flex;
+  animation: adm-rise 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.adm-palette::backdrop {
+  background: color-mix(in oklab, var(--color-primary) 28%, transparent);
+}
+
+@keyframes adm-rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+}
+
+.adm-palette__box {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.adm-palette__field {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--color-outline);
+}
+
+.adm-palette__field svg {
+  flex: none;
+  font-size: var(--text-h3);
+  color: var(--color-on-surface-muted);
+}
+
+.adm-palette__field input {
+  flex: 1;
+  min-width: 0;
+  min-height: 2.25rem;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  font-size: var(--text-body-md);
+  background: none;
+  border: 0;
+  outline: none;
+}
+
+/* The field is the only thing in the box that takes typing, and its caret says where the keyboard
+   is; a ring around it inside a ringed dialog would be a third border. */
+.adm-palette__field input:focus-visible {
+  outline: none;
+}
+
+.adm-palette__field input::placeholder {
+  color: var(--color-on-surface-muted);
+}
+
+.adm-palette__list {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: var(--spacing-sm);
+  overflow-y: auto;
+  list-style: none;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-outline) transparent;
+}
+
+.adm-palette__group {
+  margin: var(--spacing-sm) 0 var(--spacing-xs);
+  padding-inline: 0.625rem;
+  color: var(--color-on-surface-muted);
+  font-size: var(--text-control-caps);
+  font-weight: var(--font-weight-control-caps);
+  letter-spacing: var(--tracking-control-caps);
+  text-transform: uppercase;
+}
+
+.adm-palette__item {
+  display: grid;
+  grid-template-columns: auto minmax(0, auto) minmax(0, 1fr);
+  align-items: baseline;
+  gap: 0.625rem;
+  padding: 0.5rem 0.625rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.adm-palette__item[aria-selected='true'] {
+  background: var(--color-neutral-variant);
+}
+
+.adm-palette__icon {
+  align-self: center;
+  font-size: var(--text-h3);
+  color: var(--color-on-surface-muted);
+}
+
+.adm-palette__label {
+  font-weight: 500;
+}
+
+.adm-palette__hint {
+  overflow: hidden;
+  color: var(--color-on-surface-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.adm-palette__foot {
+  display: flex;
+  gap: var(--spacing-md);
+  margin: 0;
+  padding: 0.5rem 1rem;
+  color: var(--color-on-surface-muted);
+  font-size: var(--text-label-caps);
+  letter-spacing: 0.04em;
+  border-top: 1px solid var(--color-outline);
+}
+
+.adm-palette__foot span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+/* ---- Narrow: the rail becomes a drawer ----------------------------------------------------- */
+
+@media (width < 60rem) {
+  .adm {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .adm-rail {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 20;
+    width: min(18rem, 86vw);
+    transform: translateX(-100%);
+    visibility: hidden;
+    transition:
+      transform 220ms cubic-bezier(0.16, 1, 0.3, 1),
+      visibility 0s linear 220ms;
+  }
+
+  .adm[data-rail='open'] .adm-rail {
+    transform: none;
+    visibility: visible;
+    transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .adm-nav__link {
+    min-height: 2.75rem;
+  }
+
+  .adm-rail__close {
+    display: inline-flex;
+    margin-left: auto;
+    align-self: center;
+  }
+
+  .adm-bar__menu {
+    display: inline-flex;
+    margin-left: calc(var(--spacing-sm) * -1);
+  }
+
+  .adm-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 15;
+    display: block;
+    padding: 0;
+    background: color-mix(in oklab, var(--color-primary) 28%, transparent);
+    border: 0;
+  }
+
+  .adm-bar {
+    gap: var(--spacing-sm);
+    padding-inline: var(--spacing-md);
+  }
+
+  .adm-bar__section,
+  .adm-search__label,
+  .adm-search .adm-kbd {
+    display: none;
+  }
+
+  .adm-search {
+    justify-content: center;
+    width: 2.75rem;
+    min-height: 2.75rem;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  .adm-ask {
+    min-height: 2.75rem;
+  }
+
+  .adm-palette {
+    margin-top: 1rem;
+    max-height: calc(100dvh - 2rem);
+  }
+
+  .adm-palette__item {
+    grid-template-columns: auto minmax(0, 1fr);
+    min-height: 2.75rem;
+    align-items: center;
+  }
+
+  .adm-palette__hint,
+  .adm-palette__foot {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .adm *,
+  .adm-palette,
+  .adm-rail {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+@media print {
+  .adm {
+    display: block;
+  }
+
+  .adm-rail,
+  .adm-bar {
+    display: none;
+  }
+}

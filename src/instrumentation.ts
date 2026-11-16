@@ -1,3 +1,5 @@
+import type { Instrumentation } from 'next';
+
 /**
  * Next.js instrumentation hook: runs once when a server process starts, before its first request.
  * It refuses hosted AI models and installs the principal resolver, so every route resolves guests
@@ -85,3 +87,20 @@ export async function register() {
 }
 
 type LocationSuggestionResolver = import('@/domain/travel/profile').LocationSuggestionResolver;
+
+/**
+ * Next calls this for every error the server hits while answering a request (a render, a route
+ * handler, a server action). The error is kept as a `source: 'server'` telemetry event so
+ * `/admin` can show what visitors ran into; the request's headers, cookies and query string are
+ * never read. Everything is loaded on first use, it does nothing under `TELEMETRY=off`, and it
+ * swallows its own failures (src/lib/telemetry.ts).
+ */
+export const onRequestError: Instrumentation.onRequestError = async (error, request, context) => {
+  if (process.env.NEXT_RUNTIME !== 'nodejs') return;
+  try {
+    const { reportRequestError } = await import('@/lib/telemetry');
+    await reportRequestError(error, { path: request.path, method: request.method }, { routePath: context.routePath, routeType: context.routeType });
+  } catch {
+    // Never a second error on top of the first.
+  }
+};

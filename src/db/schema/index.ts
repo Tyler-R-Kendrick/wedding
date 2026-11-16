@@ -33,3 +33,5 @@ export * from './media';
 export * from './media_ai';
 // Level 12: concierge sessions, answers, cited sources, capability invocations.
 export * from './ai';
+// First-party visit telemetry: sessions and their views, vitals and errors.
+export * from './telemetry';

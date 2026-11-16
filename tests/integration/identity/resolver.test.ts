@@ -213,7 +213,10 @@ describe('principal resolver', () => {
     // `admin_mark_invitation_sent`), ui-only navigate/read/write.
     // 93 -> 94: `admin_guest_sheet`, the planning sheet on /admin/guests (ui-only read).
     // 94 -> 95: `admin_upload_guest_sheet`, saving a new copy of it (ui-only action).
-    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(95);
+    // 95 -> 99: first-party visit telemetry (`admin_site_traffic`, `admin_list_sessions`,
+    // `admin_session_detail`, `admin_site_errors`), ui-only reads behind `admin_integrations`.
+    // 99 -> 100: `admin_assistant_answer` (ui-only read), the admin console's assistant.
+    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(100);
     expect(names({ principal: ap, exposure: 'ai' }).filter((n) => n.startsWith('admin_'))).toEqual([]);
     // Level 15. The counts above are of the `admin_` namespace, so nothing here ever pinned the
     // GUEST-facing capabilities an admin's list also contains — and `meetsAuthLevel('guest', admin)`

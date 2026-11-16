@@ -37,6 +37,17 @@ export const RATE_LIMIT_POLICIES = {
   upload: { capacity: 30, refillPerSecond: 30 / 3600 },
   /** Concierge messages per principal. */
   concierge: { capacity: 20, refillPerSecond: 20 / 60 },
+  /**
+   * Telemetry beacons per IP (`POST /api/telemetry`), checked before the body is read. Generous on
+   * purpose: the whole reception can share one venue address, and a dropped beacon costs a data
+   * point, never a guest's action.
+   */
+  telemetry: { capacity: 300, refillPerSecond: 10 },
+  /**
+   * Telemetry EVENTS per IP: one token per event a batch would store. This is what bounds how many
+   * rows one address can write to `visit_events` (five a second sustained), whatever it sends.
+   */
+  telemetryEvents: { capacity: 1200, refillPerSecond: 5 },
   /** Inbound guest-mail forwards per sender address (loop / spray guard). */
   inboundMailSender: { capacity: 10, refillPerSecond: 10 / 3600, failMode: 'closed' },
 } as const satisfies Record<string, RateLimitPolicy>;
