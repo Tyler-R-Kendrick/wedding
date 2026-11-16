@@ -140,7 +140,15 @@ jobs:
       # files took 3.8 minutes at the median, the longest step outside Playwright.
       - name: Integration tests (vitest + PGlite), shard ${{ matrix.shard }} of 4
         if: steps.reach.outputs.run == 'true'
-        run: npm run test:integration -- $(node scripts/ci/vitest-plan.mjs integration ${{ matrix.shard }}/4)
+        run: npm run test:integration -- --reporter=default --reporter=json --outputFile.json=test-results/integration-${{ matrix.shard }}.json $(node scripts/ci/vitest-plan.mjs integration ${{ matrix.shard }}/4)
+
+      # Each file's time, for `npm run test:durations`, which the shard plan is built from.
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always() && steps.reach.outputs.run == 'true'
+        with:
+          name: integration-${{ matrix.shard }}
+          path: test-results/integration-${{ matrix.shard }}.json
+          retention-days: 7
 
   e2e:
     name: e2e ${{ matrix.kind }} ${{ matrix.shard }}/${{ matrix.of }}
@@ -152,16 +160,18 @@ jobs:
         include:
           - { kind: production, shard: 1, of: 2 }
           - { kind: production, shard: 2, of: 2 }
-          - { kind: test-server, shard: 1, of: 10 }
-          - { kind: test-server, shard: 2, of: 10 }
-          - { kind: test-server, shard: 3, of: 10 }
-          - { kind: test-server, shard: 4, of: 10 }
-          - { kind: test-server, shard: 5, of: 10 }
-          - { kind: test-server, shard: 6, of: 10 }
-          - { kind: test-server, shard: 7, of: 10 }
-          - { kind: test-server, shard: 8, of: 10 }
-          - { kind: test-server, shard: 9, of: 10 }
-          - { kind: test-server, shard: 10, of: 10 }
+          - { kind: test-server, shard: 1, of: 12 }
+          - { kind: test-server, shard: 2, of: 12 }
+          - { kind: test-server, shard: 3, of: 12 }
+          - { kind: test-server, shard: 4, of: 12 }
+          - { kind: test-server, shard: 5, of: 12 }
+          - { kind: test-server, shard: 6, of: 12 }
+          - { kind: test-server, shard: 7, of: 12 }
+          - { kind: test-server, shard: 8, of: 12 }
+          - { kind: test-server, shard: 9, of: 12 }
+          - { kind: test-server, shard: 10, of: 12 }
+          - { kind: test-server, shard: 11, of: 12 }
+          - { kind: test-server, shard: 12, of: 12 }
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       # On a pull request, with selection on, a suite none of the changed files can reach is skipped
