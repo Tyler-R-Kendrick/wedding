@@ -111,8 +111,8 @@ export default async function AdminEventsPage({ searchParams }: { searchParams: 
                       <InvitationsFlow event={{ id: e.id, name: e.name }} guests={guests} current={policyOf(e.id)} />
                       {loose >= 0 && day.untimed.length > 1 ? (
                         <>
-                          <QuickAction label="Up" busyLabel="Moving…" done={`Moved ${e.name} up.`} unavailable={loose === 0} accessibleName={`Move ${e.name} up`} calls={move(d.events, d.events.indexOf(e), 'up')} />
-                          <QuickAction label="Down" busyLabel="Moving…" done={`Moved ${e.name} down.`} unavailable={loose === day.untimed.length - 1} accessibleName={`Move ${e.name} down`} calls={move(d.events, d.events.indexOf(e), 'down')} />
+                          <QuickAction label="Up" busyLabel="Moving…" done={`Moved ${e.name} up.`} unavailable={loose === 0} accessibleName={`Move ${e.name} up`} calls={move(day.untimed, loose, 'up')} />
+                          <QuickAction label="Down" busyLabel="Moving…" done={`Moved ${e.name} down.`} unavailable={loose === day.untimed.length - 1} accessibleName={`Move ${e.name} down`} calls={move(day.untimed, loose, 'down')} />
                         </>
                       ) : null}
                       {e.responseCount === 0 && d.events.length > 1 ? <DeleteEventFlow event={{ id: e.id, name: e.name, invitedCount: e.invitedCount, mealOptionsVersion: e.mealOptionsVersion }} /> : null}

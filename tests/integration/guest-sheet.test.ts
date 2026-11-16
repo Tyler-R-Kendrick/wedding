@@ -123,4 +123,19 @@ describe('the planning sheet against the guest list', () => {
     expect(after.matched.some((m) => m.household.id === one!.id)).toBe(false);
     expect(after.onlyOnSite.map((h) => h.id)).toEqual(expect.arrayContaining(['HH-SHEET-1', 'HH-SHEET-2']));
   });
+
+  it('a line whose namesake household is already another line gets its own household', async () => {
+    expectOk(await run(adminUploadGuestSheet, admin(), { text: TAB, source: 'Guests tab' }));
+    const db = await getDb();
+    // A household named like line A, but linked to line B.
+    await db.insert(households).values({ id: 'HH-SHEET-3', name: 'Test household A', sheetLabel: 'Test household B' });
+    expect((await sync()).onlyOnSheet.map((l) => l.label)).toContain('Test household A');
+
+    const made = expectOk(await run(adminAddHouseholdFromSheet, admin(), { label: 'Test household A' })).data;
+    expect(made.created).toBe(true);
+    expect(made.householdId).not.toBe('HH-SHEET-3');
+    const after = await sync();
+    expect(after.onlyOnSheet.map((l) => l.label)).not.toContain('Test household A');
+    expect(after.matched.find((m) => m.label === 'Test household A')).toMatchObject({ household: { id: made.householdId }, how: 'linked' });
+  });
 });

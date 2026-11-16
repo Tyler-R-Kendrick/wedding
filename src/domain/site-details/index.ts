@@ -103,12 +103,15 @@ export function buildSiteDetails(i: SiteDetailsInput): DetailFact[] {
   // ---- The day and the place
   const dateCopies = i.code.weddingDate === i.site.weddingDate ? [] : [copy('The trip planner’s weekend days and the lifecycle calendar (src/contracts/lifecycle.ts)', i.format.day(i.code.weddingDate))];
   const offDay = i.events.filter((e) => e.dateIso !== i.site.weddingDate);
+  // A welcome dinner the night before is on its own day by design. No event at all on the wedding
+  // date is not: the date was moved and the schedule was left behind.
+  const noEventOnTheDay = i.events.length > 0 && offDay.length === i.events.length;
   facts.push({
     key: 'wedding.date',
     group: 'day',
     label: 'Wedding date',
     value: i.format.day(i.site.weddingDate),
-    state: dateCopies.length ? 'differs' : 'set',
+    state: dateCopies.length || noEventOnTheDay ? 'differs' : 'set',
     shownOn: [PAGES.frame, PAGES.dashboard, PAGES.story, PAGES.adventures, PAGES.rsvp, PAGES.concierge],
     edit: site('weddingDate', 'date', i.site.weddingDate),
     // Each event keeps its own day (a welcome dinner is the night before), so they are listed, not moved.
@@ -226,8 +229,10 @@ export function buildSiteDetails(i: SiteDetailsInput): DetailFact[] {
   const field = (key: string, label: string, codeCopy: { where: string; value: string } | null, shownOn: ShownOn[]) => {
     const row = i.fields[key];
     // "$84/night" and "$84 per vehicle, per night" agree; "$90/night" and "$84 …" do not.
-    const figure = row?.value?.match(/\$?\d+(?:\.\d+)?|\d+\s+\w+/)?.[0];
-    const differs = !!row?.value && !!codeCopy && !(figure ? codeCopy.value.includes(figure) : sameText(codeCopy.value, row.value));
+    // Whole figures, so "$8" is not found inside "$84".
+    const figures = (s: string): string[] => s.match(/\d+(?:\.\d+)?/g) ?? [];
+    const figure = row?.value ? figures(row.value)[0] : undefined;
+    const differs = !!row?.value && !!codeCopy && !(figure ? figures(codeCopy.value).includes(figure) : sameText(codeCopy.value, row.value));
     facts.push({
       key,
       group: 'arrival',

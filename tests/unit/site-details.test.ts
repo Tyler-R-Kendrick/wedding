@@ -46,6 +46,19 @@ describe('the shared facts of the site, in one list', () => {
     expect(date.copies[1]!.where).toContain('Ceremony');
   });
 
+  it('a wedding date with no event on it is out of step: the date moved and the schedule did not', () => {
+    const moved = buildSiteDetails(base({ site: { ...base().site, weddingDate: '2027-07-24' }, code: { ...base().code, weddingDate: '2027-07-24' } }));
+    expect(fact(moved, 'wedding.date')).toMatchObject({ state: 'differs', copies: [{ where: 'Ceremony is on its own day (Schedule)' }] });
+    // A dinner the night before, with the ceremony on the day, is the schedule working as meant.
+    const dinner = buildSiteDetails(base({ events: [...base().events, { id: 'e0', name: 'Welcome dinner', dateIso: '2027-07-16', startsAt: null, endsAt: null, room: null, dressCode: null }] }));
+    expect(fact(dinner, 'wedding.date').state).toBe('set');
+  });
+
+  it('compares whole figures, so $8 is not found inside $84', () => {
+    const eight = buildSiteDetails(base({ fields: { ...base().fields, 'valet.event-rate': { id: 'f2', value: '$8 per night' } } }));
+    expect(fact(eight, 'valet.event-rate').state).toBe('differs');
+  });
+
   it('a valet rate changed in its record is flagged against the sentence the travel pages print', () => {
     const facts = buildSiteDetails(base({ fields: { 'valet.entrance': { id: 'f1', value: '71 E Madison' }, 'valet.event-rate': { id: 'f2', value: '$90/night' } } }));
     expect(fact(facts, 'valet.event-rate')).toMatchObject({ state: 'differs', value: '$90/night' });

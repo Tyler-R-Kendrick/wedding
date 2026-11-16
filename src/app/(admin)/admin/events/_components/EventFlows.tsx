@@ -33,10 +33,10 @@ const CHICAGO_HINT = 'Chicago time. Leave it empty until it is confirmed.';
 const timeOf = (iso: string | null | undefined) => isoToChicagoLocal(iso).slice(11, 16);
 /** A day and a time of day in Chicago as an instant, or null while the time is not set. */
 const instantOn = (dateIso: string, time: string) => (time ? chicagoLocalToIso(`${dateIso}T${time}`) : null);
-/** The end of an event that starts at `start`: on the same day, or the next when it runs past midnight. */
+/** The end of an event that starts at `start`: on the same day, or the next when it is earlier than the start (past midnight). */
 function endInstant(dateIso: string, start: string, end: string): string | null {
   if (!end) return null;
-  if (!start || end > start) return instantOn(dateIso, end);
+  if (!start || end >= start) return instantOn(dateIso, end);
   const next = new Date(`${dateIso}T12:00:00Z`);
   next.setUTCDate(next.getUTCDate() + 1);
   return instantOn(next.toISOString().slice(0, 10), end);

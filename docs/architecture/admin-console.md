@@ -34,7 +34,8 @@ each fact, its value, the pages that print it, and how it is changed (a capabili
 makes in place, or a link to the screen that owns it). Where the code keeps its own copy of a fact
 (the wedding date constant the trip planner reads, the address and valet sentence in
 `src/domain/travel/facts.ts`, the room-block dates in `stay-copy.ts`), the copy is compared with the
-record and the fact is marked out of step when they differ. Adding a shared fact is adding it to
+record and the fact is marked out of step when they differ. The wedding date is also out of step when no event
+is on it: the date was moved and the schedule was not. Adding a shared fact is adding it to
 `buildSiteDetails`; making a page follow one is making it read the record.
 
 `admin_update_site_details` is the one writer of `site_settings` after the seed.
@@ -42,8 +43,10 @@ record and the fact is marked out of step when they differ. Adding a shared fact
 ## The schedule
 
 `/admin/events` groups events by day and orders each day by start time (`src/domain/events/agenda.ts`).
-Events with no time follow, in their hand-set order. The event flow takes a date and times of day,
-so a start cannot land on a different day from the event's own date.
+Events with no time follow, in their hand-set order; Up and Down move an event among those only.
+`listEvents` returns the same order (day, start time, then `sortOrder`), so guests read the events
+in the order the Schedule shows them. The event flow takes a date and times of day, so a start
+cannot land on a different day from the event's own date.
 
 ## The assistant
 

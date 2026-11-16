@@ -13,6 +13,17 @@ describe('the planning sheet beside the guest list', () => {
     expect(sheetKey('José Núñez')).toBe('jose nunez');
   });
 
+  it('never reads two different names as the same empty name', () => {
+    // Letters of any script are letters, and a name that is only filler keeps its words.
+    expect(sheetKey('Иванов')).toBe('иванов');
+    expect(sheetKey('Иванов')).not.toBe(sheetKey('Петров'));
+    expect(sheetKey('Guests')).toBe('guests');
+    expect(sheetKey('The Family')).toBe('the family');
+    const sync = reconcileSheet([line(2, 'Иванов'), line(3, 'Guests')], [home('h1', 'Петров', 2, 0, 0, 'Петров')]);
+    expect(sync.matched).toEqual([]);
+    expect(diffSheetCopies([line(2, 'Иванов')], [line(2, 'Петров')])).toMatchObject({ added: [{ label: 'Петров' }], removed: [{ label: 'Иванов' }] });
+  });
+
   it('matches a line to a household by name, and says when the adults or children differ', () => {
     const sync = reconcileSheet([line(2, 'Fitzgerald', 2, 1), line(3, 'Ana Ruiz & Guest', 1, 0, 1)], [home('h1', 'The Fitzgerald Family', 2, 0), home('h2', 'Ana Ruiz', 1, 0, 0)]);
     expect(sync.matched.map((m) => [m.label, m.household.id, m.how, m.differs])).toEqual([

@@ -67,6 +67,8 @@ describe('admin_site_details', () => {
   it('refuses a date that is not a date, an address that is not https, and an empty change', async () => {
     expect(expectErr(await run(adminUpdateSiteDetails, admin(), { weddingDate: '17 July 2027' })).code).toBe('validation');
     expect(expectErr(await run(adminUpdateSiteDetails, admin(), { weddingDate: '2027-13-45' })).code).toBe('validation');
+    // A day the calendar does not have: Date.parse would roll it into March.
+    expect(expectErr(await run(adminUpdateSiteDetails, admin(), { weddingDate: '2027-02-31' })).code).toBe('validation');
     expect(expectErr(await run(adminUpdateSiteDetails, admin(), { venueUrl: 'http://example.com' })).code).toBe('validation');
     expect(expectErr(await run(adminUpdateSiteDetails, admin(), {})).code).toBe('validation');
   });

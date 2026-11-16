@@ -289,14 +289,20 @@ export const adminAddHouseholdFromSheet = defineCapability<z.infer<typeof adoptI
     const { db } = appServices(ctx);
     const key = sheetKey(i.label);
     const all = await db.select({ id: households.id, name: households.name, sheetLabel: households.sheetLabel }).from(households);
-    const existing = all.find((h) => (h.sheetLabel && sheetKey(h.sheetLabel) === key) || sheetKey(h.name) === key);
+    // The household that answers to this line: the one linked to it, else one with the same name
+    // that is not already another line's. A namesake linked elsewhere is a different household
+    // ("Smith" the line beside "Smith" the household that is "Bob & Jane" on the sheet).
+    const existing = all.find((h) => h.sheetLabel && sheetKey(h.sheetLabel) === key) ?? all.find((h) => !h.sheetLabel && sheetKey(h.name) === key);
     if (existing) {
-      if (!existing.sheetLabel) await db.update(households).set({ sheetLabel: i.label, updatedAt: ctx.now }).where(eq(households.id, existing.id));
+      if (!existing.sheetLabel) {
+        await db.update(households).set({ sheetLabel: i.label, updatedAt: ctx.now }).where(eq(households.id, existing.id));
+        await ctx.audit.record({ actor: actorOf(ctx), action: 'content.updated', target: { type: 'household', id: existing.id }, outcome: 'success', requestId: ctx.requestId, metadata: { sheetLink: 'set', from: 'planning_sheet' } });
+      }
       return ok({ data: { householdId: existing.id, name: existing.name, created: false }, sources: [] });
     }
     const made = await upsertHousehold(db, { name: i.label });
     if (!made.ok) return err(made.error);
-    await db.update(households).set({ sheetLabel: i.label }).where(eq(households.id, made.value.id));
+    await db.update(households).set({ sheetLabel: i.label, updatedAt: ctx.now }).where(eq(households.id, made.value.id));
     await ctx.audit.record({ actor: actorOf(ctx), action: 'content.updated', target: { type: 'household', id: made.value.id }, outcome: 'success', requestId: ctx.requestId, metadata: { created: true, from: 'planning_sheet' } });
     return ok({ data: { householdId: made.value.id, name: made.value.name, created: true }, sources: [] });
   },

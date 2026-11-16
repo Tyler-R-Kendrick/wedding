@@ -59,17 +59,22 @@ export interface SheetSync {
 
 const NOISE = new Set(['the', 'family', 'household', 'and', 'guest', 'guests', 'mr', 'mrs', 'ms', 'dr']);
 
-/** A name read loosely: case, punctuation, "&" and filler words ("The … Family") do not count. */
+/**
+ * A name read loosely: case, accents, punctuation, "&" and filler words ("The … Family") do not
+ * count. Letters of any script are kept, and a name made only of filler ("Guests") keeps its
+ * words, so two different lines never read as the same empty name.
+ */
 export function sheetKey(name: string): string {
-  return name
+  const words = name
     .toLowerCase()
     .normalize('NFKD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/\p{M}+/gu, '')
     .replace(/&/g, ' and ')
-    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
     .split(' ')
-    .filter((w) => w && !NOISE.has(w))
-    .join(' ');
+    .filter(Boolean);
+  const kept = words.filter((w) => !NOISE.has(w));
+  return (kept.length ? kept : words).join(' ') || name.trim().toLowerCase();
 }
 
 const counts = (c: Counts): Counts => ({ adults: c.adults, kids: c.kids, plusOnes: c.plusOnes });
@@ -91,7 +96,8 @@ export function reconcileSheet(rows: readonly GuestSheetRow[], households: reado
   const byLink = new Map<string, SiteHousehold>();
   const byName = new Map<string, SiteHousehold>();
   for (const h of households) {
-    if (h.sheetLabel) byLink.set(sheetKey(h.sheetLabel), h);
+    const link = h.sheetLabel ? sheetKey(h.sheetLabel) : '';
+    if (link) byLink.set(link, h);
     const key = sheetKey(h.name);
     if (key && !byName.has(key)) byName.set(key, h);
   }
