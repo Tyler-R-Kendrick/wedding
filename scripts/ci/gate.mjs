@@ -15,7 +15,15 @@ const { GITHUB_API_URL, GITHUB_REPOSITORY, GITHUB_RUN_ID, GITHUB_TOKEN } = proce
 const SELF = process.env.GATE_JOB_NAME ?? 'CI';
 /** Every job of a run exists within a few seconds of its start; do not conclude before this. */
 const SETTLE_MS = 20_000;
-const POLL_MS = 2_000;
+/**
+ * How often to look. Slowly while nothing can have finished yet, then every 2 s: about 30 requests
+ * a run. The job token is allowed 1,000 an hour for the whole repository, so a constant 2 s (60 a
+ * run, before the other jobs' own requests) would have run out at about a dozen runs an hour, and
+ * a gate that cannot read the job list fails.
+ */
+const pollMs = (elapsed) => (elapsed < QUIET_MS ? 10_000 : 2_000);
+/** No run finishes sooner than this (the shortest job chain is setup, build and a shard of tests). */
+const QUIET_MS = 70_000;
 const DEADLINE_MS = Number(process.env.GATE_DEADLINE_MS ?? 8 * 60_000);
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -64,11 +72,11 @@ async function main() {
       others = await jobs();
       failures = 0;
     } catch (error) {
-      if (++failures >= 5) {
-        console.error(`::error::${error instanceof Error ? error.message : error}, five times in a row`);
+      if (++failures >= 6) {
+        console.error(`::error::${error instanceof Error ? error.message : error}, six times in a row`);
         return 1;
       }
-      await sleep(POLL_MS);
+      await sleep(10_000);
       continue;
     }
     const { state, bad } = verdict(others);
@@ -82,7 +90,7 @@ async function main() {
       return 0;
     }
     seen = others.length;
-    await sleep(POLL_MS);
+    await sleep(pollMs(Date.now() - started));
   }
 }
 
