@@ -408,7 +408,7 @@
    }
   },
   "admin-events": {
-   "title": "Events (admin)",
+   "title": "Schedule",
    "url": "/admin/events",
    "finalUrl": "/admin/events",
    "source": "app (test server, fixture data)",
@@ -915,6 +915,34 @@
    "title": "Errors",
    "url": "/admin/errors",
    "finalUrl": "/admin/errors",
+   "source": "app (test server, fixture data)",
+   "principal": "admin",
+   "capturedAt": "2026-11-16",
+   "designs": {
+    "botanical-deco": {
+     "status": 200,
+     "file": "botanical-deco.json"
+    }
+   }
+  },
+  "admin-details": {
+   "title": "Details",
+   "url": "/admin/details",
+   "finalUrl": "/admin/details",
+   "source": "app (test server, fixture data)",
+   "principal": "admin",
+   "capturedAt": "2026-11-16",
+   "designs": {
+    "botanical-deco": {
+     "status": 200,
+     "file": "botanical-deco.json"
+    }
+   }
+  },
+  "admin-guests-sheet": {
+   "title": "Guest sheet",
+   "url": "/admin/guests/sheet",
+   "finalUrl": "/admin/guests/sheet",
    "source": "app (test server, fixture data)",
    "principal": "admin",
    "capturedAt": "2026-11-16",
