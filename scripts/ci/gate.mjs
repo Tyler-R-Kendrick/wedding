@@ -15,7 +15,7 @@ const { GITHUB_API_URL, GITHUB_REPOSITORY, GITHUB_RUN_ID, GITHUB_TOKEN } = proce
 const SELF = process.env.GATE_JOB_NAME ?? 'CI';
 /** Every job of a run exists within a few seconds of its start; do not conclude before this. */
 const SETTLE_MS = 20_000;
-const POLL_MS = 3_000;
+const POLL_MS = 2_000;
 const DEADLINE_MS = Number(process.env.GATE_DEADLINE_MS ?? 8 * 60_000);
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

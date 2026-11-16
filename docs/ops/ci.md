@@ -12,10 +12,10 @@ It is the one check to require in branch protection.
 | Job | What it runs | Budget |
 |---|---|---|
 | lint · typecheck · design gates · concierge evals | `bun check`, oxlint, DESIGN.md lint, impeccable, stylelint, the docs and coverage checks, migrations, the concierge evals | 3 min |
-| unit · ui · stage tests (2 shards) | `npm run test:unit` | 3 min |
-| integration (6 shards) | `npm run test:integration`, files dealt out by recorded time | 4 min |
+| unit · ui · stage tests | `npm run test:unit` | 3 min |
+| integration (5 shards) | `npm run test:integration`, files dealt out by recorded time | 4 min |
 | e2e production (2 shards) | the `PRODUCTION_SPECS` against `next start` | 5 min |
-| e2e test-server (14 shards) | the `TEST_SERVER_SPECS` against the production build started with `NODE_ENV=test` | 5 min |
+| e2e test-server (15 shards) | the `TEST_SERVER_SPECS` against the production build started with `NODE_ENV=test` | 5 min |
 
 The budget is the job's `timeout-minutes`. A job that outgrows it fails, so CI getting slower is a
 red build. The budgets are loose on purpose (a slow runner should not fail a build); tighten them

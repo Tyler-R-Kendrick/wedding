@@ -105,29 +105,26 @@ jobs:
           key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
 
   unit:
-    name: unit · ui · stage tests ${{ matrix.shard }}/2
+    name: unit · ui · stage tests
     runs-on: ubuntu-latest
     timeout-minutes: 3
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1, 2]
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: ./.github/actions/setup
 
-      # Two halves (vitest's own split, by file): 220 small files, so count is close enough to time.
-      - name: Unit tests (vitest), shard ${{ matrix.shard }} of 2
-        run: npm run test:unit -- --shard=${{ matrix.shard }}/2
+      # One job: about 75 s of tests, under the browser shards' total, so a second shard would
+      # shorten nothing and take a runner the browser tests use better.
+      - name: Unit tests (vitest)
+        run: npm run test:unit
 
   integration:
-    name: integration ${{ matrix.shard }}/6
+    name: integration ${{ matrix.shard }}/5
     runs-on: ubuntu-latest
     timeout-minutes: 4
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6]
+        shard: [1, 2, 3, 4, 5]
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       # On a pull request, with selection on, a suite none of the changed files can reach is skipped
@@ -141,11 +138,11 @@ jobs:
       - uses: ./.github/actions/setup
         if: steps.reach.outputs.run == 'true'
 
-      # Six shards of about equal recorded time (scripts/ci/vitest-plan.mjs). In one job the 83
+      # Five shards of about equal recorded time (scripts/ci/vitest-plan.mjs). In one job the 83
       # files took 3.8 minutes at the median, the longest step outside Playwright.
-      - name: Integration tests (vitest + PGlite), shard ${{ matrix.shard }} of 6
+      - name: Integration tests (vitest + PGlite), shard ${{ matrix.shard }} of 5
         if: steps.reach.outputs.run == 'true'
-        run: npm run test:integration -- --reporter=default --reporter=json --outputFile.json=test-results/integration-${{ matrix.shard }}.json $(node scripts/ci/vitest-plan.mjs integration ${{ matrix.shard }}/6)
+        run: npm run test:integration -- --reporter=default --reporter=json --outputFile.json=test-results/integration-${{ matrix.shard }}.json $(node scripts/ci/vitest-plan.mjs integration ${{ matrix.shard }}/5)
 
       # Each file's time, for `npm run test:durations`, which the shard plan is built from.
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -161,27 +158,28 @@ jobs:
     timeout-minutes: 5
     strategy:
       fail-fast: false
-      # 14 test-server shards, for 25 jobs in this workflow. With stages.yml's 5 beside them that
-      # is 30; at 32 exactly one job waited 38 s for a runner on two runs in a row, and that wait
-      # was the whole run's.
+      # 15 test-server shards, for 25 jobs in this workflow (lint, unit, 5 integration, 17 browser,
+      # CI). With stages.yml's 5 beside them that is 30; at 32 exactly one job waited 38 s for a runner on two runs in a
+      # row, and that wait was the whole run's. Count the jobs before adding a shard anywhere.
       matrix:
         include:
           - { kind: production, shard: 1, of: 2 }
           - { kind: production, shard: 2, of: 2 }
-          - { kind: test-server, shard: 1, of: 14 }
-          - { kind: test-server, shard: 2, of: 14 }
-          - { kind: test-server, shard: 3, of: 14 }
-          - { kind: test-server, shard: 4, of: 14 }
-          - { kind: test-server, shard: 5, of: 14 }
-          - { kind: test-server, shard: 6, of: 14 }
-          - { kind: test-server, shard: 7, of: 14 }
-          - { kind: test-server, shard: 8, of: 14 }
-          - { kind: test-server, shard: 9, of: 14 }
-          - { kind: test-server, shard: 10, of: 14 }
-          - { kind: test-server, shard: 11, of: 14 }
-          - { kind: test-server, shard: 12, of: 14 }
-          - { kind: test-server, shard: 13, of: 14 }
-          - { kind: test-server, shard: 14, of: 14 }
+          - { kind: test-server, shard: 1, of: 15 }
+          - { kind: test-server, shard: 2, of: 15 }
+          - { kind: test-server, shard: 3, of: 15 }
+          - { kind: test-server, shard: 4, of: 15 }
+          - { kind: test-server, shard: 5, of: 15 }
+          - { kind: test-server, shard: 6, of: 15 }
+          - { kind: test-server, shard: 7, of: 15 }
+          - { kind: test-server, shard: 8, of: 15 }
+          - { kind: test-server, shard: 9, of: 15 }
+          - { kind: test-server, shard: 10, of: 15 }
+          - { kind: test-server, shard: 11, of: 15 }
+          - { kind: test-server, shard: 12, of: 15 }
+          - { kind: test-server, shard: 13, of: 15 }
+          - { kind: test-server, shard: 14, of: 15 }
+          - { kind: test-server, shard: 15, of: 15 }
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       # On a pull request, with selection on, a suite none of the changed files can reach is skipped
