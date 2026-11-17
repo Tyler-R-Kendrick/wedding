@@ -22,7 +22,7 @@
  * TEST_SERVER_SPECS file; name spec files to run only those.
  *
  * It builds first, so a run never tests a build older than the checkout. `--no-build` skips that
- * for a caller that has just built (CI builds once for both Playwright steps).
+ * for a caller that has just built (each CI shard builds, then runs its tests through this script).
  *
  * The server starts on PORT (default 3100), and is stopped whatever happens. It never reaches a real
  * system: `next start` loads `.env` too, so every credential and database setting there is blanked

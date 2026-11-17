@@ -301,6 +301,8 @@ jobs:
     # Runs only when a repository variable BASE_URL (e.g. a preview deployment) is configured.
     if: ${{ vars.BASE_URL != '' }}
     runs-on: ubuntu-latest
+    # Under the `CI` job's eight-minute wait for the other jobs, like every budget here.
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: ./.github/actions/setup
