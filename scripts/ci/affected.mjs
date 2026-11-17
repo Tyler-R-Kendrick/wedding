@@ -22,8 +22,11 @@
 import { realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-/** Read by nothing the app or its integration and browser suites load. */
-const INERT = [/^docs\//, /^[^/]+\.md$/, /^\.claude\//, /^\.impeccable\//, /^evals\//, /^tests\/unit\//, /^tests\/ui\//, /^tests\/contract\//, /^LICENSE$/];
+/**
+ * Read by nothing the app or its integration and browser suites load. PRODUCT.md is not here:
+ * tests/e2e/links.spec.ts reads its route table.
+ */
+const INERT = [/^docs\//, /^(?!PRODUCT\.md$)[^/]+\.md$/, /^\.claude\//, /^\.impeccable\//, /^evals\//, /^tests\/unit\//, /^tests\/ui\//, /^tests\/contract\//, /^LICENSE$/];
 
 /** Per suite: the other suite's own files, which this one never loads. */
 const NOT_MINE = {

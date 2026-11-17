@@ -24,6 +24,7 @@ describe('a pull request runs every suite its changes can reach', () => {
     ['a script the suites start servers with', 'scripts/lib/server-env.mjs'],
     ['a file in a place this rule has never heard of', 'somewhere/new/thing.bin'],
     ['a dotfile at the root', '.nvmrc'],
+    ['PRODUCT.md, whose route table links.spec.ts reads', 'PRODUCT.md'],
   ])('%s runs the integration and browser suites', (_what, file) => {
     expect(both([file])).toEqual([true, true]);
     // Hidden among changes that would be skipped on their own, it still runs them.

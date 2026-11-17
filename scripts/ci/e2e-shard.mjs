@@ -6,7 +6,9 @@
  * The plan (scripts/ci/e2e-plan.mjs) names the shard's tests; this passes them to Playwright as the
  * files they are in plus a `--grep` of their exact titles. It then holds Playwright to that list:
  * the tests the run reports must be exactly the plan's, or the shard fails. A pattern that matched
- * one test too few would otherwise be a test no shard ran, and a green build.
+ * one test too few would otherwise be a test no shard selected, and a green build. The check is of
+ * what was selected, not of each test's outcome: a test that skips itself (`test.skip`, as the
+ * project skips do) is in the report and counts.
  *
  * `production` runs against `next start` with the environment it is given (the workflow's);
  * `test-server` goes through scripts/test-server-specs.mjs, so the server settings stay in one place.

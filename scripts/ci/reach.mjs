@@ -22,6 +22,7 @@ async function decide() {
   if (process.env.CI_SELECTION !== 'on') return [true, 'selection is off (repository variable CI_SELECTION)'];
   const pull = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8')).pull_request;
   const files = [];
+  let listed = 0;
   for (let page = 1; page <= 30; page++) {
     const res = await fetch(`${process.env.GITHUB_API_URL}/repos/${process.env.GITHUB_REPOSITORY}/pulls/${pull.number}/files?per_page=100&page=${page}`, {
       headers: { authorization: `Bearer ${process.env.GITHUB_TOKEN}`, accept: 'application/vnd.github+json' },
@@ -30,9 +31,9 @@ async function decide() {
     const batch = await res.json();
     // A rename changes two paths: the old one stops existing, which a suite can also depend on.
     for (const f of batch) files.push(f.filename, ...(f.previous_filename ? [f.previous_filename] : []));
+    listed += batch.length;
     if (batch.length < 100) break;
   }
-  const listed = new Set(files).size;
   if (listed < pull.changed_files) return [true, `listed ${listed} of the pull request's ${pull.changed_files} changed files`];
   const run = affected(suite, files);
   return [run, run ? `at least one of ${pull.changed_files} changed files can reach the ${suite} suite` : `none of ${pull.changed_files} changed files can reach the ${suite} suite: ${files.slice(0, 8).join(', ')}${files.length > 8 ? ', …' : ''}`];

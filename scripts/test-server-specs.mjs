@@ -147,10 +147,18 @@ function groupRunning(pgid) {
 function run(command, args, env) {
   return new Promise((resolve) => {
     const child = spawn(command, args, { cwd: ROOT, env, stdio: 'inherit' });
-    child.on('error', () => resolve(1));
-    child.on('exit', (code) => resolve(code ?? 1));
+    running = child;
+    const done = (code) => {
+      if (running === child) running = null;
+      resolve(code);
+    };
+    child.on('error', () => done(1));
+    child.on('exit', (code) => done(code ?? 1));
   });
 }
+
+/** The command `run` is waiting for, so a signal to this script can end it. */
+let running = null;
 
 async function main(args) {
   const build = !args.includes('--no-build');
@@ -192,8 +200,17 @@ async function main(args) {
 
   // Ctrl-C reaches Playwright directly (it shares our terminal's process group); here it only sets
   // the exit code. The server is stopped in `finally`, once, whatever happened.
+  // SIGTERM and SIGHUP (a closed terminal, a tool's timeout) reach only this process, and left
+  // alone they would end it before `finally`, with the detached server still running. So they end
+  // the command being waited for instead, and the same `finally` stops the server.
   let interrupted = false;
   process.on('SIGINT', () => (interrupted = true));
+  for (const signal of ['SIGTERM', 'SIGHUP']) {
+    process.on(signal, () => {
+      interrupted = true;
+      running?.kill('SIGTERM');
+    });
+  }
 
   const stop = async () => {
     if (!server.pid) return;

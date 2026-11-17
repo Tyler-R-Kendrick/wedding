@@ -7,7 +7,12 @@
 
 Every job starts at once and none waits for another. One of them, `CI`, watches the rest
 (`scripts/ci/gate.mjs`) and passes only when every other job has completed with success or skipped.
-It is the one check to require in branch protection.
+It is the one check to require in branch protection for this workflow.
+
+`stages.yml` is a separate workflow that runs only when its paths change, so `CI` does not cover it
+and it cannot be a required check (a required check that never starts blocks the pull request). The
+stage tests themselves are in the unit job; the stage builds and the served-by-the-app probe are
+only in `stages.yml`, so read its result on a pull request that touches a stage.
 
 | Job | What it runs | Budget |
 |---|---|---|

@@ -10,6 +10,9 @@
  * with `success` or `skipped`. A failed or cancelled job, a request that keeps failing, a job
  * list that is still changing, or running out of time all fail it.
  */
+import { realpathSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
 const { GITHUB_API_URL, GITHUB_REPOSITORY, GITHUB_RUN_ID, GITHUB_TOKEN } = process.env;
 /** This job's own name in the workflow, so it does not wait for itself. */
 const SELF = process.env.GATE_JOB_NAME ?? 'CI';
@@ -94,4 +97,13 @@ async function main() {
   }
 }
 
-if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href) process.exitCode = await main();
+// Node resolves symlinks in the main module's URL but not in argv[1], so compare real paths. A
+// guard that wrongly said "imported" would run nothing and exit 0: a green gate that never looked.
+const runDirectly = () => {
+  try {
+    return !!process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url);
+  } catch {
+    return false;
+  }
+};
+if (runDirectly()) process.exitCode = await main();
