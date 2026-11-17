@@ -2,7 +2,7 @@
 
 ```bash
 nvm use                 # Node 22
-npm install             # or npm ci
+bun install             # bun.lock is the lockfile; scripts still run with `npm run`
 cp .env.example .env    # optional: everything runs with no variables set
 npm run dev             # http://localhost:3000
 ```
@@ -92,20 +92,20 @@ settings, runs the specs, and stops it:
 
 ```bash
 npm run test:e2e:server -- tests/e2e/claim.spec.ts tests/security/otp.spec.ts
-npm run test:e2e:server   # all of them, after warming every route, as CI does
+npm run test:e2e:server   # all of them, as CI does
 npm run test:e2e:server -- tests/e2e/rsvp.spec.ts --project=mobile --headed   # other arguments go to Playwright
 ```
 
-Specs can be files, `file:line` filters or directories. The no-argument run warms every route first;
-name the specs you want and only their routes are warmed. CI runs this same script, so there is one
-warm-up list and one set of server settings.
+Specs can be files, `file:line` filters or directories. CI runs this same script, so there is one
+set of server settings.
 
-The warm-up is paced by the server's memory: it pauses whenever `next dev` has grown 2.5 GB
-(`WARM_HEADROOM_MB`) and resumes once Turbopack has let go of what it compiled. A full warm-up peaks
-near 6 GB that way, where the same routes requested back to back took the server past 13 GB. The
-script prints the server's peak at the end of a run.
+The server is the production build started with `NODE_ENV=test`: the script runs `npm run build`,
+then `next start`. Every gate these specs depend on reads the environment when the server starts,
+so the compiled code is what ships and only the settings differ. There is no warm-up and nothing to
+compile on a first request. Pass `--no-build` to reuse the build already in `.next` (CI does, having
+just built); without it the script always builds, so a run never tests a stale build.
 
-The server never reaches a real system. `next dev` loads `.env` too, so the script blanks every
+The server never reaches a real system. `next start` loads `.env` too, so the script blanks every
 credential and database setting there (`DATABASE_URL` and its Postgres aliases, `RESEND_*`, `S3_*`,
 `ADMIN_EMAILS`, API keys), which is what CI gets by having no `.env`. It refuses a port that
 something else already answers on, and its server log is in the OS temp directory

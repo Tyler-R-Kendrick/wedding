@@ -62,6 +62,8 @@ export const TEST_SERVER_SPECS = [
   // Your Trip's planner: a signed-in guest saves places as their own trip items, through the
   // test-principal injector; the room block, the old list address and the 390px layout ride along.
   'tests/e2e/your-trip.spec.ts',
+  // The planner's hold-still check, one test per viewport, out of that file's serial chain.
+  'tests/e2e/your-trip-steady.spec.ts',
   // Level 08: travel search prefill from household mailing address and party counts.
   'tests/e2e/travel-prefill.spec.ts',
   // Level 09: transport claims and the voucher/redirect suites all drive signed-in principals

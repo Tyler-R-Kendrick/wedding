@@ -47,7 +47,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DESIGN_MD = /^(DESIGN\.md|src\/themes\/[^/]+\/DESIGN\.md)$/;
 /** Everything `design-sync.mjs` reads or writes, plus what decides its output. */
 const DESIGN_SYNC_FILES =
-  /^(package-lock\.json|scripts\/design-sync\.mjs|src\/themes\/[^/]+\/(DESIGN\.md|design\.json|theme\.css|tailwind\.theme\.css|tokens\.generated\.json))$/;
+  /^(bun\.lock|scripts\/design-sync\.mjs|src\/themes\/[^/]+\/(DESIGN\.md|design\.json|theme\.css|tailwind\.theme\.css|tokens\.generated\.json))$/;
 const DETECTOR_CONTEXT = /^(DESIGN\.md|\.impeccable\/config\.json|src\/themes\/[^/]+\/(DESIGN\.md|design\.json))$/;
 /** impeccable's hook extension list (reference/hooks.md), plus .mdx pages. */
 const UI_FILE = /\.(tsx|jsx|ts|js|mjs|html|vue|svelte|astro|css|scss|sass|less|mdx)$/;
@@ -86,7 +86,7 @@ const say = (line = '') => process.stdout.write(`${line}\n`);
 
 function locate(pkg, binName) {
   const script = tool(pkg, binName);
-  if (!script) failures.push(`${binName} is not installed — run \`npm ci\` first.`);
+  if (!script) failures.push(`${binName} is not installed — run \`bun install\` first.`);
   return script;
 }
 function partial(files, what) {

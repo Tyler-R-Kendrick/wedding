@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
-import { BASE_URL, contextAs, customPrincipalHeaders, IDS } from './helpers/principal';
+import { BASE_URL, callCapability, contextAs, customPrincipalHeaders, IDS } from './helpers/principal';
 
 /**
  * The cross-cutting admin console (level 14): lifecycle, audit, jobs, metrics, flags, providers.
@@ -292,7 +292,10 @@ test('the flags screen shows the legal gate shut and offers no way to open it', 
   await ctx.close();
 });
 
-test('the audit trail renders rows, filters them server-side, and withholds free text', async ({ browser }) => {
+test('the audit trail renders rows, filters them server-side, and withholds free text', async ({ browser, request }) => {
+  // Make the row this test reads. It used to find one only because some other spec had already
+  // called a capability on the same server; first on a fresh server, the trail was empty.
+  expect((await callCapability(request, 'admin_seating_overview', 'admin', {})).status).toBe(200);
   const ctx = await contextAs(browser, 'admin');
   const page = await ctx.newPage();
   await page.goto('/admin/audit');

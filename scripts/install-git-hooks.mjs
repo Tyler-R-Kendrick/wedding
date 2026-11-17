@@ -2,7 +2,7 @@
 /**
  * Point this clone's git at the committed hooks in .githooks/ (the pre-commit design gate).
  *
- * Runs as `prepare`, so `npm install` / `npm ci` wire it with no extra step; `npm run hooks:install`
+ * Runs as `prepare`, so `bun install` wires it with no extra step; `npm run hooks:install`
  * does it by hand, and a Claude Code SessionStart hook runs it too. Never fails an install, and never
  * silently displaces hooks someone already relies on. It leaves things alone, saying why, when:
  *   - `CI` is set, or this is not a git work tree (a Vercel build, a tarball);

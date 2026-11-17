@@ -116,7 +116,11 @@ test.describe('the adventures atlas', () => {
       await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0)).toBe(true);
     }
     // The canvas stayed within reach: opening a postcard does not scroll the map away on a wide screen.
-    expect((await canvas(page).boundingBox())!.y).toBeGreaterThan(-box.height);
+    // Read once the page has stopped scrolling to the postcard. Read at once, it was true on a phone
+    // too, mid-scroll; there the postcard sits under the map and the page ends with the map above
+    // the screen, so the check is for the wide layout its sentence names.
+    await expect.poll(async () => { const y = await page.evaluate(() => window.scrollY); await page.waitForTimeout(150); return (await page.evaluate(() => window.scrollY)) === y; }).toBe(true);
+    if (page.viewportSize()!.width >= 900) expect((await canvas(page).boundingBox())!.y).toBeGreaterThan(-box.height);
   });
 
   test('follows a finger: a one-finger drag, a pinch, and a tap on "+" right after a drag', async ({ page }, testInfo) => {

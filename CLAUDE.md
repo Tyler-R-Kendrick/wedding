@@ -106,7 +106,7 @@ npm run design:drift           # the same, plus any size/colour/radius off the D
 npm run slop:detect:rendered   # rendered scan: every route × 390/820/1280/1440 (needs a server, BASE_URL)
 npm run lint:css               # stylelint (bans Inter/Roboto/Arial/Helvetica/Fraunces/… in CSS)
 npm run test:a11y              # axe-core WCAG 2.2 AA via Playwright (needs BASE_URL)
-npm run test:e2e:server        # identity/RSVP/security specs against a NODE_ENV=test server, as CI runs them
+npm run test:e2e:server        # identity/RSVP/security specs against the production build started in test mode, as CI runs them
 npm run quality                # design:lint + slop:detect + lint:css (what CI runs)
 npm run precommit              # the pre-commit design gate over staged files (git runs it for you)
 npm run hooks:install          # point git at .githooks/ (npm install already does, via `prepare`)
@@ -117,6 +117,24 @@ node scripts/fal-generate.mjs "prompt"   # quick fal.ai image for a mood board (
 
 Inside Claude Code: `/impeccable <cmd> <target>`, `hallmark audit <target>`,
 `design-review <route|file|url>`, `/mcp` to authorize Higgsfield.
+
+## CI and tests
+
+Read `docs/ops/ci.md` before touching a workflow, a Playwright spec or an integration test. The short
+version:
+
+- Every job runs in parallel; the browser and integration suites are split into shards filled by
+  recorded time (`scripts/ci/e2e-plan.mjs`, `scripts/ci/vitest-plan.mjs`). A pull request has its
+  result in about two minutes.
+- **No retries.** A test that needs a second attempt has a bug; find it.
+- A browser test makes the state it reads, and passes alone on a fresh server
+  (`npm run test:e2e:server -- <file>`). Both projects share one server and run at the same moment:
+  what a test creates by name is per project. A file that changes something for the whole server
+  says so with `// @server-state <name>`.
+- `bun install` installs (`bun.lock`); scripts run with `npm run`. `npm run typecheck` is
+  `bun check`, `npm run lint` is oxlint (`npx oxlint --format=agent` for one finding per line), and
+  `git push` runs both in about 2 s (`.githooks/pre-push`).
+- After adding slow tests, record their times (`npm run e2e:durations`, `npm run test:durations`).
 
 ## Secrets & accounts
 

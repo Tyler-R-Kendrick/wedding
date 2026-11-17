@@ -700,8 +700,11 @@ export function ContentRecordFlow({ editor, record, label, variant = 'primary', 
       ]
     : [fieldStep('What it says', 'The record as guests and the concierge will read it.', ownMain, ownTechnical, fields, editor, isNew)];
 
-  // A new record's verification stamp is "now", on this device's clock and in its time zone.
-  const initial = record ? blankValues(fields) : blankValues(fields, { ...editor.defaults, verifiedAt: toLocalInput(new Date().toISOString()) });
+  // A new record's verification stamp is "now", on this device's clock and in its time zone. Read
+  // once, when the flow is first rendered: read in the render itself, every re-render gave the form
+  // a different starting value.
+  const [openedAt] = useState(() => toLocalInput(new Date().toISOString()));
+  const initial = record ? blankValues(fields) : blankValues(fields, { ...editor.defaults, verifiedAt: openedAt });
 
   const steps: FlowStep<Values>[] = [
     ...ownSteps,

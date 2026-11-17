@@ -109,7 +109,7 @@ WebMCP tools ───────┘        validate → authorize → step-up 
 
 ## 5. How to continue in a new session
 
-1. Clone, `npm ci`. Everything runs with no accounts and no keys: `npm run dev`
+1. Clone, `bun install`. Everything runs with no accounts and no keys: `npm run dev`
    migrates and seeds PGlite on first connection. For Playwright, Chromium is at
    `PW_CHROMIUM_PATH` when preinstalled; never run `playwright install` in the
    cloud sandbox.

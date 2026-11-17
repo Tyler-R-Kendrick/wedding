@@ -57,8 +57,7 @@ export const SEEDED_STORY_ROW_ID = seedId(200);
 export const RSVP_STEP_PATHS = ['/rsvp/attending', '/rsvp/guest', '/rsvp/meals', '/rsvp/notes'] as const;
 
 /**
- * Concrete paths quoted so `scripts/test-server-specs.mjs` can see them when it warms the crawler.
- * Dynamic routes compile on the first of these; the rest of a pattern is the same page.
+ * One concrete path for each dynamic route the crawler opens; the rest of a pattern is the same page.
  */
 export const CRAWL_EXAMPLES = {
   adventure: '/our-adventures/starved-rock',

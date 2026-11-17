@@ -337,15 +337,17 @@ test.describe('the concierge is rate limited', () => {
   });
 
   test('a signed-in caller is cut off after the burst, with Retry-After', async ({ playwright }) => {
-    // Its own address so the budget is this test's alone, and its own request context so the
+    // A guest no other test in this file asks as. A signed-in caller's budget is counted per guest,
+    // not per address, so draining A1's here left every A1 test that ran beside or after this one
+    // with "Too many questions at once" for the next minute. Its own request context so the
     // per-test header above does not apply.
     const api = await playwright.request.newContext({
       baseURL: test.info().project.use.baseURL,
-      extraHTTPHeaders: { ...apiHeaders('A1'), 'x-forwarded-for': '203.0.113.77' },
+      extraHTTPHeaders: { ...apiHeaders('B2'), 'x-forwarded-for': '203.0.113.77' },
     });
     const codes: number[] = [];
     for (let i = 0; i < 24; i += 1) {
-      const res = await api.post('/api/ai/chat', { data: { message: 'When is the wedding?' }, headers: apiHeaders('A1') });
+      const res = await api.post('/api/ai/chat', { data: { message: 'When is the wedding?' }, headers: apiHeaders('B2') });
       codes.push(res.status());
       if (res.status() === 429) {
         expect(res.headers()['retry-after'], 'a 429 must say when to come back').toBeTruthy();

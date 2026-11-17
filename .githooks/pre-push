@@ -1,0 +1,20 @@
+#!/bin/sh
+# Lint and typecheck before a push: oxlint and bun check over the whole repository, about 2 seconds
+# together (the budget is 9). A hook rather than a line in AGENTS.md, because a step that is only
+# written down gets skipped. CI runs the same two commands, so a push that passes here does not
+# come back red for a type error or a lint rule three minutes later.
+#
+# `git push --no-verify` skips it; CI still runs both.
+
+cd "$(git rev-parse --show-toplevel)" || exit 1
+
+if [ ! -x node_modules/.bin/oxlint ] || ! command -v bun >/dev/null 2>&1; then
+  echo "pre-push: oxlint or bun is missing, so lint and typecheck cannot run here." >&2
+  echo "pre-push: run \`bun install\` (bun: https://bun.sh), then push again." >&2
+  exit 1
+fi
+
+# One finding per line, the form an agent reads without wading through code frames.
+node_modules/.bin/oxlint --format=agent || { echo "pre-push: oxlint found problems (above)." >&2; exit 1; }
+# NODE_OPTIONS is cleared for the same reason the pre-commit hook clears it.
+env -u NODE_OPTIONS bun check --no-script || { echo "pre-push: bun check found type errors (above)." >&2; exit 1; }

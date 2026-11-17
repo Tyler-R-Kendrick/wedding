@@ -26,7 +26,10 @@ test.describe('media security', () => {
   });
 
   test('a quarantined (unprocessed) upload is never served or listed, even to its owner via the gallery', async ({ request, baseURL }) => {
-    const created = await request.post('/api/uploads/create', { headers: apiHeaders(guestA, baseURL!), data: { input: { files: [{ clientRef: 'q', filename: 'q.jpg', contentType: 'image/jpeg', size: 1024 }] }, idempotencyKey: `sec-${Date.now()}` } });
+    // As household B, not A: the upload journey (tests/e2e/media-upload.spec.ts) counts household A's
+    // uploads exactly, and this test's rejected one was a fifth where it expected four whenever the
+    // two ran on the same server in this order.
+    const created = await request.post('/api/uploads/create', { headers: apiHeaders(guestB, baseURL!), data: { input: { files: [{ clientRef: 'q', filename: 'q.jpg', contentType: 'image/jpeg', size: 1024 }] }, idempotencyKey: `sec-${Date.now()}` } });
     expect(created.status()).toBe(200);
     const ticket = (await created.json()).data.uploads[0].ticket;
     expect(ticket.parts[0].url).toContain('/api/dev/storage/quarantine/');
@@ -36,7 +39,7 @@ test.describe('media security', () => {
     // Upload bytes that are not an image at all: completion rejects, nothing becomes an asset
     const put = await request.put(ticket.parts[0].url, { headers: ticket.parts[0].headers, data: Buffer.alloc(1024, 0x41) });
     expect(put.status()).toBe(200);
-    const done = await request.post('/api/uploads/complete', { headers: apiHeaders(guestA, baseURL!), data: { input: { uploadId: ticket.uploadId }, idempotencyKey: `sec-done-${Date.now()}` } });
+    const done = await request.post('/api/uploads/complete', { headers: apiHeaders(guestB, baseURL!), data: { input: { uploadId: ticket.uploadId }, idempotencyKey: `sec-done-${Date.now()}` } });
     expect(done.status()).toBe(422);
     expect((await done.json()).error.message).toMatch(/could not recognise/);
     // Nobody can fetch the quarantined object through the dev route without the exact signature

@@ -13,6 +13,22 @@ async function axe(page: Page) {
 const MARKER = 'TODO(Tyler & Sara)';
 
 /**
+ * Press one of the ride's buttons where it is on the screen, as a finger does.
+ *
+ * `locator.click()` first asks the browser to scroll its target into view. The buttons sit on the
+ * pinned stage, already on screen, and on a busy machine that step still moved the page about half
+ * a screen (measured: 2656 to 2989, with no scroll call from the page). The ride takes any scroll
+ * it did not make as the guest's own and settles on the nearest station, so the next press counted
+ * from the wrong one. With retries on, this failed and then passed.
+ */
+async function press(page: Page, name: RegExp) {
+  const button = page.getByRole('button', { name });
+  await expect(button).toBeEnabled();
+  const box = (await button.boundingBox())!;
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+}
+
+/**
  * Follow a site link. On a phone both kits keep the full list in the Menu sheet and leave only the
  * wordmark and the sheet trigger in the Site landmark, so fall back to the sheet when it is not there.
  */
@@ -101,9 +117,9 @@ test.describe('explore journey', () => {
     for (const tabindex of await page.locator('.bd-ride__stop[aria-hidden="true"] a').evaluateAll((as) => as.map((a) => a.getAttribute('tabindex')))) expect(tabindex).toBe('-1');
     await expect(page.getByRole('heading', { name: 'Love', level: 3 })).toBeVisible();
 
-    await page.getByRole('button', { name: /Next stop/ }).click();
+    await press(page, /Next stop/);
     await expect(map.getByRole('link', { name: /Greater together than alone/ })).toHaveAttribute('aria-current', 'location');
-    await page.getByRole('button', { name: /Back a stop/ }).click();
+    await press(page, /Back a stop/);
     await expect(map.getByRole('link', { name: /^Love$/ })).toHaveAttribute('aria-current', 'location');
     await expect(page.locator('.bd-ride__bar [aria-live="polite"]')).toHaveText(/This is Love\. Next stop, Greater together than alone\./);
 
