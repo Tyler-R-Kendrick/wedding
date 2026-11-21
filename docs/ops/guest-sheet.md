@@ -77,7 +77,12 @@ so that everyone a line names can sign in under their own name:
   guest; so does one on a line that counts a head it does not name (it may be theirs), and one under
   a name two people on the line share a form of (`chris@` on "Chris and Christine"). A verified
   email signs a guest in on its own, so a wrong guess would sign in the wrong person. Addresses,
-  phones, dietary needs and notes are still never read.
+  dietary needs and notes are still never read.
+- **Phone is read too** (`phoneOwnerIndexes`): numbers in the Phone cell, separated by `;`, `/`
+  or `,`, go to the people on the line in the order they are named (`5551110000;5552220000` on
+  "Lee and Karen Kendrick" is Lee's, then Karen's). A single number on a line of two is the first
+  person's, the household's own. A number already on another guest is left alone. Phone sign-in
+  texts a code to the number, so only whoever holds that phone can use it.
 - **A line of more than 20 heads** is taken for a tally or a typo, left alone and reported.
 - **The list ends at the last line that says whose guest it is** (a side, group or tier). The
   sheet's own tallies under it ("2s", "Declined", "Total") are not households, with or without a
