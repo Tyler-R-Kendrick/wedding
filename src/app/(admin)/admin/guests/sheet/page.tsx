@@ -53,7 +53,7 @@ export default async function AdminGuestSheetPage() {
   return (
     <ConsolePage
       title="Guest sheet"
-      lede="The guest list is kept in the planning spreadsheet. Syncing saves a copy of its Guests tab and adds everyone a line names to the guest list; nobody is removed. This screen lists what still differs. Addresses, phones, dietary needs and notes are never saved."
+      lede="The guest list is kept in the planning spreadsheet. Syncing saves a copy of its Guests tab and adds everyone a line names to the guest list; nobody is removed. This screen lists what still differs. Addresses, dietary needs and notes are never saved; emails and phone numbers go only on the guest they belong to, for sign-in."
       actions={<UpdatePlanningSheetFlow hasCopy={!!s.copy} variant="primary" />}
     >
       {!s.copy || !s.summary ? (
