@@ -78,3 +78,6 @@ public/_stages/
 
 # The ONNX runtime's wasm for the on-device models, copied from node_modules by scripts/copy-ort-wasm.mjs
 public/ort/
+
+# Playwright MCP snapshots and logs: may hold whatever page was open, including guest data
+.playwright-mcp/

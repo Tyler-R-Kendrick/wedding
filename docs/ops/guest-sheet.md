@@ -107,3 +107,13 @@ so that everyone a line names can sign in under their own name:
 The save reports how many lines have someone who cannot be found by name.
 
 Sign-in still waits for the household's invitation to be marked as sent (`docs/social-auth.md`).
+
+## Who cannot sign in
+
+The console's **Overview** puts households nobody can sign in for at the top of **Needs you**, and
+lists them in a full-width panel above everything else (`admin_guest_reach`,
+`src/domain/guests/reach.ts`). A household is on it when not one grown-up in it has an email or a
+phone on their guest record (the record's own columns or its contact rows); children and merged
+records do not count. The list is ordered by the sheet line's **Priority** (1 first), then by name,
+and shows the side; each name opens the household on **Guests**, where an email or mobile number can
+be added. It shows names and counts only, never a contact detail, and is admin only.

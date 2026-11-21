@@ -327,3 +327,24 @@
     transition: none;
   }
 }
+
+/*
+ * Households nobody can sign in for. The first panel and the full width of the grid, because the
+ * rest of the console waits on guests getting in; ruled in the alert colour, like the mark beside
+ * its line under "Needs you".
+ */
+.ov-panel--reach {
+  grid-column: 1 / -1;
+  grid-template-rows: auto;
+  border-top: 2px solid var(--color-tertiary);
+}
+
+.ov-reach__lede {
+  margin: 0;
+  color: var(--ops-muted);
+}
+
+.ov-reach td:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

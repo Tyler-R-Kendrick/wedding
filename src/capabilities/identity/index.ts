@@ -1,5 +1,6 @@
 import type { AnyCapability } from '@/contracts/capability';
 import { adminGuestOpsCapabilities } from '../admin_guest_ops';
+import { adminGuestReach } from '../admin_guest_reach';
 import { adminAddHouseholdFromSheet, adminGuestSheet, adminGuestSheetSync, adminLinkSheetLine, adminUploadGuestSheet } from '../admin_guest_sheet';
 import { adminBrowseAsGuest, adminGuestViewStatus, adminListOwnGuestRecords } from './browse_as_guest';
 import { adminClearViewRole, adminListViewRoles, adminSetViewRole, adminViewRoleStatus } from './view_role';
@@ -25,6 +26,7 @@ export const identityCapabilities: readonly AnyCapability[] = [
   adminGuestSheetSync,
   adminLinkSheetLine,
   adminAddHouseholdFromSheet,
+  adminGuestReach,
   adminBrowseAsGuest,
   adminListOwnGuestRecords,
   adminGuestViewStatus,
