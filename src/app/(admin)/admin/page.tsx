@@ -2,12 +2,14 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { adminJobsOverview, adminLifecycleStatus, adminSearchAudit, adminSiteErrors, adminSiteTraffic } from '@/capabilities/ops';
 import { adminRsvpOverview } from '@/capabilities/rsvp';
+import { adminGuestReach } from '@/capabilities/admin_guest_reach';
 import type { CapabilityDescriptor } from '@/contracts/capability';
 import { AdminIcon } from '@/components/admin/shell/icons';
 import { Chart } from '@/components/admin/viz/Chart';
 import '@/components/admin/assistant/assistant.css';
 import { attentionItems, plural, shapeAudit, shapeErrors, shapeJobs, shapeLifecycle, shapeRsvp, shapeTraffic, type Gathered } from '@/domain/admin-assistant';
 import type { Delta } from '@/domain/admin-assistant/shape';
+import type { AttentionItem } from '@/domain/admin-assistant';
 import { adminInvoke, adminPrincipal } from '../_shared/admin';
 import { ConsoleGate, ConsolePage } from './_components/console';
 import { ViewRolePanel } from './_components/ViewRolePanel';
@@ -48,17 +50,23 @@ export default async function AdminPage() {
     const result = await adminInvoke(capability, input);
     return result.ok ? result.value.data : null;
   };
-  const [lifecycle, jobs, rsvp, errors, traffic, audit] = await Promise.all([
+  const [lifecycle, jobs, rsvp, errors, traffic, audit, reach] = await Promise.all([
     read(adminLifecycleStatus, { historyLimit: 1 }),
     read(adminJobsOverview, { attentionLimit: 5, recentLimit: 1 }),
     read(adminRsvpOverview, {}),
     read(adminSiteErrors, { windowHours: 168 }),
     read(adminSiteTraffic, { windowHours: 168 }),
     read(adminSearchAudit, { limit: 60 }),
+    read(adminGuestReach, {}),
   ]);
 
   const gathered: Gathered = { now: new Date().toISOString(), lifecycle, jobs, rsvp, errors, traffic };
-  const items = attentionItems(gathered);
+  // Households nobody can sign in for come first: every other thing on this list waits on guests getting in.
+  const unreachable = reach?.unreachable ?? [];
+  const reachItem: AttentionItem[] = unreachable.length
+    ? [{ state: 'alert' as const, title: `${plural(unreachable.length, 'household')} ${unreachable.length === 1 ? 'has' : 'have'} no email or phone`, detail: 'Nobody in them can sign in or get a code until someone has one. They are listed below, most-wanted first.', href: '#ov-reach' }]
+    : [];
+  const items = [...reachItem, ...attentionItems(gathered)];
   const open = items.filter((i) => i.state !== 'done');
   const fine = items.filter((i) => i.state === 'done');
 
@@ -102,6 +110,40 @@ export default async function AdminPage() {
       </div>
 
       <div className="ov-grid">
+        {unreachable.length ? (
+          <section className="ov-panel ov-panel--reach" aria-labelledby="ov-reach">
+            <div className="ov-panel__head">
+              <h2 id="ov-reach" className="ov-panel__title">
+                No email or phone: {plural(unreachable.length, 'household')}
+              </h2>
+              <Link href="/admin/guests">Guests</Link>
+            </div>
+            <p className="ov-reach__lede">Nobody in these households can sign in. Add an email or a mobile number to someone in each, starting at the top.</p>
+            <table className="aui-table ov-reach">
+              <thead>
+                <tr>
+                  <th scope="col">Household</th>
+                  <th scope="col">Side</th>
+                  <th scope="col" className="aui-num">
+                    Priority
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {unreachable.map((h) => (
+                  <tr key={h.id}>
+                    <td>
+                      <Link href={`/admin/guests?householdId=${encodeURIComponent(h.id)}#guests`}>{h.name}</Link>
+                    </td>
+                    <td>{h.guestOf ?? '—'}</td>
+                    <td className="aui-num">{h.priority ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        ) : null}
+
         <section className="ov-panel ov-panel--needs" aria-labelledby="ov-needs">
           <h2 id="ov-needs" className="ov-panel__title">
             {open.length ? 'Needs you' : 'Nothing is waiting on you'}

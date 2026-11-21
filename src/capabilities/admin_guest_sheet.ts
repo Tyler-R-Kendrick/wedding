@@ -146,7 +146,7 @@ const latestCopies = (db: Db, n: number) => db.select().from(guestSheetCopies).o
  * Saving also makes the guest records agree with the sheet (src/domain/guests/sheet-sync.ts): each
  * person a line names becomes a guest unless they already are one, so that either person on a line
  * can sign in under their own name. It only adds and completes; nobody is removed or changed. The
- * one contact column it reads is Email, which becomes that guest's sign-in address.
+ * contact columns it reads are Email and Phone, which become that guest's sign-in details.
  */
 export const adminUploadGuestSheet = defineCapability<z.infer<typeof uploadInput>, z.infer<typeof uploadOutput>>({
   ...ADMIN_ONLY,
@@ -205,7 +205,7 @@ export const adminUploadGuestSheet = defineCapability<z.infer<typeof uploadInput
       cannotBeFoundByName: Object.values(synced.notes).reduce((a, b) => a + (b ?? 0), 0),
       skippedLines: synced.skipped.length,
     };
-    await ctx.audit.record({ actor: actorOf(ctx), action: 'guest.imported', target: { type: 'guest_sheet_copy', id }, outcome: 'success', requestId: ctx.requestId, metadata: { lines: summary.lines, people: summary.people, ...guestsSummary, householdsAdded: synced.households.created, emailsAdded: synced.emailsAdded, foundElsewhere: synced.foundElsewhere } });
+    await ctx.audit.record({ actor: actorOf(ctx), action: 'guest.imported', target: { type: 'guest_sheet_copy', id }, outcome: 'success', requestId: ctx.requestId, metadata: { lines: summary.lines, people: summary.people, ...guestsSummary, householdsAdded: synced.households.created, emailsAdded: synced.emailsAdded, phonesAdded: synced.phonesAdded, foundElsewhere: synced.foundElsewhere } });
     return ok({ data: { ...summary, guests: guestsSummary }, sources: [] });
   },
 });

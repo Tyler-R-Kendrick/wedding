@@ -3,6 +3,7 @@ import type { Db } from '@/db/client';
 import { guestContacts, guests, households, type GuestRow } from '@/db/schema';
 import { sameGivenName } from '@/domain/identity/name-match';
 import { isEmailShape, normalizeEmail } from '@/domain/identity/mask';
+import { normalizePhoneE164 } from '@/domain/identity/phone';
 import { upsertGuest } from '@/domain/guests/repo';
 import { upsertHousehold } from '@/domain/households/repo';
 import { parseCsv } from './csv';
@@ -39,6 +40,8 @@ export interface SheetSyncLine {
   plusOnes: number;
   /** Email addresses on the line, if the sheet has any. Each goes to the one person it can be told to belong to. */
   emails?: readonly string[];
+  /** Phone numbers on the line, in the order its people are named. Each goes to one person on it (`phoneOwnerIndexes`). */
+  phones?: readonly string[];
 }
 
 export interface SheetSyncResult {
@@ -46,6 +49,7 @@ export interface SheetSyncResult {
   households: { created: number; found: number };
   guests: { created: number; found: number; completed: number; unnamedCreated: number };
   emailsAdded: number;
+  phonesAdded: number;
   /** People a line names who were not in its household and were taken to be a guest of that exact name elsewhere (moved by the couple, or a namesake): none was made. Worth a look when it is not zero. */
   foundElsewhere: number;
   /** Lines with people who cannot be found by name alone, by what is missing. Counts only. */
@@ -121,13 +125,16 @@ export interface SheetSyncOptions {
 }
 
 export async function syncGuestsFromSheet(db: Db, lines: readonly SheetSyncLine[], options: SheetSyncOptions = {}): Promise<SheetSyncResult> {
-  const result: SheetSyncResult = { lines: lines.length, households: { created: 0, found: 0 }, guests: { created: 0, found: 0, completed: 0, unnamedCreated: 0 }, emailsAdded: 0, foundElsewhere: 0, notes: {}, skipped: [] };
+  const result: SheetSyncResult = { lines: lines.length, households: { created: 0, found: 0 }, guests: { created: 0, found: 0, completed: 0, unnamedCreated: 0 }, emailsAdded: 0, phonesAdded: 0, foundElsewhere: 0, notes: {}, skipped: [] };
   const allHouseholds = await db.select().from(households);
   const everyGuest = await db.select().from(guests);
   let live = everyGuest.filter((g) => !g.mergedIntoGuestId);
   const merged = everyGuest.filter((g) => g.mergedIntoGuestId);
   const takenEmails = new Set((await db.select({ value: guestContacts.value }).from(guestContacts).where(eq(guestContacts.kind, 'email'))).map((c) => c.value));
   for (const g of live) if (g.email) takenEmails.add(g.email);
+  // A number is one guest's (guest_contacts is unique on it): one already on someone, merged or not, is never given to another.
+  const takenPhones = new Set((await db.select({ value: guestContacts.value }).from(guestContacts).where(eq(guestContacts.kind, 'phone'))).map((c) => c.value));
+  for (const g of everyGuest) if (g.phone) takenPhones.add(g.phone);
 
   /** A line, the household that is its own, and who of its people is already here (`slots`, one per person named). */
   type Entry = { line: SheetSyncLine; people: SheetLinePeople; householdId: string | null; made: boolean; slots: (GuestRow | 'elsewhere' | null)[] };
@@ -328,8 +335,42 @@ export async function syncGuestsFromSheet(db: Db, lines: readonly SheetSyncLine[
       takenEmails.add(email);
       result.emailsAdded += 1;
     }
+
+    // A phone on the line, for the person on it whose number it is, where they are here and have none.
+    const phones = (line.phones ?? []).map((raw) => normalizePhoneE164(raw));
+    const owners = phoneOwnerIndexes(phones.length, people.named.length);
+    for (let k = 0; k < phones.length; k++) {
+      const phone = phones[k];
+      const at = owners[k];
+      if (!phone || at === null || at === undefined || takenPhones.has(phone)) continue;
+      const slot = slots[at];
+      if (!slot || slot === 'elsewhere') continue;
+      const owner = live.find((g) => g.id === slot.id);
+      if (!owner || owner.phone || owner.isMinor || owner.kind === 'child') continue;
+      await save({ id: owner.id, householdId: owner.householdId, firstName: owner.firstName, phone });
+      takenPhones.add(phone);
+      result.phonesAdded += 1;
+    }
   }
   return result;
+}
+
+/**
+ * Whose number each phone on a line is, by position: the index among the people the line names, or
+ * null for a number that is nobody's.
+ *
+ * The sheet has one Phone column per line. Where it holds as many numbers as the line names people
+ * ("Lee and Karen Kendrick", `5551110000;5552220000`), they are in the same order: the first is
+ * Lee's, the second Karen's. Fewer numbers than people go in order too, and a single number on a
+ * line of two is the first person's, the household's own number: whoever answers it signs in for
+ * the household and answers for everyone on it. A number beyond the people named is nobody's.
+ *
+ * Unlike an email, a number never names anyone, so position is the only thing to go by; and it is
+ * the line's own household either way. Phone sign-in texts a code to the number, so only someone
+ * holding that phone can use it.
+ */
+export function phoneOwnerIndexes(phones: number, people: number): (number | null)[] {
+  return Array.from({ length: phones }, (_, k) => (k < people ? k : null));
 }
 
 /**
@@ -383,9 +424,9 @@ export function emailOwner<T extends { firstName: string; lastName: string }>(em
 
 /**
  * The lines to sync from the Guests tab as pasted or exported: the planning columns the copy keeps
- * (`parseGuestSheetText`), and beside them the one contact column the sync reads, Email, which
- * becomes a sign-in address on the guest it belongs to. Nothing else of the tab is read: not the
- * address, the phone, the dietary notes or the notes.
+ * (`parseGuestSheetText`), and beside them the two contact columns the sync reads, Email and Phone,
+ * which become sign-in details on the guest each belongs to. Nothing else of the tab is read: not the
+ * address, the dietary notes or the notes.
  */
 /**
  * Where the guest list ends. Under it the sheet keeps its own tallies ("2s", "Declined", "Total"),
@@ -402,15 +443,29 @@ export function guestRows<R extends Pick<GuestSheetParse['rows'][number], 'guest
   return last < 0 ? [...rows] : rows.slice(0, last + 1);
 }
 
+/**
+ * The numbers in a Phone cell, in order: `5551110000;5552220000`, `(555) 111-0000 / (555) 222-0000`,
+ * or one per line. A number a spreadsheet wrote as a decimal (`5551110000.0`) is read as the number.
+ * Spaces are not a separator: they are inside `(555) 111-0000`.
+ */
+export function splitPhones(cell: string): string[] {
+  return cell
+    .split(/\s*(?:[;,/|\n]|\bor\b|\band\b|&)\s*/i)
+    .map((p) => p.trim().replace(/^(\d+)\.0+$/, '$1'))
+    .filter((p) => /\d/.test(p));
+}
+
 export function sheetSyncLines(text: string): { parse: GuestSheetParse; lines: SheetSyncLine[] } {
   const parse = parseGuestSheetText(text);
   const firstLine = text.replace(/^﻿/, '').split(/\r?\n/, 1)[0] ?? '';
   const values = parseCsv(text, { delimiter: firstLine.includes('\t') ? '\t' : ',', keepBlankRows: true });
   const emailAt = (values[0] ?? []).findIndex((h) => /^(e[- ]?mails?|email address)$/i.test(String(h ?? '').trim()));
+  const phoneAt = (values[0] ?? []).findIndex((h) => /^(phones?|phone numbers?|mobiles?|mobile numbers?|cells?|cell phones?)$/i.test(String(h ?? '').trim()));
   const lines = guestRows(parse.rows).map((r) => {
     const cell = emailAt >= 0 ? String(values[r.sheetRow - 1]?.[emailAt] ?? '') : '';
     const emails = cell.split(/[;,\s]+/).map((e) => e.trim()).filter(Boolean);
-    return { sheetRow: r.sheetRow, name: r.name, adults: r.adults, kids: r.kids, plusOnes: r.plusOnes, ...(emails.length ? { emails } : {}) };
+    const phones = splitPhones(phoneAt >= 0 ? String(values[r.sheetRow - 1]?.[phoneAt] ?? '') : '');
+    return { sheetRow: r.sheetRow, name: r.name, adults: r.adults, kids: r.kids, plusOnes: r.plusOnes, ...(emails.length ? { emails } : {}), ...(phones.length ? { phones } : {}) };
   });
   return { parse, lines };
 }

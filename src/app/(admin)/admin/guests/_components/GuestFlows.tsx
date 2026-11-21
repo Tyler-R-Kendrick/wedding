@@ -781,9 +781,9 @@ function SheetFile({ onText }: { onText: (text: string) => void }) {
 /**
  * Sync the planning sheet: pick the downloaded Guests tab or paste it, read what the copy changes
  * and how it stands against the site, then save. Only the planning columns are kept in the copy;
- * the server drops addresses, phones, dietary needs and notes before anything is stored. Saving
- * also adds everyone a line names to the guest list, if they are not on it yet (an email on a line
- * becomes that guest's sign-in address), so either person on a line can sign in.
+ * the server drops addresses, dietary needs and notes before anything is stored. Saving also adds
+ * everyone a line names to the guest list, if they are not on it yet (an email or phone number on a
+ * line becomes that guest's sign-in), so either person on a line can sign in.
  *
  * `secret`: the pasted tab (with those columns in it) is never kept on this device.
  */
@@ -803,7 +803,7 @@ export function UpdatePlanningSheetFlow({ hasCopy, variant }: { hasCopy: boolean
           render: (ctx) => (
             <>
               <SheetFile onText={(text) => ctx.set({ text })} />
-              <TextField ctx={ctx} name="text" label="Or paste the tab" multiline rows={8} spellCheck={false} hint="Header row first. Addresses, phones, dietary needs and notes are dropped; an email is kept as that guest’s sign-in address." />
+              <TextField ctx={ctx} name="text" label="Or paste the tab" multiline rows={8} spellCheck={false} hint="Header row first. Addresses, dietary needs and notes are dropped; an email or phone number is kept as that guest’s sign-in." />
             </>
           ),
           ready: (v) => v.text.trim().length > 0,

@@ -248,8 +248,10 @@ describe('the wedding planner, who is not on the sheet', () => {
     const blank = (name: string, adults: string) => [name, adults, ...HEADER.slice(2).map(() => '')];
     const labelled = [HEADER, ...SHEET, blank('2s', '14'), blank('Declined', '6'), blank('Total', '120')].map((r) => r.join('\t')).join('\n');
     expect(sheetSyncLines(labelled).lines).toEqual(a.lines);
-    // Nothing of the tab but names, counts and emails reaches a line.
-    expect(JSON.stringify(a.lines)).not.toMatch(/Secret St|Hiddenville|60000|555-0100|Peanuts|private note|53760/);
+    // Nothing of the tab but names, counts, emails and phones reaches a line: never the address,
+    // the dietary needs or the notes.
+    expect(JSON.stringify(a.lines)).not.toMatch(/Secret St|Hiddenville|60000|Peanuts|private note|53760/);
+    expect(a.lines.every((l) => (l.phones ?? []).every((p) => p === '555-0100'))).toBe(true);
   });
 });
 
