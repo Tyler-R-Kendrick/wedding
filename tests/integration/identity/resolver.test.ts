@@ -221,7 +221,8 @@ describe('principal resolver', () => {
     // 104 -> 107: the planning sheet against the guest list (`admin_guest_sheet_sync`, `admin_link_sheet_line`,
     // `admin_add_household_from_sheet`).
     // 107 -> 109: the Details screen (`admin_site_details`, `admin_update_site_details`).
-    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(109);
+    // 109 -> 110: households nobody can sign in for (`admin_guest_reach`, ui-only read).
+    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(110);
     expect(names({ principal: ap, exposure: 'ai' }).filter((n) => n.startsWith('admin_'))).toEqual([]);
     // Level 15. The counts above are of the `admin_` namespace, so nothing here ever pinned the
     // GUEST-facing capabilities an admin's list also contains — and `meetsAuthLevel('guest', admin)`
